@@ -13,13 +13,15 @@ const OFFLINE_URL = '/offline.html';
 const STATIC_ASSETS = [
     '/',
     '/index.html',
+    '/offline.html',
     '/css/styles.css',
     '/js/audio-data.js',
     '/js/audio-processor.js',
     '/js/file-system.js',
     '/js/waveform.js',
     '/js/app.js',
-    '/manifest.json'
+    '/manifest.json',
+    '/images/icon-192.svg'
 ];
 
 // Install event - cache static assets

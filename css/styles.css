@@ -261,6 +261,18 @@ body {
     color: var(--color-text);
 }
 
+.sound-card-category {
+    display: inline-block;
+    font-size: 0.625rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--color-text-muted);
+    background-color: var(--color-surface);
+    padding: 0.125rem 0.5rem;
+    border-radius: 10px;
+    margin-top: 0.25rem;
+}
+
 /* ===========================
    Waveform Container
    =========================== */

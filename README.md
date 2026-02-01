@@ -1,19 +1,20 @@
 # Tesla Lock Sound Creator
 
-A free web-based tool that allows Tesla owners to create custom lock chime sounds and save them directly to a USB drive.
+A free, production-ready web application that allows Tesla owners to create custom lock chime sounds and save them directly to a USB drive.
 
 ## Features
 
 - **100% Free** - No payments, no subscriptions, no accounts required
-- **Browser-Based** - No software installation needed
-- **Direct USB Save** - Save directly to USB drive using File System Access API
-- **Audio Preview** - Listen to sounds before saving
+- **12 Pre-made Sounds** - Classic, modern, and sci-fi categories
 - **Visual Waveform Editor** - Trim audio with intuitive drag handles
-- **Tesla-Optimized Output** - Generates properly formatted WAV files
+- **Volume Control** - Adjust output volume
+- **Fade Effects** - Add fade in/out to your sound
+- **Audio Normalization** - Automatically optimizes volume levels
+- **Direct USB Save** - Save directly to USB drive using File System Access API
+- **PWA Support** - Install as an app, works offline (UI only)
+- **Fully Accessible** - WCAG 2.1 compliant with keyboard navigation
 
-## Requirements
-
-### Browser Support
+## Browser Support
 
 | Browser | Support |
 |---------|---------|
@@ -25,38 +26,35 @@ A free web-based tool that allows Tesla owners to create custom lock chime sound
 
 This tool requires the **File System Access API** which is only available in Chromium-based browsers on desktop computers.
 
-### Tesla Requirements
+## Tesla Requirements
 
 - Tesla vehicle with Boombox feature (Model S, 3, X, Y with external speaker)
 - USB drive formatted as FAT32 or exFAT
 - Software version that supports custom lock sounds
 
-## How It Works
+## Quick Start
 
 ### User Flow
 
 1. **Visit the Website** - Open in Chrome or Edge on a desktop PC
-2. **Select a Sound** - Choose from pre-made chime sounds
-3. **Trim the Audio** - Adjust to 2-5 seconds using the waveform editor
+2. **Select a Sound** - Choose from 12 pre-made sounds
+3. **Customize** - Trim to 2-5 seconds, adjust volume, add fades
 4. **Save to USB** - Click "Save to USB Drive" and select your USB drive
-5. **Use in Tesla** - Follow on-screen instructions to enable in your Tesla
+5. **Use in Tesla** - Follow on-screen instructions
 
-### Tesla Setup Instructions
+### Tesla Setup
 
 1. Safely eject the USB drive from your computer
 2. Plug the USB drive into your Tesla's USB port
-3. On the touchscreen, go to **Toybox**
-4. Select **Boombox**
-5. Tap **Lock Sound**
-6. Choose **USB** to use your custom sound
+3. Go to **Toybox** → **Boombox** → **Lock Sound** → **USB**
 
-## Technical Details
+## Technical Specifications
 
-### Output File Specifications
+### Output File
 
 | Property | Value |
 |----------|-------|
-| File Name | `LockChime.wav` |
+| File Name | `LockChime.wav` (exact) |
 | Format | WAV (PCM) |
 | Channels | Mono |
 | Sample Rate | 44.1 kHz |
@@ -68,97 +66,131 @@ This tool requires the **File System Access API** which is only available in Chr
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                    Browser (Chrome/Edge)                 │
+│              Static Web Application (No Server)          │
 ├─────────────────────────────────────────────────────────┤
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────┐  │
-│  │   Web Audio │  │  Canvas     │  │ File System     │  │
-│  │   API       │  │  Waveform   │  │ Access API      │  │
-│  │             │  │             │  │                 │  │
-│  │ • Generate  │  │ • Visualize │  │ • Save to USB   │  │
-│  │ • Playback  │  │ • Trim UI   │  │ • Direct write  │  │
-│  │ • Export    │  │             │  │                 │  │
-│  └─────────────┘  └─────────────┘  └─────────────────┘  │
+│  Web Audio API    │  Canvas API     │  File System API  │
+│  ─────────────    │  ─────────      │  ───────────────  │
+│  • Synthesis      │  • Waveform     │  • USB Write      │
+│  • Playback       │  • Trim UI      │  • Save Picker    │
+│  • Processing     │  • Animation    │  • Fallback DL    │
 └─────────────────────────────────────────────────────────┘
 ```
-
-### Key Technologies
-
-- **Web Audio API** - Audio synthesis, playback, and processing
-- **Canvas API** - Waveform visualization
-- **File System Access API** - Direct file system writes
-- **No Server Required** - All processing happens client-side
 
 ## Project Structure
 
 ```
 Tesla-LockChime/
-├── index.html          # Main HTML page
+├── index.html           # Main page with SEO & accessibility
+├── manifest.json        # PWA manifest
+├── sw.js               # Service worker for offline support
+├── offline.html        # Offline fallback page
 ├── css/
-│   └── styles.css      # Styling
+│   └── styles.css      # Responsive styling with a11y
 ├── js/
-│   ├── app.js          # Main application logic
-│   ├── audio-data.js   # Sound definitions & WAV encoder
-│   ├── audio-processor.js  # Audio playback & export
-│   ├── file-system.js  # File System Access API handler
-│   └── waveform.js     # Waveform visualizer
-└── README.md           # This file
+│   ├── app.js          # Main application controller
+│   ├── audio-data.js   # 12 synthesized sounds + WAV encoder
+│   ├── audio-processor.js  # Playback, trimming, effects
+│   ├── file-system.js  # File System Access API
+│   └── waveform.js     # Canvas waveform visualizer
+├── src/                # ES modules for testing
+├── tests/              # Vitest unit tests (151 tests)
+├── images/             # PWA icons
+└── README.md
 ```
 
 ## Development
 
-### Local Development
+### Prerequisites
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/your-repo/Tesla-LockChime.git
-   cd Tesla-LockChime
-   ```
+- Node.js 18+
+- npm
 
-2. Serve the files locally (File System Access API requires HTTPS or localhost):
-   ```bash
-   # Using Python
-   python -m http.server 8000
+### Setup
 
-   # Using Node.js
-   npx serve
-   ```
+```bash
+git clone https://github.com/yprite/Tesla-LockChime.git
+cd Tesla-LockChime
+npm install
+```
 
-3. Open `http://localhost:8000` in Chrome or Edge
+### Commands
 
-### Deployment
+```bash
+npm test          # Run all tests
+npm run test:watch  # Watch mode
+npm run dev       # Start local server (port 3000)
+```
 
-This is a static site that can be deployed to any web hosting service:
+### Testing
 
-- GitHub Pages
-- Netlify
-- Vercel
-- Cloudflare Pages
-- Any static file host
+The project has comprehensive unit tests:
 
-**Note:** HTTPS is required for the File System Access API to work in production.
+```
+✓ tests/audio-data.test.js (26 tests)
+✓ tests/audio-processor.test.js (56 tests)
+✓ tests/file-system.test.js (30 tests)
+✓ tests/waveform.test.js (39 tests)
+─────────────────────────────────────
+Total: 151 tests passing
+```
+
+## Deployment
+
+### Static Hosting
+
+Deploy to any static hosting service:
+
+- **Vercel**: `vercel deploy`
+- **Netlify**: Connect GitHub repo
+- **GitHub Pages**: Enable in repo settings
+- **Cloudflare Pages**: Connect GitHub repo
+
+**Requirements:**
+- HTTPS (required for File System Access API)
+- No build step needed (static files)
+
+### Configuration
+
+1. **Analytics**: Replace `G-XXXXXXXXXX` in `index.html` with your GA4 ID
+2. **AdSense**: Uncomment and add your AdSense code in `index.html`
+3. **Domain**: Update canonical URL and OG tags in `index.html`
+
+### Performance
+
+The site is optimized for performance:
+- No external dependencies (vanilla JS)
+- Service worker caching
+- Minimal CSS (~15KB)
+- Synthesized audio (no audio file downloads)
 
 ## Monetization
 
-This tool is monetized through display advertising only:
+Display advertising only (non-intrusive):
 
-- Header and footer ad placements
+- Header ad slot (728x90 leaderboard)
+- Footer ad slot (728x90 leaderboard)
 - No popups or interstitials
-- Ads do not interfere with core functionality
-- Google AdSense compatible
+- Google AdSense ready
 
-To enable ads, add your AdSense code to the `ad-header` and `ad-footer` div elements in `index.html`.
+## Accessibility
 
-## Edge Cases & Error Handling
+WCAG 2.1 Level AA compliant:
 
-| Scenario | Handling |
-|----------|----------|
-| Unsupported browser | Modal overlay with instructions |
-| Mobile device | Modal overlay with PC requirement |
-| User cancels save | Silent - no error message |
-| Permission denied | Prompt to try again |
-| Save fails | Offer fallback download option |
-| Audio too short | Validation message, save button hidden |
-| Audio too long | Validation message, save button hidden |
+- Skip to main content link
+- Full keyboard navigation
+- Screen reader support (ARIA)
+- Focus indicators
+- High contrast mode support
+- Reduced motion support
+- Semantic HTML structure
+
+## Security
+
+- No server-side code
+- No user data collection
+- No cookies (except analytics)
+- Content Security Policy ready
+- All processing client-side
 
 ## License
 
@@ -170,12 +202,29 @@ This tool is not affiliated with, endorsed by, or sponsored by Tesla, Inc. Tesla
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit pull requests.
+Contributions welcome! Please:
 
-### Ideas for Future Improvements
+1. Fork the repository
+2. Create a feature branch
+3. Write tests for new features
+4. Submit a pull request
 
-- [ ] Upload custom audio files (with copyright disclaimer)
-- [ ] More pre-made sounds
-- [ ] Audio effects (fade in/out, normalization)
-- [ ] Multiple language support
-- [ ] PWA support for offline use
+### Completed Features
+
+- [x] 12 synthesized sounds
+- [x] Volume control
+- [x] Fade in/out effects
+- [x] Audio normalization
+- [x] PWA with offline support
+- [x] Full accessibility
+- [x] SEO optimization
+- [x] Analytics integration
+- [x] AdSense integration
+
+### Potential Improvements
+
+- [ ] User-uploaded audio files
+- [ ] More sound effects
+- [ ] Internationalization (i18n)
+- [ ] Sound categories filter UI
+- [ ] Undo/redo for edits
