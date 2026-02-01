@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tesla Lock Sound Creator - Free Custom Lock Chime Generator</title>
+    <meta name="description" content="Create custom Tesla lock chimes for free. Select, trim, and save directly to USB. Works with all Tesla models supporting custom lock sounds.">
+    <link rel="stylesheet" href="css/styles.css">
+
+    <!-- Preload ffmpeg for faster loading -->
+    <link rel="preconnect" href="https://unpkg.com">
+</head>
+<body>
+    <!-- Header with Ad Space -->
+    <header class="header">
+        <div class="header-content">
+            <h1 class="logo">Tesla Lock Sound Creator</h1>
+            <span class="free-badge">100% Free</span>
+        </div>
+        <!-- Ad Container - Header -->
+        <div class="ad-container ad-header" id="ad-header">
+            <div class="ad-placeholder">Advertisement</div>
+        </div>
+    </header>
+
+    <!-- Browser Compatibility Warning -->
+    <div class="compatibility-notice" id="compatibility-notice">
+        <div class="notice-icon">⚠️</div>
+        <div class="notice-content">
+            <strong>PC Only - Chrome or Edge Required</strong>
+            <p>This tool uses the File System Access API which is only available in Chrome and Edge on desktop computers. Safari, Firefox, and mobile browsers are not supported.</p>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Step 1: Select Sound -->
+        <section class="step-section" id="step-select">
+            <div class="step-header">
+                <span class="step-number">1</span>
+                <h2>Select a Sound</h2>
+            </div>
+            <div class="sound-grid" id="sound-grid">
+                <!-- Sound cards will be populated by JavaScript -->
+            </div>
+        </section>
+
+        <!-- Step 2: Trim Sound -->
+        <section class="step-section" id="step-trim" style="display: none;">
+            <div class="step-header">
+                <span class="step-number">2</span>
+                <h2>Trim Your Sound</h2>
+                <span class="duration-info">Duration must be 2-5 seconds</span>
+            </div>
+
+            <div class="trim-container">
+                <div class="waveform-container" id="waveform-container">
+                    <canvas id="waveform-canvas"></canvas>
+                    <div class="trim-handles">
+                        <div class="trim-handle trim-start" id="trim-start"></div>
+                        <div class="trim-selection" id="trim-selection"></div>
+                        <div class="trim-handle trim-end" id="trim-end"></div>
+                    </div>
+                    <div class="playhead" id="playhead"></div>
+                </div>
+
+                <div class="trim-controls">
+                    <div class="time-inputs">
+                        <div class="time-input-group">
+                            <label for="start-time">Start</label>
+                            <input type="number" id="start-time" min="0" step="0.1" value="0">
+                            <span class="time-unit">sec</span>
+                        </div>
+                        <div class="time-input-group">
+                            <label for="end-time">End</label>
+                            <input type="number" id="end-time" min="0" step="0.1" value="3">
+                            <span class="time-unit">sec</span>
+                        </div>
+                        <div class="duration-display">
+                            <label>Duration</label>
+                            <span id="duration-value">3.0</span>
+                            <span class="time-unit">sec</span>
+                        </div>
+                    </div>
+
+                    <div class="playback-controls">
+                        <button class="btn btn-secondary" id="btn-preview">
+                            <span class="btn-icon">▶</span> Preview
+                        </button>
+                        <button class="btn btn-secondary" id="btn-preview-trimmed">
+                            <span class="btn-icon">▶</span> Preview Trimmed
+                        </button>
+                        <button class="btn btn-outline" id="btn-change-sound">
+                            ← Change Sound
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="validation-message" id="validation-message"></div>
+        </section>
+
+        <!-- Step 3: Save to USB -->
+        <section class="step-section" id="step-save" style="display: none;">
+            <div class="step-header">
+                <span class="step-number">3</span>
+                <h2>Save to USB</h2>
+            </div>
+
+            <div class="save-container">
+                <div class="save-preview">
+                    <div class="file-icon">📁</div>
+                    <div class="file-info">
+                        <span class="file-name">LockChime.wav</span>
+                        <span class="file-details" id="file-details">WAV • Mono • ~0 KB</span>
+                    </div>
+                </div>
+
+                <button class="btn btn-primary btn-large" id="btn-save-usb">
+                    <span class="btn-icon">💾</span> Save to USB Drive
+                </button>
+
+                <p class="save-hint">
+                    You'll be prompted to select your USB drive. Choose the <strong>root folder</strong> of the USB drive.
+                </p>
+            </div>
+        </section>
+
+        <!-- Success Message -->
+        <section class="step-section success-section" id="step-success" style="display: none;">
+            <div class="success-icon">✓</div>
+            <h2>Success!</h2>
+            <p>Your custom lock sound has been saved to the USB drive.</p>
+
+            <div class="instructions-card">
+                <h3>How to use in your Tesla:</h3>
+                <ol class="tesla-instructions">
+                    <li>Safely eject the USB drive from your computer</li>
+                    <li>Plug the USB drive into your Tesla's USB port</li>
+                    <li>On the touchscreen, go to <strong>Toybox</strong></li>
+                    <li>Select <strong>Boombox</strong></li>
+                    <li>Tap <strong>Lock Sound</strong></li>
+                    <li>Choose <strong>USB</strong> to use your custom sound</li>
+                </ol>
+            </div>
+
+            <button class="btn btn-secondary" id="btn-create-another">
+                Create Another Sound
+            </button>
+        </section>
+
+        <!-- Loading Overlay -->
+        <div class="loading-overlay" id="loading-overlay" style="display: none;">
+            <div class="loading-spinner"></div>
+            <p class="loading-text" id="loading-text">Processing audio...</p>
+        </div>
+    </main>
+
+    <!-- Footer with Ad Space -->
+    <footer class="footer">
+        <!-- Ad Container - Footer -->
+        <div class="ad-container ad-footer" id="ad-footer">
+            <div class="ad-placeholder">Advertisement</div>
+        </div>
+
+        <div class="footer-content">
+            <p class="disclaimer">
+                This is an unofficial tool and is not affiliated with Tesla, Inc.
+                Tesla and the Tesla logo are trademarks of Tesla, Inc.
+            </p>
+            <p class="copyright">
+                © 2024 Tesla Lock Sound Creator. Free to use. No account required.
+            </p>
+        </div>
+    </footer>
+
+    <!-- Unsupported Browser Modal -->
+    <div class="modal" id="unsupported-modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-icon">🖥️</div>
+            <h2>Desktop Browser Required</h2>
+            <p>This tool requires <strong>Chrome</strong> or <strong>Edge</strong> on a <strong>desktop computer</strong>.</p>
+            <p>The File System Access API needed to save files directly to USB is not available in:</p>
+            <ul>
+                <li>Safari (any platform)</li>
+                <li>Firefox (any platform)</li>
+                <li>Mobile browsers</li>
+                <li>Tablets</li>
+            </ul>
+            <p class="modal-hint">Please open this page in Chrome or Edge on your PC.</p>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/audio-data.js"></script>
+    <script src="js/audio-processor.js"></script>
+    <script src="js/file-system.js"></script>
+    <script src="js/waveform.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
