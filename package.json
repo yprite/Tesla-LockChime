@@ -1,0 +1,35 @@
+{
+  "name": "tesla-lockchime",
+  "version": "1.0.0",
+  "description": "A free web-based tool that allows Tesla owners to create custom lock chime sounds and save them directly to a USB drive.",
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "dev": "npx serve -p 3000",
+    "lint": "eslint js/",
+    "build": "echo 'Static site - no build required'"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yprite/Tesla-LockChime"
+  },
+  "keywords": [
+    "tesla",
+    "lock-chime",
+    "boombox",
+    "audio",
+    "wav",
+    "usb"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "happy-dom": "^20.4.0",
+    "jsdom": "^27.4.0",
+    "vitest": "^4.0.18"
+  }
+}
