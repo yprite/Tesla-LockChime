@@ -2,6 +2,8 @@
 
 A free, production-ready web application that allows Tesla owners to create custom lock chime sounds and save them directly to a USB drive.
 
+🌐 [한국어 버전 (Korean)](./README.ko.md)
+
 ## Features
 
 - **100% Free** - No payments, no subscriptions, no accounts required
@@ -12,10 +14,21 @@ A free, production-ready web application that allows Tesla owners to create cust
 - **Fade Effects** - Add fade in/out to your sound
 - **Audio Normalization** - Automatically optimizes volume levels
 - **Direct USB Save** - Save directly to USB drive using File System Access API
-- **Share with Friends** - Share your custom sounds via URL or native sharing
-- **Import Shared Sounds** - Click a shared link to instantly use a friend's sound
+- **Community Gallery** - Browse, download, and share sounds with the community
 - **PWA Support** - Install as an app, works offline (UI only)
 - **Fully Accessible** - WCAG 2.1 compliant with keyboard navigation
+
+## Community Gallery
+
+Share your custom sounds with Tesla owners worldwide:
+
+- **Upload** - Share your creations to the community gallery
+- **Browse** - Discover sounds created by other users
+- **Search & Filter** - Find sounds by name or category
+- **Like & Download** - Save your favorites and track popularity
+- **Categories** - Classic, Modern, Futuristic, Custom, Funny, Musical
+
+> Note: Community gallery requires Firebase configuration. See [Setup Guide](./doc/SETUP_GUIDE.md).
 
 ## Browser Support
 
@@ -40,19 +53,10 @@ This tool requires the **File System Access API** which is only available in Chr
 ### User Flow
 
 1. **Visit the Website** - Open in Chrome or Edge on a desktop PC
-2. **Select or Upload a Sound** - Choose from 12 pre-made sounds, or upload your own audio file
+2. **Select or Upload a Sound** - Choose from 12 pre-made sounds, browse the community gallery, or upload your own audio file
 3. **Customize** - Trim to 2-5 seconds, adjust volume, add fades
-4. **Save & Share** - Save to USB drive, download, or share with friends via link
+4. **Save & Share** - Save to USB drive, download, or upload to the community gallery
 5. **Use in Tesla** - Follow on-screen instructions
-
-### Sharing Sounds
-
-Share your custom lock sounds with friends:
-
-1. After customizing your sound, click **Copy Link** to copy a shareable URL
-2. Send the link to your friend
-3. When they open the link, they'll see a banner to import your sound instantly
-4. They can then customize and save it to their own USB drive
 
 ### Tesla Setup
 
@@ -77,15 +81,15 @@ Share your custom lock sounds with friends:
 ### Architecture
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│              Static Web Application (No Server)          │
-├─────────────────────────────────────────────────────────┤
-│  Web Audio API    │  Canvas API     │  File System API  │
-│  ─────────────    │  ─────────      │  ───────────────  │
-│  • Synthesis      │  • Waveform     │  • USB Write      │
-│  • Playback       │  • Trim UI      │  • Save Picker    │
-│  • Processing     │  • Animation    │  • Fallback DL    │
-└─────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│                    Web Application                           │
+├─────────────────────────────────────────────────────────────┤
+│  Web Audio API  │  Canvas API   │  File System  │  Firebase │
+│  ────────────   │  ──────────   │  ───────────  │  ──────── │
+│  • Synthesis    │  • Waveform   │  • USB Write  │  • Gallery│
+│  • Playback     │  • Trim UI    │  • Save Picker│  • Storage│
+│  • Processing   │  • Animation  │  • Fallback   │  • Likes  │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ## Project Structure
@@ -103,10 +107,12 @@ Tesla-LockChime/
 │   ├── audio-data.js   # 12 synthesized sounds + WAV encoder
 │   ├── audio-processor.js  # Playback, trimming, effects
 │   ├── file-system.js  # File System Access API
-│   ├── sharing.js      # URL sharing & Web Share API
+│   ├── gallery.js      # Community gallery (Firebase)
 │   └── waveform.js     # Canvas waveform visualizer
 ├── src/                # ES modules for testing
-├── tests/              # Vitest unit tests (179 tests)
+├── tests/              # Vitest unit tests (205 tests)
+├── doc/                # Documentation
+│   └── SETUP_GUIDE.md  # Firebase setup guide
 ├── images/             # PWA icons
 └── README.md
 ```
@@ -142,15 +148,15 @@ The project has comprehensive unit tests:
 ✓ tests/audio-data.test.js (26 tests)
 ✓ tests/audio-processor.test.js (56 tests)
 ✓ tests/file-system.test.js (30 tests)
-✓ tests/sharing.test.js (28 tests)
+✓ tests/gallery.test.js (54 tests)
 ✓ tests/waveform.test.js (39 tests)
 ─────────────────────────────────────
-Total: 179 tests passing
+Total: 205 tests passing
 ```
 
 ## Deployment
 
-### Static Hosting
+### Static Hosting (Without Gallery)
 
 Deploy to any static hosting service:
 
@@ -159,22 +165,34 @@ Deploy to any static hosting service:
 - **GitHub Pages**: Enable in repo settings
 - **Cloudflare Pages**: Connect GitHub repo
 
+### With Community Gallery
+
+To enable the community gallery feature:
+
+1. Create a Firebase project
+2. Configure Firestore and Storage
+3. Update `js/gallery.js` with your Firebase config
+4. Deploy to Firebase Hosting (recommended) or other platforms
+
+See [Setup Guide](./doc/SETUP_GUIDE.md) for detailed instructions.
+
 **Requirements:**
 - HTTPS (required for File System Access API)
-- No build step needed (static files)
+- Firebase project (for gallery features)
 
 ### Configuration
 
-1. **Analytics**: Replace `G-XXXXXXXXXX` in `index.html` with your GA4 ID
-2. **AdSense**: Uncomment and add your AdSense code in `index.html`
-3. **Domain**: Update canonical URL and OG tags in `index.html`
+1. **Firebase**: Follow the [Setup Guide](./doc/SETUP_GUIDE.md)
+2. **Analytics**: Replace `G-XXXXXXXXXX` in `index.html` with your GA4 ID
+3. **AdSense**: Uncomment and add your AdSense code in `index.html`
+4. **Domain**: Update canonical URL and OG tags in `index.html`
 
 ### Performance
 
 The site is optimized for performance:
-- No external dependencies (vanilla JS)
+- Minimal external dependencies
 - Service worker caching
-- Minimal CSS (~15KB)
+- Minimal CSS (~20KB)
 - Synthesized audio (no audio file downloads)
 
 ## Monetization
@@ -200,11 +218,11 @@ WCAG 2.1 Level AA compliant:
 
 ## Security
 
-- No server-side code
-- No user data collection
-- No cookies (except analytics)
+- No user authentication required
+- Anonymous user IDs for gallery (localStorage)
+- No sensitive data collection
 - Content Security Policy ready
-- All processing client-side
+- All audio processing client-side
 
 ## License
 
@@ -230,9 +248,9 @@ Contributions welcome! Please:
 - [x] Volume control
 - [x] Fade in/out effects
 - [x] Audio normalization
-- [x] URL-based sound sharing
-- [x] Web Share API integration
-- [x] Import shared sounds from links
+- [x] Community sound gallery
+- [x] Browse, search, filter sounds
+- [x] Like and download tracking
 - [x] PWA with offline support
 - [x] Full accessibility
 - [x] SEO optimization
@@ -243,6 +261,7 @@ Contributions welcome! Please:
 
 - [ ] More sound effects
 - [ ] Internationalization (i18n)
-- [ ] Sound categories filter UI
+- [ ] User profiles and authentication
+- [ ] Sound remix/mashup feature
 - [ ] Undo/redo for edits
 - [ ] QR code sharing for easier mobile-to-PC transfer
