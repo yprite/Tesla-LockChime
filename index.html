@@ -108,20 +108,6 @@
         </div>
     </aside>
 
-    <!-- Shared Sound Import Banner -->
-    <aside class="import-banner" id="import-banner" style="display: none;" role="alert" aria-live="polite">
-        <div class="import-banner-content">
-            <div class="import-icon" aria-hidden="true">🔗</div>
-            <div class="import-info">
-                <strong>Shared Sound Received!</strong>
-                <p>Someone shared "<span id="shared-sound-name">Custom Sound</span>" with you.</p>
-            </div>
-            <div class="import-actions">
-                <button class="btn btn-primary btn-small" id="btn-import-shared">Use This Sound</button>
-                <button class="btn btn-outline btn-small" id="btn-dismiss-import">Dismiss</button>
-            </div>
-        </div>
-    </aside>
 
     <!-- Main Content -->
     <main class="main-content" id="main-content" role="main">
@@ -274,14 +260,11 @@
                         <span class="btn-icon" aria-hidden="true">💾</span> Save to USB Drive
                     </button>
 
-                    <div class="share-section">
-                        <p class="share-label">Share with friends</p>
-                        <div class="share-buttons" role="group" aria-label="Share options">
-                            <button class="btn btn-secondary" id="btn-share-copy" title="Copy share link">
-                                <span class="btn-icon" aria-hidden="true">🔗</span> Copy Link
-                            </button>
-                            <button class="btn btn-secondary" id="btn-share-native" title="Share via system share" style="display: none;">
-                                <span class="btn-icon" aria-hidden="true">📤</span> Share
+                    <div class="gallery-upload-section">
+                        <p class="gallery-upload-label">Share to Community</p>
+                        <div class="gallery-upload-actions" role="group" aria-label="Gallery options">
+                            <button class="btn btn-secondary" id="btn-upload-gallery" title="Upload to community gallery">
+                                <span class="btn-icon" aria-hidden="true">🌐</span> Upload to Gallery
                             </button>
                             <button class="btn btn-secondary" id="btn-download" title="Download WAV file">
                                 <span class="btn-icon" aria-hidden="true">⬇️</span> Download
@@ -317,6 +300,60 @@
             <button class="btn btn-secondary" id="btn-create-another">
                 Create Another Sound
             </button>
+        </section>
+
+        <!-- Community Gallery Section -->
+        <section class="step-section gallery-section" id="gallery-section" aria-labelledby="gallery-heading">
+            <div class="step-header">
+                <span class="step-number gallery-number" aria-hidden="true">🌐</span>
+                <h2 id="gallery-heading">Community Gallery</h2>
+                <div class="gallery-stats" id="gallery-stats" role="status"></div>
+            </div>
+
+            <div class="gallery-controls">
+                <div class="gallery-search">
+                    <input type="text"
+                           id="gallery-search"
+                           placeholder="Search sounds..."
+                           aria-label="Search gallery sounds">
+                    <button class="btn btn-secondary btn-small" id="btn-gallery-search">
+                        Search
+                    </button>
+                </div>
+                <div class="gallery-sort">
+                    <label for="gallery-sort-select">Sort by:</label>
+                    <select id="gallery-sort-select" aria-label="Sort gallery by">
+                        <option value="createdAt">Newest</option>
+                        <option value="likes">Most Liked</option>
+                        <option value="downloads">Most Downloaded</option>
+                    </select>
+                </div>
+                <div class="gallery-category">
+                    <label for="gallery-category-select">Category:</label>
+                    <select id="gallery-category-select" aria-label="Filter by category">
+                        <option value="all">All</option>
+                        <option value="classic">Classic</option>
+                        <option value="modern">Modern</option>
+                        <option value="futuristic">Futuristic</option>
+                        <option value="custom">Custom</option>
+                        <option value="funny">Funny</option>
+                        <option value="musical">Musical</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="gallery-grid" id="gallery-grid" role="list" aria-label="Community sounds">
+                <!-- Gallery cards will be populated by JavaScript -->
+                <div class="gallery-empty" id="gallery-empty">
+                    <p>Loading community sounds...</p>
+                </div>
+            </div>
+
+            <div class="gallery-pagination">
+                <button class="btn btn-secondary" id="btn-gallery-load-more" style="display: none;">
+                    Load More
+                </button>
+            </div>
         </section>
 
         <!-- Loading Overlay -->
@@ -369,12 +406,17 @@
         </div>
     </div>
 
+    <!-- Firebase SDK (optional - for community gallery) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+
     <!-- Scripts -->
     <script src="js/audio-data.js"></script>
     <script src="js/audio-processor.js"></script>
     <script src="js/file-system.js"></script>
     <script src="js/waveform.js"></script>
-    <script src="js/sharing.js"></script>
+    <script src="js/gallery.js"></script>
     <script src="js/app.js"></script>
 
     <!-- Google AdSense (load after content) -->

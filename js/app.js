@@ -9,7 +9,7 @@ class TeslaLockSoundApp {
         // Initialize modules
         this.audioProcessor = new AudioProcessor();
         this.fileSystem = new FileSystemHandler();
-        this.sharing = new SharingHandler();
+        this.gallery = new GalleryHandler();
         this.waveform = null;
 
         // State
@@ -48,6 +48,8 @@ class TeslaLockSoundApp {
             btnChangeSound: document.getElementById('btn-change-sound'),
             btnSaveUsb: document.getElementById('btn-save-usb'),
             btnCreateAnother: document.getElementById('btn-create-another'),
+            btnDownload: document.getElementById('btn-download'),
+            btnUploadToGallery: document.getElementById('btn-upload-gallery'),
 
             // File info
             fileDetails: document.getElementById('file-details'),
@@ -68,16 +70,12 @@ class TeslaLockSoundApp {
             uploadZone: document.getElementById('upload-zone'),
             fileUpload: document.getElementById('file-upload'),
 
-            // Share elements
-            btnShareCopy: document.getElementById('btn-share-copy'),
-            btnShareNative: document.getElementById('btn-share-native'),
-            btnDownload: document.getElementById('btn-download'),
-
-            // Import banner
-            importBanner: document.getElementById('import-banner'),
-            sharedSoundName: document.getElementById('shared-sound-name'),
-            btnImportShared: document.getElementById('btn-import-shared'),
-            btnDismissImport: document.getElementById('btn-dismiss-import')
+            // Gallery elements
+            gallerySection: document.getElementById('gallery-section'),
+            galleryGrid: document.getElementById('gallery-grid'),
+            gallerySort: document.getElementById('gallery-sort'),
+            galleryLoadMore: document.getElementById('gallery-load-more'),
+            galleryStats: document.getElementById('gallery-stats')
         };
 
         this.init();
@@ -117,14 +115,252 @@ class TeslaLockSoundApp {
         // Set up upload functionality
         this.setupUpload();
 
-        // Set up share functionality
-        this.setupSharing();
-
-        // Check for shared audio in URL
-        this.checkForSharedAudio();
+        // Initialize gallery
+        await this.initGallery();
 
         // Track page view
         this.trackEvent('page_view', { page: 'home' });
+    }
+
+    /**
+     * Initialize gallery functionality
+     */
+    async initGallery() {
+        const initialized = await this.gallery.init();
+
+        if (initialized && this.elements.gallerySection) {
+            this.elements.gallerySection.style.display = 'block';
+            await this.loadGallerySounds();
+            this.setupGalleryListeners();
+        }
+    }
+
+    /**
+     * Load gallery sounds
+     */
+    async loadGallerySounds(append = false) {
+        if (!this.gallery.isAvailable()) return;
+
+        try {
+            const sortBy = this.elements.gallerySort?.value || 'createdAt';
+            const options = {
+                sortBy: sortBy === 'popular' ? 'likes' : sortBy === 'downloads' ? 'downloads' : 'createdAt',
+                startAfter: append ? this.gallery.lastDoc : null
+            };
+
+            const { sounds, hasMore } = await this.gallery.getSounds(options);
+
+            if (!append) {
+                this.elements.galleryGrid.innerHTML = '';
+            }
+
+            sounds.forEach(sound => {
+                this.elements.galleryGrid.appendChild(this.createGalleryCard(sound));
+            });
+
+            if (this.elements.galleryLoadMore) {
+                this.elements.galleryLoadMore.style.display = hasMore ? 'block' : 'none';
+            }
+
+            // Update stats
+            const stats = await this.gallery.getStats();
+            if (this.elements.galleryStats) {
+                this.elements.galleryStats.textContent = `${stats.totalSounds} sounds shared`;
+            }
+        } catch (error) {
+            console.error('Failed to load gallery:', error);
+        }
+    }
+
+    /**
+     * Create a gallery card element
+     */
+    createGalleryCard(sound) {
+        const card = document.createElement('div');
+        card.className = 'gallery-card';
+        card.dataset.soundId = sound.id;
+
+        const isLiked = this.gallery.isLiked(sound.id);
+
+        card.innerHTML = `
+            <div class="gallery-card-header">
+                <span class="gallery-card-name">${this.escapeHtml(sound.name)}</span>
+                <span class="gallery-card-category">${sound.category}</span>
+            </div>
+            <div class="gallery-card-meta">
+                <span>${sound.duration?.toFixed(1) || '?'}s</span>
+                <span>${this.formatFileSize(sound.fileSize)}</span>
+            </div>
+            <div class="gallery-card-stats">
+                <button class="gallery-like-btn ${isLiked ? 'liked' : ''}" data-sound-id="${sound.id}">
+                    ${isLiked ? '❤️' : '🤍'} ${sound.likes || 0}
+                </button>
+                <span>⬇️ ${sound.downloads || 0}</span>
+            </div>
+            <div class="gallery-card-actions">
+                <button class="btn btn-small btn-secondary gallery-preview-btn" data-sound-id="${sound.id}" data-url="${sound.downloadUrl}">
+                    ▶ Preview
+                </button>
+                <button class="btn btn-small btn-primary gallery-use-btn" data-sound-id="${sound.id}">
+                    Use This
+                </button>
+            </div>
+        `;
+
+        // Event listeners
+        card.querySelector('.gallery-like-btn').addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.handleGalleryLike(sound.id, e.target);
+        });
+
+        card.querySelector('.gallery-preview-btn').addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.handleGalleryPreview(sound.downloadUrl, e.target);
+        });
+
+        card.querySelector('.gallery-use-btn').addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.handleGalleryUse(sound.id);
+        });
+
+        return card;
+    }
+
+    /**
+     * Set up gallery event listeners
+     */
+    setupGalleryListeners() {
+        if (this.elements.gallerySort) {
+            this.elements.gallerySort.addEventListener('change', () => {
+                this.loadGallerySounds(false);
+            });
+        }
+
+        if (this.elements.galleryLoadMore) {
+            this.elements.galleryLoadMore.addEventListener('click', () => {
+                this.loadGallerySounds(true);
+            });
+        }
+
+        if (this.elements.btnUploadToGallery) {
+            this.elements.btnUploadToGallery.addEventListener('click', () => {
+                this.uploadToGallery();
+            });
+        }
+    }
+
+    /**
+     * Handle gallery like
+     */
+    async handleGalleryLike(soundId, button) {
+        try {
+            const { liked } = await this.gallery.likeSound(soundId);
+            button.classList.toggle('liked', liked);
+            button.innerHTML = `${liked ? '❤️' : '🤍'} ${parseInt(button.textContent.match(/\d+/)?.[0] || 0) + (liked ? 1 : -1)}`;
+        } catch (error) {
+            console.error('Like failed:', error);
+        }
+    }
+
+    /**
+     * Handle gallery preview
+     */
+    async handleGalleryPreview(url, button) {
+        const originalText = button.textContent;
+
+        try {
+            button.textContent = '⏹ Stop';
+            await this.audioProcessor.init();
+
+            const response = await fetch(url);
+            const blob = await response.blob();
+            await this.audioProcessor.loadFromBlob(blob);
+
+            await this.audioProcessor.play(0, null, () => {
+                button.textContent = originalText;
+            });
+        } catch (error) {
+            console.error('Preview failed:', error);
+            button.textContent = originalText;
+        }
+    }
+
+    /**
+     * Handle using a gallery sound
+     */
+    async handleGalleryUse(soundId) {
+        this.showLoading('Loading sound from gallery...');
+
+        try {
+            const { blob, sound } = await this.gallery.downloadSound(soundId);
+
+            await this.audioProcessor.init();
+            await this.audioProcessor.loadFromBlob(blob);
+
+            this.customAudioBlob = blob;
+            this.customAudioName = sound.name;
+            this.selectedSound = 'gallery-' + soundId;
+
+            const { startTime, endTime } = this.waveform.loadWaveform(this.audioProcessor);
+            this.trimStart = startTime;
+            this.trimEnd = endTime;
+
+            this.onVolumeChange();
+            this.onFadeChange();
+
+            this.updateTimeInputs();
+            this.validateAndUpdateUI();
+            this.updateAriaValues();
+
+            this.goToStep('trim');
+            this.showToast('Sound loaded from gallery!', 'success');
+            this.trackEvent('gallery_sound_used', { sound_id: soundId });
+        } catch (error) {
+            console.error('Failed to use gallery sound:', error);
+            this.showError('Failed to load sound from gallery.');
+        } finally {
+            this.hideLoading();
+        }
+    }
+
+    /**
+     * Upload current sound to gallery
+     */
+    async uploadToGallery() {
+        if (!this.gallery.isAvailable()) {
+            this.showError('Gallery is not available. Please try again later.');
+            return;
+        }
+
+        const name = prompt('Enter a name for your sound:', this.customAudioName || 'My Custom Sound');
+        if (!name) return;
+
+        const category = prompt('Category (classic, modern, futuristic, custom, funny, musical):', 'custom');
+
+        this.showLoading('Uploading to gallery...');
+
+        try {
+            const wavBlob = this.audioProcessor.exportToWav(this.trimStart, this.trimEnd, {
+                normalize: true
+            });
+
+            const result = await this.gallery.uploadSound(wavBlob, {
+                name: name,
+                category: category || 'custom',
+                duration: this.trimEnd - this.trimStart
+            });
+
+            this.showToast('Sound uploaded to gallery!', 'success');
+            this.trackEvent('gallery_upload', { sound_id: result.soundId });
+
+            // Refresh gallery
+            await this.loadGallerySounds(false);
+        } catch (error) {
+            console.error('Upload failed:', error);
+            this.showError('Failed to upload: ' + error.message);
+        } finally {
+            this.hideLoading();
+        }
     }
 
     /**
@@ -232,6 +468,11 @@ class TeslaLockSoundApp {
         // Save button
         this.elements.btnSaveUsb.addEventListener('click', () => this.saveToUsb());
 
+        // Download button
+        if (this.elements.btnDownload) {
+            this.elements.btnDownload.addEventListener('click', () => this.downloadFile());
+        }
+
         // Create another button
         this.elements.btnCreateAnother.addEventListener('click', () => this.reset());
 
@@ -255,7 +496,7 @@ class TeslaLockSoundApp {
     setupTrimKeyboardNav() {
         const handleKeydown = (handle, isStart) => {
             handle.addEventListener('keydown', (e) => {
-                const step = e.shiftKey ? 0.5 : 0.1; // Larger step with Shift
+                const step = e.shiftKey ? 0.5 : 0.1;
                 const duration = this.audioProcessor.getDuration();
 
                 if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') {
@@ -364,7 +605,6 @@ class TeslaLockSoundApp {
             return;
         }
 
-        // Check file type by extension if MIME type is not reliable
         const ext = file.name.split('.').pop().toLowerCase();
         const validExtensions = ['wav', 'mp3', 'm4a', 'ogg'];
 
@@ -407,89 +647,6 @@ class TeslaLockSoundApp {
     }
 
     /**
-     * Set up sharing functionality
-     */
-    setupSharing() {
-        // Show native share button if available
-        if (this.sharing.canWebShare() && this.elements.btnShareNative) {
-            this.elements.btnShareNative.style.display = 'inline-flex';
-        }
-
-        // Copy link button
-        if (this.elements.btnShareCopy) {
-            this.elements.btnShareCopy.addEventListener('click', () => this.copyShareLink());
-        }
-
-        // Native share button
-        if (this.elements.btnShareNative) {
-            this.elements.btnShareNative.addEventListener('click', () => this.shareNative());
-        }
-
-        // Download button
-        if (this.elements.btnDownload) {
-            this.elements.btnDownload.addEventListener('click', () => this.downloadFile());
-        }
-    }
-
-    /**
-     * Copy share link to clipboard
-     */
-    async copyShareLink() {
-        this.showLoading('Generating share link...');
-
-        try {
-            const wavBlob = this.audioProcessor.exportToWav(this.trimStart, this.trimEnd, {
-                normalize: true
-            });
-
-            const soundName = this.customAudioName || this.getSoundDisplayName();
-            const result = await this.sharing.copyShareUrl(wavBlob, soundName);
-
-            if (result.success) {
-                this.showToast('Share link copied to clipboard!', 'success');
-                if (result.warning) {
-                    console.warn(result.warning);
-                }
-                this.trackEvent('share_link_copied', { sound_id: this.selectedSound });
-            }
-        } catch (error) {
-            console.error('Share error:', error);
-            if (error.message.includes('too large')) {
-                this.showError('Audio is too large to share via link. Try trimming it shorter or use the Download button.');
-            } else {
-                this.showError('Could not generate share link. Please try downloading the file instead.');
-            }
-        } finally {
-            this.hideLoading();
-        }
-    }
-
-    /**
-     * Share using native share API
-     */
-    async shareNative() {
-        this.showLoading('Preparing to share...');
-
-        try {
-            const wavBlob = this.audioProcessor.exportToWav(this.trimStart, this.trimEnd, {
-                normalize: true
-            });
-
-            const soundName = this.customAudioName || this.getSoundDisplayName();
-            const result = await this.sharing.shareNative(wavBlob, soundName);
-
-            if (result.success) {
-                this.trackEvent('share_native', { sound_id: this.selectedSound, method: result.method });
-            }
-        } catch (error) {
-            console.error('Share error:', error);
-            this.showError('Could not share. Please try copying the link instead.');
-        } finally {
-            this.hideLoading();
-        }
-    }
-
-    /**
      * Download the file
      */
     downloadFile() {
@@ -505,91 +662,6 @@ class TeslaLockSoundApp {
             console.error('Download error:', error);
             this.showError('Could not download file.');
         }
-    }
-
-    /**
-     * Check for shared audio in URL
-     */
-    checkForSharedAudio() {
-        if (!this.sharing.hasSharedAudio()) return;
-
-        const sharedAudio = this.sharing.getSharedAudio();
-        if (!sharedAudio) {
-            this.showError('Could not load shared audio. The link may be invalid or corrupted.');
-            this.sharing.clearSharedAudioFromUrl();
-            return;
-        }
-
-        // Show import banner
-        if (this.elements.importBanner) {
-            this.elements.importBanner.style.display = 'block';
-            this.elements.sharedSoundName.textContent = sharedAudio.name;
-        }
-
-        // Store shared audio for import
-        this.pendingSharedAudio = sharedAudio;
-
-        // Set up import banner buttons
-        if (this.elements.btnImportShared) {
-            this.elements.btnImportShared.addEventListener('click', () => this.importSharedAudio());
-        }
-
-        if (this.elements.btnDismissImport) {
-            this.elements.btnDismissImport.addEventListener('click', () => this.dismissImportBanner());
-        }
-
-        this.trackEvent('shared_audio_received', { name: sharedAudio.name });
-    }
-
-    /**
-     * Import shared audio
-     */
-    async importSharedAudio() {
-        if (!this.pendingSharedAudio) return;
-
-        this.showLoading('Loading shared sound...');
-
-        try {
-            await this.audioProcessor.init();
-            await this.audioProcessor.loadFromBlob(this.pendingSharedAudio.blob);
-
-            this.customAudioBlob = this.pendingSharedAudio.blob;
-            this.customAudioName = this.pendingSharedAudio.name;
-            this.selectedSound = 'shared-import';
-
-            const { startTime, endTime } = this.waveform.loadWaveform(this.audioProcessor);
-            this.trimStart = startTime;
-            this.trimEnd = endTime;
-
-            this.onVolumeChange();
-            this.onFadeChange();
-
-            this.updateTimeInputs();
-            this.validateAndUpdateUI();
-            this.updateAriaValues();
-
-            this.goToStep('trim');
-            this.dismissImportBanner();
-
-            this.trackEvent('shared_audio_imported', { name: this.pendingSharedAudio.name });
-            this.showToast('Shared sound loaded!', 'success');
-        } catch (error) {
-            console.error('Import error:', error);
-            this.showError('Could not load shared sound. The audio may be corrupted.');
-        } finally {
-            this.hideLoading();
-        }
-    }
-
-    /**
-     * Dismiss import banner
-     */
-    dismissImportBanner() {
-        if (this.elements.importBanner) {
-            this.elements.importBanner.style.display = 'none';
-        }
-        this.sharing.clearSharedAudioFromUrl();
-        this.pendingSharedAudio = null;
     }
 
     /**
@@ -626,6 +698,7 @@ class TeslaLockSoundApp {
      * Handle volume slider change
      */
     onVolumeChange() {
+        if (!this.elements.volumeSlider) return;
         const volume = parseInt(this.elements.volumeSlider.value) / 100;
         this.audioProcessor.setVolume(volume);
 
@@ -675,7 +748,6 @@ class TeslaLockSoundApp {
     async selectSound(soundId) {
         this.selectedSound = soundId;
 
-        // Update UI to show selected
         document.querySelectorAll('.sound-card').forEach(card => {
             const isSelected = card.dataset.soundId === soundId;
             card.classList.toggle('selected', isSelected);
@@ -691,7 +763,6 @@ class TeslaLockSoundApp {
             this.trimStart = startTime;
             this.trimEnd = endTime;
 
-            // Apply current volume/fade settings
             this.onVolumeChange();
             this.onFadeChange();
 
@@ -762,7 +833,6 @@ class TeslaLockSoundApp {
             this.elements.stepSave.style.display = 'none';
         }
 
-        // Update file details
         const fileSize = this.audioProcessor.estimateFileSize(this.trimStart, this.trimEnd);
         this.elements.fileDetails.textContent = `WAV • Mono • ~${this.audioProcessor.formatFileSize(fileSize)}`;
     }
@@ -831,7 +901,6 @@ class TeslaLockSoundApp {
         this.showLoading('Processing audio...');
 
         try {
-            // Apply effects and export
             const wavBlob = this.audioProcessor.exportToWav(this.trimStart, this.trimEnd, {
                 normalize: true
             });
@@ -876,7 +945,6 @@ class TeslaLockSoundApp {
         this.audioProcessor.stop();
         this.waveform?.stopPlayheadAnimation();
 
-        // Hide all steps
         this.elements.stepSelect.style.display = 'none';
         this.elements.stepTrim.style.display = 'none';
         this.elements.stepSave.style.display = 'none';
@@ -885,7 +953,6 @@ class TeslaLockSoundApp {
         switch (step) {
             case 'select':
                 this.elements.stepSelect.style.display = 'block';
-                // Focus first sound card for keyboard users
                 const firstCard = this.elements.soundGrid.querySelector('.sound-card');
                 if (firstCard) firstCard.focus();
                 break;
@@ -899,7 +966,6 @@ class TeslaLockSoundApp {
                 break;
             case 'success':
                 this.elements.stepSuccess.style.display = 'block';
-                // Announce success for screen readers
                 this.announceToScreenReader('Your custom lock sound has been saved successfully.');
                 break;
         }
@@ -921,7 +987,6 @@ class TeslaLockSoundApp {
         this.elements.validationMessage.className = 'validation-message';
         this.elements.validationMessage.textContent = '';
 
-        // Reset volume and fade
         if (this.elements.volumeSlider) {
             this.elements.volumeSlider.value = 100;
             this.onVolumeChange();
@@ -977,15 +1042,31 @@ class TeslaLockSoundApp {
      * Track analytics event
      */
     trackEvent(eventName, params = {}) {
-        // Google Analytics 4
         if (typeof gtag === 'function') {
             gtag('event', eventName, params);
         }
 
-        // Console log in development
         if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
             console.log('Analytics:', eventName, params);
         }
+    }
+
+    /**
+     * Escape HTML to prevent XSS
+     */
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    /**
+     * Format file size
+     */
+    formatFileSize(bytes) {
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+        return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
     }
 }
 
