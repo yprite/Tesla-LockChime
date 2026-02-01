@@ -6,11 +6,14 @@ A free, production-ready web application that allows Tesla owners to create cust
 
 - **100% Free** - No payments, no subscriptions, no accounts required
 - **12 Pre-made Sounds** - Classic, modern, and sci-fi categories
+- **Upload Your Own Audio** - Import WAV, MP3, M4A, or OGG files
 - **Visual Waveform Editor** - Trim audio with intuitive drag handles
 - **Volume Control** - Adjust output volume
 - **Fade Effects** - Add fade in/out to your sound
 - **Audio Normalization** - Automatically optimizes volume levels
 - **Direct USB Save** - Save directly to USB drive using File System Access API
+- **Share with Friends** - Share your custom sounds via URL or native sharing
+- **Import Shared Sounds** - Click a shared link to instantly use a friend's sound
 - **PWA Support** - Install as an app, works offline (UI only)
 - **Fully Accessible** - WCAG 2.1 compliant with keyboard navigation
 
@@ -37,10 +40,19 @@ This tool requires the **File System Access API** which is only available in Chr
 ### User Flow
 
 1. **Visit the Website** - Open in Chrome or Edge on a desktop PC
-2. **Select a Sound** - Choose from 12 pre-made sounds
+2. **Select or Upload a Sound** - Choose from 12 pre-made sounds, or upload your own audio file
 3. **Customize** - Trim to 2-5 seconds, adjust volume, add fades
-4. **Save to USB** - Click "Save to USB Drive" and select your USB drive
+4. **Save & Share** - Save to USB drive, download, or share with friends via link
 5. **Use in Tesla** - Follow on-screen instructions
+
+### Sharing Sounds
+
+Share your custom lock sounds with friends:
+
+1. After customizing your sound, click **Copy Link** to copy a shareable URL
+2. Send the link to your friend
+3. When they open the link, they'll see a banner to import your sound instantly
+4. They can then customize and save it to their own USB drive
 
 ### Tesla Setup
 
@@ -91,9 +103,10 @@ Tesla-LockChime/
 │   ├── audio-data.js   # 12 synthesized sounds + WAV encoder
 │   ├── audio-processor.js  # Playback, trimming, effects
 │   ├── file-system.js  # File System Access API
+│   ├── sharing.js      # URL sharing & Web Share API
 │   └── waveform.js     # Canvas waveform visualizer
 ├── src/                # ES modules for testing
-├── tests/              # Vitest unit tests (151 tests)
+├── tests/              # Vitest unit tests (179 tests)
 ├── images/             # PWA icons
 └── README.md
 ```
@@ -129,9 +142,10 @@ The project has comprehensive unit tests:
 ✓ tests/audio-data.test.js (26 tests)
 ✓ tests/audio-processor.test.js (56 tests)
 ✓ tests/file-system.test.js (30 tests)
+✓ tests/sharing.test.js (28 tests)
 ✓ tests/waveform.test.js (39 tests)
 ─────────────────────────────────────
-Total: 151 tests passing
+Total: 179 tests passing
 ```
 
 ## Deployment
@@ -212,9 +226,13 @@ Contributions welcome! Please:
 ### Completed Features
 
 - [x] 12 synthesized sounds
+- [x] User-uploaded audio files (WAV, MP3, M4A, OGG)
 - [x] Volume control
 - [x] Fade in/out effects
 - [x] Audio normalization
+- [x] URL-based sound sharing
+- [x] Web Share API integration
+- [x] Import shared sounds from links
 - [x] PWA with offline support
 - [x] Full accessibility
 - [x] SEO optimization
@@ -223,8 +241,8 @@ Contributions welcome! Please:
 
 ### Potential Improvements
 
-- [ ] User-uploaded audio files
 - [ ] More sound effects
 - [ ] Internationalization (i18n)
 - [ ] Sound categories filter UI
 - [ ] Undo/redo for edits
+- [ ] QR code sharing for easier mobile-to-PC transfer

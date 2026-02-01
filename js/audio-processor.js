@@ -66,6 +66,13 @@ class AudioProcessor {
     }
 
     /**
+     * Load audio from a Blob
+     */
+    async loadFromBlob(blob) {
+        return this.loadFromFile(blob);
+    }
+
+    /**
      * Get the current audio buffer
      */
     getBuffer() {

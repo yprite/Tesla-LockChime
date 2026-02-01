@@ -6,7 +6,7 @@
  * and won't work offline, but the app UI will load.
  */
 
-const CACHE_NAME = 'tesla-lock-sound-v1';
+const CACHE_NAME = 'tesla-lock-sound-v2';
 const OFFLINE_URL = '/offline.html';
 
 // Files to cache for offline use
@@ -19,6 +19,7 @@ const STATIC_ASSETS = [
     '/js/audio-processor.js',
     '/js/file-system.js',
     '/js/waveform.js',
+    '/js/sharing.js',
     '/js/app.js',
     '/manifest.json',
     '/images/icon-192.svg'

@@ -9,10 +9,13 @@ class TeslaLockSoundApp {
         // Initialize modules
         this.audioProcessor = new AudioProcessor();
         this.fileSystem = new FileSystemHandler();
+        this.sharing = new SharingHandler();
         this.waveform = null;
 
         // State
         this.selectedSound = null;
+        this.customAudioBlob = null;
+        this.customAudioName = null;
         this.trimStart = 0;
         this.trimEnd = 3;
 
@@ -59,7 +62,22 @@ class TeslaLockSoundApp {
 
             // Trim handles for keyboard nav
             trimStart: document.getElementById('trim-start'),
-            trimEnd: document.getElementById('trim-end')
+            trimEnd: document.getElementById('trim-end'),
+
+            // Upload elements
+            uploadZone: document.getElementById('upload-zone'),
+            fileUpload: document.getElementById('file-upload'),
+
+            // Share elements
+            btnShareCopy: document.getElementById('btn-share-copy'),
+            btnShareNative: document.getElementById('btn-share-native'),
+            btnDownload: document.getElementById('btn-download'),
+
+            // Import banner
+            importBanner: document.getElementById('import-banner'),
+            sharedSoundName: document.getElementById('shared-sound-name'),
+            btnImportShared: document.getElementById('btn-import-shared'),
+            btnDismissImport: document.getElementById('btn-dismiss-import')
         };
 
         this.init();
@@ -95,6 +113,15 @@ class TeslaLockSoundApp {
 
         // Set up event listeners
         this.setupEventListeners();
+
+        // Set up upload functionality
+        this.setupUpload();
+
+        // Set up share functionality
+        this.setupSharing();
+
+        // Check for shared audio in URL
+        this.checkForSharedAudio();
 
         // Track page view
         this.trackEvent('page_view', { page: 'home' });
@@ -278,6 +305,321 @@ class TeslaLockSoundApp {
             this.elements.trimEnd.setAttribute('aria-valuenow', endPercent);
             this.elements.trimEnd.setAttribute('aria-valuetext', `End at ${this.trimEnd.toFixed(1)} seconds`);
         }
+    }
+
+    /**
+     * Set up file upload functionality
+     */
+    setupUpload() {
+        const uploadZone = this.elements.uploadZone;
+        const fileInput = this.elements.fileUpload;
+
+        if (!uploadZone || !fileInput) return;
+
+        // Click to upload
+        uploadZone.addEventListener('click', () => fileInput.click());
+        uploadZone.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                fileInput.click();
+            }
+        });
+
+        // File input change
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files && e.target.files[0]) {
+                this.handleFileUpload(e.target.files[0]);
+            }
+        });
+
+        // Drag and drop
+        uploadZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadZone.classList.add('drag-over');
+        });
+
+        uploadZone.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            uploadZone.classList.remove('drag-over');
+        });
+
+        uploadZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadZone.classList.remove('drag-over');
+            if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                this.handleFileUpload(e.dataTransfer.files[0]);
+            }
+        });
+    }
+
+    /**
+     * Handle uploaded file
+     */
+    async handleFileUpload(file) {
+        const maxSize = 10 * 1024 * 1024; // 10MB
+        const validTypes = ['audio/wav', 'audio/mpeg', 'audio/mp3', 'audio/mp4', 'audio/m4a', 'audio/ogg', 'audio/x-wav'];
+
+        if (file.size > maxSize) {
+            this.showError('File is too large. Maximum size is 10MB.');
+            return;
+        }
+
+        // Check file type by extension if MIME type is not reliable
+        const ext = file.name.split('.').pop().toLowerCase();
+        const validExtensions = ['wav', 'mp3', 'm4a', 'ogg'];
+
+        if (!validTypes.includes(file.type) && !validExtensions.includes(ext)) {
+            this.showError('Invalid file type. Please upload a WAV, MP3, M4A, or OGG file.');
+            return;
+        }
+
+        this.showLoading('Processing audio...');
+
+        try {
+            await this.audioProcessor.init();
+            await this.audioProcessor.loadFromFile(file);
+
+            this.customAudioBlob = file;
+            this.customAudioName = file.name.replace(/\.[^/.]+$/, '');
+            this.selectedSound = 'custom-upload';
+
+            const { startTime, endTime } = this.waveform.loadWaveform(this.audioProcessor);
+            this.trimStart = startTime;
+            this.trimEnd = endTime;
+
+            this.onVolumeChange();
+            this.onFadeChange();
+
+            this.updateTimeInputs();
+            this.validateAndUpdateUI();
+            this.updateAriaValues();
+
+            this.goToStep('trim');
+
+            this.trackEvent('sound_uploaded', { file_type: ext, file_size: file.size });
+            this.showToast('Audio uploaded successfully!', 'success');
+        } catch (error) {
+            console.error('Upload error:', error);
+            this.showError('Could not process audio file. Please try a different file.');
+        } finally {
+            this.hideLoading();
+        }
+    }
+
+    /**
+     * Set up sharing functionality
+     */
+    setupSharing() {
+        // Show native share button if available
+        if (this.sharing.canWebShare() && this.elements.btnShareNative) {
+            this.elements.btnShareNative.style.display = 'inline-flex';
+        }
+
+        // Copy link button
+        if (this.elements.btnShareCopy) {
+            this.elements.btnShareCopy.addEventListener('click', () => this.copyShareLink());
+        }
+
+        // Native share button
+        if (this.elements.btnShareNative) {
+            this.elements.btnShareNative.addEventListener('click', () => this.shareNative());
+        }
+
+        // Download button
+        if (this.elements.btnDownload) {
+            this.elements.btnDownload.addEventListener('click', () => this.downloadFile());
+        }
+    }
+
+    /**
+     * Copy share link to clipboard
+     */
+    async copyShareLink() {
+        this.showLoading('Generating share link...');
+
+        try {
+            const wavBlob = this.audioProcessor.exportToWav(this.trimStart, this.trimEnd, {
+                normalize: true
+            });
+
+            const soundName = this.customAudioName || this.getSoundDisplayName();
+            const result = await this.sharing.copyShareUrl(wavBlob, soundName);
+
+            if (result.success) {
+                this.showToast('Share link copied to clipboard!', 'success');
+                if (result.warning) {
+                    console.warn(result.warning);
+                }
+                this.trackEvent('share_link_copied', { sound_id: this.selectedSound });
+            }
+        } catch (error) {
+            console.error('Share error:', error);
+            if (error.message.includes('too large')) {
+                this.showError('Audio is too large to share via link. Try trimming it shorter or use the Download button.');
+            } else {
+                this.showError('Could not generate share link. Please try downloading the file instead.');
+            }
+        } finally {
+            this.hideLoading();
+        }
+    }
+
+    /**
+     * Share using native share API
+     */
+    async shareNative() {
+        this.showLoading('Preparing to share...');
+
+        try {
+            const wavBlob = this.audioProcessor.exportToWav(this.trimStart, this.trimEnd, {
+                normalize: true
+            });
+
+            const soundName = this.customAudioName || this.getSoundDisplayName();
+            const result = await this.sharing.shareNative(wavBlob, soundName);
+
+            if (result.success) {
+                this.trackEvent('share_native', { sound_id: this.selectedSound, method: result.method });
+            }
+        } catch (error) {
+            console.error('Share error:', error);
+            this.showError('Could not share. Please try copying the link instead.');
+        } finally {
+            this.hideLoading();
+        }
+    }
+
+    /**
+     * Download the file
+     */
+    downloadFile() {
+        try {
+            const wavBlob = this.audioProcessor.exportToWav(this.trimStart, this.trimEnd, {
+                normalize: true
+            });
+
+            this.fileSystem.downloadFile(wavBlob, 'LockChime.wav');
+            this.showToast('File downloaded!', 'success');
+            this.trackEvent('sound_downloaded', { sound_id: this.selectedSound });
+        } catch (error) {
+            console.error('Download error:', error);
+            this.showError('Could not download file.');
+        }
+    }
+
+    /**
+     * Check for shared audio in URL
+     */
+    checkForSharedAudio() {
+        if (!this.sharing.hasSharedAudio()) return;
+
+        const sharedAudio = this.sharing.getSharedAudio();
+        if (!sharedAudio) {
+            this.showError('Could not load shared audio. The link may be invalid or corrupted.');
+            this.sharing.clearSharedAudioFromUrl();
+            return;
+        }
+
+        // Show import banner
+        if (this.elements.importBanner) {
+            this.elements.importBanner.style.display = 'block';
+            this.elements.sharedSoundName.textContent = sharedAudio.name;
+        }
+
+        // Store shared audio for import
+        this.pendingSharedAudio = sharedAudio;
+
+        // Set up import banner buttons
+        if (this.elements.btnImportShared) {
+            this.elements.btnImportShared.addEventListener('click', () => this.importSharedAudio());
+        }
+
+        if (this.elements.btnDismissImport) {
+            this.elements.btnDismissImport.addEventListener('click', () => this.dismissImportBanner());
+        }
+
+        this.trackEvent('shared_audio_received', { name: sharedAudio.name });
+    }
+
+    /**
+     * Import shared audio
+     */
+    async importSharedAudio() {
+        if (!this.pendingSharedAudio) return;
+
+        this.showLoading('Loading shared sound...');
+
+        try {
+            await this.audioProcessor.init();
+            await this.audioProcessor.loadFromBlob(this.pendingSharedAudio.blob);
+
+            this.customAudioBlob = this.pendingSharedAudio.blob;
+            this.customAudioName = this.pendingSharedAudio.name;
+            this.selectedSound = 'shared-import';
+
+            const { startTime, endTime } = this.waveform.loadWaveform(this.audioProcessor);
+            this.trimStart = startTime;
+            this.trimEnd = endTime;
+
+            this.onVolumeChange();
+            this.onFadeChange();
+
+            this.updateTimeInputs();
+            this.validateAndUpdateUI();
+            this.updateAriaValues();
+
+            this.goToStep('trim');
+            this.dismissImportBanner();
+
+            this.trackEvent('shared_audio_imported', { name: this.pendingSharedAudio.name });
+            this.showToast('Shared sound loaded!', 'success');
+        } catch (error) {
+            console.error('Import error:', error);
+            this.showError('Could not load shared sound. The audio may be corrupted.');
+        } finally {
+            this.hideLoading();
+        }
+    }
+
+    /**
+     * Dismiss import banner
+     */
+    dismissImportBanner() {
+        if (this.elements.importBanner) {
+            this.elements.importBanner.style.display = 'none';
+        }
+        this.sharing.clearSharedAudioFromUrl();
+        this.pendingSharedAudio = null;
+    }
+
+    /**
+     * Get display name for current sound
+     */
+    getSoundDisplayName() {
+        if (this.customAudioName) return this.customAudioName;
+        if (this.selectedSound) {
+            const sound = AUDIO_SAMPLES.find(s => s.id === this.selectedSound);
+            return sound ? sound.name : 'Custom Sound';
+        }
+        return 'Custom Sound';
+    }
+
+    /**
+     * Show toast notification
+     */
+    showToast(message, type = 'info') {
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        toast.textContent = message;
+        toast.setAttribute('role', 'status');
+        toast.setAttribute('aria-live', 'polite');
+
+        document.body.appendChild(toast);
+
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
     }
 
     /**

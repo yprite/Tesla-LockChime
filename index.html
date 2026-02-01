@@ -108,6 +108,21 @@
         </div>
     </aside>
 
+    <!-- Shared Sound Import Banner -->
+    <aside class="import-banner" id="import-banner" style="display: none;" role="alert" aria-live="polite">
+        <div class="import-banner-content">
+            <div class="import-icon" aria-hidden="true">🔗</div>
+            <div class="import-info">
+                <strong>Shared Sound Received!</strong>
+                <p>Someone shared "<span id="shared-sound-name">Custom Sound</span>" with you.</p>
+            </div>
+            <div class="import-actions">
+                <button class="btn btn-primary btn-small" id="btn-import-shared">Use This Sound</button>
+                <button class="btn btn-outline btn-small" id="btn-dismiss-import">Dismiss</button>
+            </div>
+        </div>
+    </aside>
+
     <!-- Main Content -->
     <main class="main-content" id="main-content" role="main">
         <!-- Step 1: Select Sound -->
@@ -116,6 +131,20 @@
                 <span class="step-number" aria-hidden="true">1</span>
                 <h2 id="step1-heading">Select a Sound</h2>
             </div>
+
+            <!-- Upload Your Own -->
+            <div class="upload-section" id="upload-section">
+                <div class="upload-divider">
+                    <span>Or upload your own audio</span>
+                </div>
+                <div class="upload-zone" id="upload-zone" role="button" tabindex="0" aria-label="Upload your own audio file">
+                    <div class="upload-icon" aria-hidden="true">📁</div>
+                    <p class="upload-text"><strong>Click to upload</strong> or drag and drop</p>
+                    <p class="upload-hint">WAV, MP3, M4A, OGG (max 10MB)</p>
+                    <input type="file" id="file-upload" accept=".wav,.mp3,.m4a,.ogg,audio/*" hidden aria-hidden="true">
+                </div>
+            </div>
+
             <div class="sound-grid" id="sound-grid" role="listbox" aria-label="Available sounds">
                 <!-- Sound cards will be populated by JavaScript -->
             </div>
@@ -228,7 +257,7 @@
         <section class="step-section" id="step-save" style="display: none;" aria-labelledby="step3-heading">
             <div class="step-header">
                 <span class="step-number" aria-hidden="true">3</span>
-                <h2 id="step3-heading">Save to USB</h2>
+                <h2 id="step3-heading">Save & Share</h2>
             </div>
 
             <div class="save-container">
@@ -240,9 +269,26 @@
                     </div>
                 </div>
 
-                <button class="btn btn-primary btn-large" id="btn-save-usb" aria-describedby="save-hint">
-                    <span class="btn-icon" aria-hidden="true">💾</span> Save to USB Drive
-                </button>
+                <div class="save-actions">
+                    <button class="btn btn-primary btn-large" id="btn-save-usb" aria-describedby="save-hint">
+                        <span class="btn-icon" aria-hidden="true">💾</span> Save to USB Drive
+                    </button>
+
+                    <div class="share-section">
+                        <p class="share-label">Share with friends</p>
+                        <div class="share-buttons" role="group" aria-label="Share options">
+                            <button class="btn btn-secondary" id="btn-share-copy" title="Copy share link">
+                                <span class="btn-icon" aria-hidden="true">🔗</span> Copy Link
+                            </button>
+                            <button class="btn btn-secondary" id="btn-share-native" title="Share via system share" style="display: none;">
+                                <span class="btn-icon" aria-hidden="true">📤</span> Share
+                            </button>
+                            <button class="btn btn-secondary" id="btn-download" title="Download WAV file">
+                                <span class="btn-icon" aria-hidden="true">⬇️</span> Download
+                            </button>
+                        </div>
+                    </div>
+                </div>
 
                 <p class="save-hint" id="save-hint">
                     You'll be prompted to select your USB drive. Choose the <strong>root folder</strong> of the USB drive.
@@ -328,6 +374,7 @@
     <script src="js/audio-processor.js"></script>
     <script src="js/file-system.js"></script>
     <script src="js/waveform.js"></script>
+    <script src="js/sharing.js"></script>
     <script src="js/app.js"></script>
 
     <!-- Google AdSense (load after content) -->
