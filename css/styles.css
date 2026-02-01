@@ -745,3 +745,253 @@ body {
         width: 100%;
     }
 }
+
+/* ===========================
+   Accessibility - Skip Link
+   =========================== */
+.skip-link {
+    position: absolute;
+    top: -100px;
+    left: 0;
+    background-color: var(--color-primary);
+    color: white;
+    padding: 0.75rem 1.5rem;
+    text-decoration: none;
+    font-weight: 600;
+    z-index: 9999;
+    border-radius: 0 0 var(--border-radius) 0;
+    transition: top 0.3s;
+}
+
+.skip-link:focus {
+    top: 0;
+    outline: 2px solid white;
+    outline-offset: 2px;
+}
+
+/* ===========================
+   Focus Styles for Accessibility
+   =========================== */
+*:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+}
+
+button:focus-visible,
+input:focus-visible,
+[tabindex]:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+}
+
+/* ===========================
+   Volume Control
+   =========================== */
+.volume-control {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 1rem;
+    padding: 1rem;
+    background-color: var(--color-surface-elevated);
+    border-radius: var(--border-radius);
+}
+
+.volume-control label {
+    font-size: 0.875rem;
+    color: var(--color-text-secondary);
+    min-width: 50px;
+}
+
+.volume-control input[type="range"] {
+    flex: 1;
+    height: 6px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: var(--color-border);
+    border-radius: 3px;
+    cursor: pointer;
+}
+
+.volume-control input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    background: var(--color-primary);
+    border-radius: 50%;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.volume-control input[type="range"]::-webkit-slider-thumb:hover {
+    transform: scale(1.1);
+}
+
+.volume-control input[type="range"]::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    background: var(--color-primary);
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+}
+
+#volume-value {
+    font-size: 0.875rem;
+    color: var(--color-text);
+    min-width: 45px;
+    text-align: right;
+}
+
+/* ===========================
+   Fade Controls
+   =========================== */
+.fade-controls {
+    display: flex;
+    gap: 2rem;
+    margin-top: 1rem;
+    padding: 1rem;
+    background-color: var(--color-surface-elevated);
+    border-radius: var(--border-radius);
+}
+
+.fade-option {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.fade-option label {
+    font-size: 0.875rem;
+    color: var(--color-text-secondary);
+}
+
+.fade-option input {
+    width: 60px;
+    padding: 0.375rem 0.5rem;
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
+    color: var(--color-text);
+    font-size: 0.875rem;
+    text-align: center;
+}
+
+.fade-option input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+}
+
+.fade-option .time-unit {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+}
+
+/* ===========================
+   Footer Links
+   =========================== */
+.footer-links {
+    display: flex;
+    justify-content: center;
+    gap: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.footer-links a {
+    color: var(--color-text-secondary);
+    text-decoration: none;
+    font-size: 0.875rem;
+    transition: var(--transition);
+}
+
+.footer-links a:hover {
+    color: var(--color-text);
+}
+
+.footer-links a:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+}
+
+/* ===========================
+   Sound Card Keyboard Focus
+   =========================== */
+.sound-card:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+}
+
+.sound-card[tabindex="0"]:focus {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px rgba(232, 33, 39, 0.3);
+}
+
+/* ===========================
+   Trim Handle Keyboard Support
+   =========================== */
+.trim-handle:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(232, 33, 39, 0.5);
+}
+
+/* ===========================
+   High Contrast Mode Support
+   =========================== */
+@media (prefers-contrast: high) {
+    :root {
+        --color-border: #666;
+        --color-text-secondary: #ccc;
+    }
+
+    .btn {
+        border-width: 2px;
+    }
+}
+
+/* ===========================
+   Reduced Motion Support
+   =========================== */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+
+    .loading-spinner {
+        animation: none;
+        border: 4px solid var(--color-primary);
+    }
+}
+
+/* ===========================
+   Print Styles
+   =========================== */
+@media print {
+    .header,
+    .footer,
+    .ad-container,
+    .compatibility-notice,
+    .btn,
+    .loading-overlay,
+    .modal {
+        display: none !important;
+    }
+
+    body {
+        background: white;
+        color: black;
+    }
+
+    .main-content {
+        max-width: none;
+    }
+
+    .instructions-card {
+        border: 1px solid #ccc;
+        background: #f9f9f9;
+    }
+}

@@ -5,12 +5,25 @@
  * For Tesla lock chimes, outputs mono WAV at 44.1kHz.
  */
 
+
+const TESLA_REQUIREMENTS = {
+    MIN_DURATION: 2.0,
+    MAX_DURATION: 5.0,
+    SAMPLE_RATE: 44100,
+    CHANNELS: 1,
+    BIT_DEPTH: 16,
+    MAX_FILE_SIZE: 1024 * 1024 // 1MB
+};
+
 class AudioProcessor {
     constructor() {
         this.audioContext = null;
         this.currentBuffer = null;
         this.currentSource = null;
         this.isPlaying = false;
+        this.volume = 1.0;
+        this.fadeInDuration = 0;
+        this.fadeOutDuration = 0;
     }
 
     /**
@@ -18,10 +31,13 @@ class AudioProcessor {
      */
     async init() {
         if (!this.audioContext) {
-            this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+            if (!AudioContextClass) {
+                throw new Error('Web Audio API is not supported in this browser');
+            }
+            this.audioContext = new AudioContextClass();
         }
 
-        // Resume if suspended (browser autoplay policies)
         if (this.audioContext.state === 'suspended') {
             await this.audioContext.resume();
         }
@@ -64,6 +80,34 @@ class AudioProcessor {
     }
 
     /**
+     * Set volume (0.0 to 1.0)
+     */
+    setVolume(volume) {
+        this.volume = Math.max(0, Math.min(1, volume));
+    }
+
+    /**
+     * Get current volume
+     */
+    getVolume() {
+        return this.volume;
+    }
+
+    /**
+     * Set fade in duration in seconds
+     */
+    setFadeIn(duration) {
+        this.fadeInDuration = Math.max(0, duration);
+    }
+
+    /**
+     * Set fade out duration in seconds
+     */
+    setFadeOut(duration) {
+        this.fadeOutDuration = Math.max(0, duration);
+    }
+
+    /**
      * Play the current buffer (full or trimmed)
      */
     async play(startTime = 0, endTime = null, onEnded = null) {
@@ -76,9 +120,14 @@ class AudioProcessor {
 
         const duration = endTime !== null ? endTime - startTime : this.currentBuffer.duration - startTime;
 
+        // Create gain node for volume control
+        const gainNode = this.audioContext.createGain();
+        gainNode.gain.value = this.volume;
+        gainNode.connect(this.audioContext.destination);
+
         this.currentSource = this.audioContext.createBufferSource();
         this.currentSource.buffer = this.currentBuffer;
-        this.currentSource.connect(this.audioContext.destination);
+        this.currentSource.connect(gainNode);
 
         this.currentSource.onended = () => {
             this.isPlaying = false;
@@ -137,25 +186,74 @@ class AudioProcessor {
         const destData = trimmedBuffer.getChannelData(0);
 
         for (let i = 0; i < newLength; i++) {
-            destData[i] = sourceData[startSample + i] || 0;
+            let sample = sourceData[startSample + i] || 0;
+
+            // Apply volume
+            sample *= this.volume;
+
+            // Apply fade in
+            if (this.fadeInDuration > 0) {
+                const fadeInSamples = this.fadeInDuration * sampleRate;
+                if (i < fadeInSamples) {
+                    sample *= i / fadeInSamples;
+                }
+            }
+
+            // Apply fade out
+            if (this.fadeOutDuration > 0) {
+                const fadeOutSamples = this.fadeOutDuration * sampleRate;
+                const fadeOutStart = newLength - fadeOutSamples;
+                if (i > fadeOutStart) {
+                    sample *= (newLength - i) / fadeOutSamples;
+                }
+            }
+
+            destData[i] = sample;
         }
 
         return trimmedBuffer;
     }
 
     /**
+     * Apply normalization to maximize volume without clipping
+     */
+    normalizeBuffer(buffer) {
+        const data = buffer.getChannelData(0);
+        let maxAmplitude = 0;
+
+        // Find max amplitude
+        for (let i = 0; i < data.length; i++) {
+            maxAmplitude = Math.max(maxAmplitude, Math.abs(data[i]));
+        }
+
+        // Normalize if needed (target 0.95 to leave headroom)
+        if (maxAmplitude > 0 && maxAmplitude < 0.95) {
+            const gain = 0.95 / maxAmplitude;
+            for (let i = 0; i < data.length; i++) {
+                data[i] *= gain;
+            }
+        }
+
+        return buffer;
+    }
+
+    /**
      * Export the audio as a WAV blob
      */
-    exportToWav(startTime = 0, endTime = null) {
+    exportToWav(startTime = 0, endTime = null, options = {}) {
         if (!this.currentBuffer) {
             throw new Error('No audio loaded');
         }
 
         const actualEnd = endTime !== null ? endTime : this.currentBuffer.duration;
-        const trimmedBuffer = this.trimBuffer(startTime, actualEnd);
+        let trimmedBuffer = this.trimBuffer(startTime, actualEnd);
 
-        // Convert to WAV at 44.1kHz mono
-        return audioBufferToWav(trimmedBuffer, 44100);
+        // Apply normalization if requested
+        if (options.normalize !== false) {
+            trimmedBuffer = this.normalizeBuffer(trimmedBuffer);
+        }
+
+        return audioBufferToWav(trimmedBuffer, TESLA_REQUIREMENTS.SAMPLE_RATE);
     }
 
     /**
@@ -205,26 +303,25 @@ class AudioProcessor {
      */
     validateDuration(startTime, endTime) {
         const duration = endTime - startTime;
-        const MIN_DURATION = 2.0;
-        const MAX_DURATION = 5.0;
 
-        if (duration < MIN_DURATION) {
+        if (duration < TESLA_REQUIREMENTS.MIN_DURATION) {
             return {
                 valid: false,
-                message: `Duration too short. Minimum is ${MIN_DURATION} seconds. Current: ${duration.toFixed(1)}s`
+                message: `Duration too short. Minimum is ${TESLA_REQUIREMENTS.MIN_DURATION} seconds. Current: ${duration.toFixed(1)}s`
             };
         }
 
-        if (duration > MAX_DURATION) {
+        if (duration > TESLA_REQUIREMENTS.MAX_DURATION) {
             return {
                 valid: false,
-                message: `Duration too long. Maximum is ${MAX_DURATION} seconds. Current: ${duration.toFixed(1)}s`
+                message: `Duration too long. Maximum is ${TESLA_REQUIREMENTS.MAX_DURATION} seconds. Current: ${duration.toFixed(1)}s`
             };
         }
 
         return {
             valid: true,
-            message: `Duration: ${duration.toFixed(1)} seconds ✓`
+            message: `Duration: ${duration.toFixed(1)} seconds ✓`,
+            duration
         };
     }
 
@@ -233,15 +330,9 @@ class AudioProcessor {
      */
     estimateFileSize(startTime, endTime) {
         const duration = endTime - startTime;
-        const sampleRate = 44100;
-        const bitsPerSample = 16;
-        const numChannels = 1;
-
-        // WAV size = header (44 bytes) + samples
-        const dataSize = duration * sampleRate * numChannels * (bitsPerSample / 8);
-        const totalSize = 44 + dataSize;
-
-        return totalSize;
+        const { SAMPLE_RATE, CHANNELS, BIT_DEPTH } = TESLA_REQUIREMENTS;
+        const dataSize = duration * SAMPLE_RATE * CHANNELS * (BIT_DEPTH / 8);
+        return 44 + dataSize; // 44 bytes header + data
     }
 
     /**
@@ -256,7 +347,39 @@ class AudioProcessor {
             return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
         }
     }
+
+    /**
+     * Check if estimated file size is within Tesla's limit
+     */
+    validateFileSize(startTime, endTime) {
+        const size = this.estimateFileSize(startTime, endTime);
+        return {
+            valid: size <= TESLA_REQUIREMENTS.MAX_FILE_SIZE,
+            size,
+            message: size <= TESLA_REQUIREMENTS.MAX_FILE_SIZE
+                ? `File size: ${this.formatFileSize(size)} ✓`
+                : `File too large: ${this.formatFileSize(size)} (max ${this.formatFileSize(TESLA_REQUIREMENTS.MAX_FILE_SIZE)})`
+        };
+    }
+
+    /**
+     * Full validation for Tesla requirements
+     */
+    validateForTesla(startTime, endTime) {
+        const durationResult = this.validateDuration(startTime, endTime);
+        const sizeResult = this.validateFileSize(startTime, endTime);
+
+        return {
+            valid: durationResult.valid && sizeResult.valid,
+            duration: durationResult,
+            fileSize: sizeResult,
+            messages: [durationResult.message, sizeResult.message].filter(m => m)
+        };
+    }
 }
 
-// Export for use in other modules
-window.AudioProcessor = AudioProcessor;
+// Browser global export
+if (typeof window !== 'undefined') {
+    window.AudioProcessor = AudioProcessor;
+    window.TESLA_REQUIREMENTS = TESLA_REQUIREMENTS;
+}
