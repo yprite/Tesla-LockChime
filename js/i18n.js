@@ -44,6 +44,8 @@ const TRANSLATIONS = {
     'btn.upload': 'Upload',
     'btn.copy': 'Copy',
     'btn.share': 'Share...',
+    'btn.use': 'Use',
+    'btn.copied': 'Copied!',
 
     // Form Labels
     'form.start': 'Start',
@@ -212,6 +214,8 @@ const TRANSLATIONS = {
     'btn.upload': '업로드',
     'btn.copy': '복사',
     'btn.share': '공유...',
+    'btn.use': '사용',
+    'btn.copied': '복사됨!',
 
     // Form Labels
     'form.start': '시작',
@@ -380,6 +384,8 @@ const TRANSLATIONS = {
     'btn.upload': 'アップロード',
     'btn.copy': 'コピー',
     'btn.share': '共有...',
+    'btn.use': '使用',
+    'btn.copied': 'コピーしました!',
 
     // Form Labels
     'form.start': '開始',
@@ -548,6 +554,8 @@ const TRANSLATIONS = {
     'btn.upload': '上传',
     'btn.copy': '复制',
     'btn.share': '分享...',
+    'btn.use': '使用',
+    'btn.copied': '已复制!',
 
     // Form Labels
     'form.start': '开始',

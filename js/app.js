@@ -174,6 +174,26 @@ class TeslaLockSoundApp {
 
         // Track page view
         this.trackEvent('page_view', { page: 'home' });
+
+        // Listen for language changes
+        window.addEventListener('languageChanged', () => {
+            this.onLanguageChanged();
+        });
+    }
+
+    /**
+     * Handle language change event - refresh dynamic content
+     */
+    onLanguageChanged() {
+        // Re-render gallery sections if on community tab
+        if (this.currentTab === 'community' && this.gallery.isAvailable()) {
+            this.loadGallerySounds(false);
+        }
+
+        // Update featured sounds
+        if (this.elements.featuredSounds && this.gallery.isAvailable()) {
+            this.loadFeaturedSounds();
+        }
     }
 
     /**
@@ -200,7 +220,7 @@ class TeslaLockSoundApp {
                     this.uploadToGallery();
                 } else {
                     this.switchTab('create');
-                    this.showToast('Create a sound first, then upload it to the gallery!', 'info');
+                    this.showToast(window.t('prompt.createFirst'), 'info');
                 }
             });
         }
@@ -282,7 +302,7 @@ class TeslaLockSoundApp {
     async checkSharedSoundInUrl() {
         const sharedSoundId = this.gallery.getSharedSoundId();
         if (sharedSoundId) {
-            this.showLoading('Loading shared sound...');
+            this.showLoading(window.t('status.loadingShared'));
             try {
                 const sound = await this.gallery.getSound(sharedSoundId);
                 if (sound) {
@@ -291,14 +311,14 @@ class TeslaLockSoundApp {
                     await this.loadGallerySounds(false);
 
                     // Scroll to the sound or show a modal
-                    this.showToast(`Loading "${sound.name}" from shared link`, 'success');
+                    this.showToast(window.t('success.loaded'), 'success');
 
                     // Automatically start using the sound
                     await this.handleGalleryUse(sharedSoundId);
                 }
             } catch (error) {
                 console.error('Failed to load shared sound:', error);
-                this.showToast('Could not find the shared sound', 'error');
+                this.showToast(window.t('error.notFound'), 'error');
             } finally {
                 this.hideLoading();
             }
@@ -330,9 +350,9 @@ class TeslaLockSoundApp {
                 if (soundId) {
                     const result = await this.gallery.copyShareLink(soundId);
                     if (result.success) {
-                        this.elements.btnCopyLink.innerHTML = '<span aria-hidden="true">✓</span> Copied!';
+                        this.elements.btnCopyLink.innerHTML = `<span aria-hidden="true">✓</span> ${window.t('btn.copied')}`;
                         setTimeout(() => {
-                            this.elements.btnCopyLink.innerHTML = '<span aria-hidden="true">📋</span> Copy';
+                            this.elements.btnCopyLink.innerHTML = `<span aria-hidden="true">📋</span> ${window.t('btn.copy')}`;
                         }, 2000);
                     }
                 }
@@ -513,7 +533,7 @@ class TeslaLockSoundApp {
      */
     async submitUpload() {
         if (!this.gallery.isAvailable()) {
-            this.showError('Gallery is not available. Please try again later.');
+            this.showError(window.t('error.galleryUnavailable'));
             return;
         }
 
@@ -529,7 +549,7 @@ class TeslaLockSoundApp {
         }
 
         this.closeUploadModal();
-        this.showLoading('Uploading to gallery...');
+        this.showLoading(window.t('status.uploading'));
 
         try {
             const wavBlob = this.audioProcessor.exportToWav(this.trimStart, this.trimEnd, {
@@ -546,7 +566,7 @@ class TeslaLockSoundApp {
             // Track upload in localStorage
             this.gallery.addToMyUploads(result.soundId);
 
-            this.showToast('Sound uploaded to gallery!', 'success');
+            this.showToast(window.t('success.uploaded'), 'success');
             this.trackEvent('gallery_upload', { sound_id: result.soundId });
 
             // Refresh gallery sections
@@ -658,7 +678,7 @@ class TeslaLockSoundApp {
                         ▶
                     </button>
                     <button class="btn btn-small btn-primary gallery-use-btn" data-sound-id="${sound.id}">
-                        Use
+                        ${window.t('btn.use')}
                     </button>
                     <button class="btn btn-small btn-share gallery-share-btn" data-sound-id="${sound.id}" data-name="${this.escapeHtml(sound.name)}">
                         📤
@@ -707,7 +727,7 @@ class TeslaLockSoundApp {
             const { sounds } = await this.gallery.getPopularSounds(3);
 
             if (sounds.length === 0) {
-                this.elements.featuredSounds.innerHTML = '<p class="featured-empty">No community sounds yet. Be the first to share!</p>';
+                this.elements.featuredSounds.innerHTML = `<p class="featured-empty">${window.t('gallery.empty')}</p>`;
                 return;
             }
 
@@ -769,7 +789,7 @@ class TeslaLockSoundApp {
 
             // Show loading state
             if (!append && this.elements.galleryEmpty) {
-                this.elements.galleryEmpty.innerHTML = '<p>Loading community sounds...</p>';
+                this.elements.galleryEmpty.innerHTML = `<p>${window.t('gallery.loading')}</p>`;
                 this.elements.galleryEmpty.style.display = 'block';
             }
 
@@ -800,8 +820,8 @@ class TeslaLockSoundApp {
             if (sounds.length === 0 && !append) {
                 if (this.elements.galleryEmpty) {
                     this.elements.galleryEmpty.innerHTML = searchQuery
-                        ? '<p>No sounds found matching your search.</p>'
-                        : '<p>No sounds in this category yet. Be the first to share!</p>';
+                        ? `<p>${window.t('gallery.noResults')}</p>`
+                        : `<p>${window.t('gallery.noCategory')}</p>`;
                     this.elements.galleryEmpty.style.display = 'block';
                 }
             } else {
@@ -832,7 +852,7 @@ class TeslaLockSoundApp {
         } catch (error) {
             console.error('Failed to load gallery:', error);
             if (this.elements.galleryEmpty) {
-                this.elements.galleryEmpty.innerHTML = '<p>Failed to load gallery. Please try again.</p>';
+                this.elements.galleryEmpty.innerHTML = `<p>${window.t('gallery.loadFailed')}</p>`;
                 this.elements.galleryEmpty.style.display = 'block';
             }
         }
@@ -865,10 +885,10 @@ class TeslaLockSoundApp {
             </div>
             <div class="gallery-card-actions has-share">
                 <button class="btn btn-small btn-secondary gallery-preview-btn" data-sound-id="${sound.id}" data-url="${sound.downloadUrl}">
-                    ▶ Preview
+                    ▶ ${window.t('btn.preview')}
                 </button>
                 <button class="btn btn-small btn-primary gallery-use-btn" data-sound-id="${sound.id}">
-                    Use
+                    ${window.t('btn.use')}
                 </button>
                 <button class="btn btn-small btn-share gallery-share-btn" data-sound-id="${sound.id}" data-name="${this.escapeHtml(sound.name)}">
                     📤
@@ -989,7 +1009,7 @@ class TeslaLockSoundApp {
      * Handle using a gallery sound
      */
     async handleGalleryUse(soundId) {
-        this.showLoading('Loading sound from gallery...');
+        this.showLoading(window.t('status.loading'));
 
         try {
             const { blob, sound } = await this.gallery.downloadSound(soundId);
@@ -1013,11 +1033,11 @@ class TeslaLockSoundApp {
             this.updateAriaValues();
 
             this.goToStep('trim');
-            this.showToast('Sound loaded from gallery!', 'success');
+            this.showToast(window.t('success.loaded'), 'success');
             this.trackEvent('gallery_sound_used', { sound_id: soundId });
         } catch (error) {
             console.error('Failed to use gallery sound:', error);
-            this.showError('Failed to load sound from gallery.');
+            this.showError(window.t('error.loadFailed'));
         } finally {
             this.hideLoading();
         }
@@ -1028,7 +1048,7 @@ class TeslaLockSoundApp {
      */
     async uploadToGallery() {
         if (!this.gallery.isAvailable()) {
-            this.showError('Gallery is not available. Please try again later.');
+            this.showError(window.t('error.galleryUnavailable'));
             return;
         }
 
@@ -1274,7 +1294,7 @@ class TeslaLockSoundApp {
         const validTypes = ['audio/wav', 'audio/mpeg', 'audio/mp3', 'audio/mp4', 'audio/m4a', 'audio/ogg', 'audio/x-wav'];
 
         if (file.size > maxSize) {
-            this.showError('File is too large. Maximum size is 10MB.');
+            this.showError(window.t('error.fileTooLarge'));
             return;
         }
 
@@ -1282,11 +1302,11 @@ class TeslaLockSoundApp {
         const validExtensions = ['wav', 'mp3', 'm4a', 'ogg'];
 
         if (!validTypes.includes(file.type) && !validExtensions.includes(ext)) {
-            this.showError('Invalid file type. Please upload a WAV, MP3, M4A, or OGG file.');
+            this.showError(window.t('error.invalidType'));
             return;
         }
 
-        this.showLoading('Processing audio...');
+        this.showLoading(window.t('status.processing'));
 
         try {
             await this.audioProcessor.init();
@@ -1310,10 +1330,10 @@ class TeslaLockSoundApp {
             this.goToStep('trim');
 
             this.trackEvent('sound_uploaded', { file_type: ext, file_size: file.size });
-            this.showToast('Audio uploaded successfully!', 'success');
+            this.showToast(window.t('success.audioUploaded'), 'success');
         } catch (error) {
             console.error('Upload error:', error);
-            this.showError('Could not process audio file. Please try a different file.');
+            this.showError(window.t('error.processAudio'));
         } finally {
             this.hideLoading();
         }
@@ -1329,11 +1349,11 @@ class TeslaLockSoundApp {
             });
 
             this.fileSystem.downloadFile(wavBlob, 'LockChime.wav');
-            this.showToast('File downloaded!', 'success');
+            this.showToast(window.t('success.downloaded'), 'success');
             this.trackEvent('sound_downloaded', { sound_id: this.selectedSound });
         } catch (error) {
             console.error('Download error:', error);
-            this.showError('Could not download file.');
+            this.showError(window.t('error.downloadFailed'));
         }
     }
 
@@ -1411,7 +1431,7 @@ class TeslaLockSoundApp {
         } catch (error) {
             console.error('Preview error:', error);
             button.textContent = originalText;
-            this.showError('Could not play audio. Please check your audio settings.');
+            this.showError(window.t('error.playFailed'));
         }
     }
 
@@ -1427,7 +1447,7 @@ class TeslaLockSoundApp {
             card.setAttribute('aria-selected', isSelected);
         });
 
-        this.showLoading('Loading sound...');
+        this.showLoading(window.t('status.loading'));
 
         try {
             await this.audioProcessor.loadSound(soundId);
@@ -1448,7 +1468,7 @@ class TeslaLockSoundApp {
             this.trackEvent('sound_selected', { sound_id: soundId });
         } catch (error) {
             console.error('Error loading sound:', error);
-            this.showError('Error loading sound. Please try again.');
+            this.showError(window.t('error.loadFailed'));
         } finally {
             this.hideLoading();
         }
@@ -1522,14 +1542,14 @@ class TeslaLockSoundApp {
         try {
             await this.audioProcessor.play(0, null, () => {
                 this.waveform.hidePlayhead();
-                this.elements.btnPreview.innerHTML = '<span class="btn-icon" aria-hidden="true">▶</span> Preview';
+                this.elements.btnPreview.innerHTML = `<span class="btn-icon" aria-hidden="true">▶</span> ${window.t('btn.preview')}`;
             });
 
-            this.elements.btnPreview.innerHTML = '<span class="btn-icon" aria-hidden="true">⏹</span> Stop';
+            this.elements.btnPreview.innerHTML = `<span class="btn-icon" aria-hidden="true">⏹</span> ${window.t('btn.stop')}`;
             this.waveform.animatePlayhead(0, duration);
         } catch (error) {
             console.error('Playback error:', error);
-            this.showError('Could not play audio.');
+            this.showError(window.t('error.playFailed'));
         }
     }
 
@@ -1545,14 +1565,14 @@ class TeslaLockSoundApp {
         try {
             await this.audioProcessor.play(this.trimStart, this.trimEnd, () => {
                 this.waveform.hidePlayhead();
-                this.elements.btnPreviewTrimmed.innerHTML = '<span class="btn-icon" aria-hidden="true">▶</span> Preview Trimmed';
+                this.elements.btnPreviewTrimmed.innerHTML = `<span class="btn-icon" aria-hidden="true">▶</span> ${window.t('btn.previewTrimmed')}`;
             });
 
-            this.elements.btnPreviewTrimmed.innerHTML = '<span class="btn-icon" aria-hidden="true">⏹</span> Stop';
+            this.elements.btnPreviewTrimmed.innerHTML = `<span class="btn-icon" aria-hidden="true">⏹</span> ${window.t('btn.stop')}`;
             this.waveform.animatePlayhead(this.trimStart, duration);
         } catch (error) {
             console.error('Playback error:', error);
-            this.showError('Could not play audio.');
+            this.showError(window.t('error.playFailed'));
         }
     }
 
@@ -1571,14 +1591,14 @@ class TeslaLockSoundApp {
             return;
         }
 
-        this.showLoading('Processing audio...');
+        this.showLoading(window.t('status.processing'));
 
         try {
             const wavBlob = this.audioProcessor.exportToWav(this.trimStart, this.trimEnd, {
                 normalize: true
             });
 
-            this.showLoading('Saving to USB...');
+            this.showLoading(window.t('status.saving'));
 
             const result = await this.fileSystem.saveFile(wavBlob, 'LockChime.wav');
 
@@ -1596,14 +1616,14 @@ class TeslaLockSoundApp {
         } catch (error) {
             console.error('Save error:', error);
 
-            if (confirm(`Could not save directly: ${error.message}\n\nWould you like to download the file instead?`)) {
+            if (confirm(`${window.t('error.saveFailed')}: ${error.message}\n\n${window.t('prompt.downloadInstead')}`)) {
                 try {
                     const wavBlob = this.audioProcessor.exportToWav(this.trimStart, this.trimEnd);
                     this.fileSystem.downloadFile(wavBlob, 'LockChime.wav');
                     this.goToStep('success');
                     this.trackEvent('sound_downloaded_fallback', { sound_id: this.selectedSound });
                 } catch (downloadError) {
-                    this.showError('Could not download file. Please try again.');
+                    this.showError(window.t('error.downloadFailed'));
                 }
             }
         } finally {
@@ -1639,7 +1659,7 @@ class TeslaLockSoundApp {
                 break;
             case 'success':
                 this.elements.stepSuccess.style.display = 'block';
-                this.announceToScreenReader('Your custom lock sound has been saved successfully.');
+                this.announceToScreenReader(window.t('success.saved'));
                 break;
         }
     }
