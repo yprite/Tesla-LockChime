@@ -2,78 +2,20 @@
     "name": "Tesla Lock Sound Creator",
     "short_name": "Tesla Lock",
     "description": "Create custom Tesla lock chimes for free. Select, trim, and save directly to USB.",
-    "start_url": "/",
+    "start_url": ".",
     "display": "standalone",
     "background_color": "#0f0f0f",
     "theme_color": "#e82127",
     "orientation": "any",
-    "scope": "/",
+    "scope": ".",
     "lang": "en",
     "categories": ["utilities", "entertainment"],
     "icons": [
         {
-            "src": "images/icon-72.png",
-            "sizes": "72x72",
-            "type": "image/png",
+            "src": "images/icon-192.svg",
+            "sizes": "any",
+            "type": "image/svg+xml",
             "purpose": "any maskable"
-        },
-        {
-            "src": "images/icon-96.png",
-            "sizes": "96x96",
-            "type": "image/png",
-            "purpose": "any maskable"
-        },
-        {
-            "src": "images/icon-128.png",
-            "sizes": "128x128",
-            "type": "image/png",
-            "purpose": "any maskable"
-        },
-        {
-            "src": "images/icon-144.png",
-            "sizes": "144x144",
-            "type": "image/png",
-            "purpose": "any maskable"
-        },
-        {
-            "src": "images/icon-152.png",
-            "sizes": "152x152",
-            "type": "image/png",
-            "purpose": "any maskable"
-        },
-        {
-            "src": "images/icon-192.png",
-            "sizes": "192x192",
-            "type": "image/png",
-            "purpose": "any maskable"
-        },
-        {
-            "src": "images/icon-384.png",
-            "sizes": "384x384",
-            "type": "image/png",
-            "purpose": "any maskable"
-        },
-        {
-            "src": "images/icon-512.png",
-            "sizes": "512x512",
-            "type": "image/png",
-            "purpose": "any maskable"
-        }
-    ],
-    "screenshots": [
-        {
-            "src": "images/screenshot-1.png",
-            "sizes": "1280x720",
-            "type": "image/png",
-            "form_factor": "wide",
-            "label": "Sound selection screen"
-        },
-        {
-            "src": "images/screenshot-2.png",
-            "sizes": "1280x720",
-            "type": "image/png",
-            "form_factor": "wide",
-            "label": "Audio trimming screen"
         }
     ],
     "shortcuts": [
@@ -81,11 +23,11 @@
             "name": "Create New Sound",
             "short_name": "Create",
             "description": "Start creating a new Tesla lock sound",
-            "url": "/",
+            "url": ".",
             "icons": [
                 {
-                    "src": "images/icon-96.png",
-                    "sizes": "96x96"
+                    "src": "images/icon-192.svg",
+                    "sizes": "any"
                 }
             ]
         }

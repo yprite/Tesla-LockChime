@@ -9,14 +9,14 @@
  */
 
 // Firebase configuration - Replace with your Firebase project config
-const FIREBASE_CONFIG = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_PROJECT.firebaseapp.com",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_PROJECT.appspot.com",
-    messagingSenderId: "YOUR_SENDER_ID",
-    appId: "YOUR_APP_ID"
-};
+const FIREBASE_CONFIG = {                                                                                         
+      apiKey: "AIzaSyAsrRsJVRCF-2nDCGNucE9FT_25OenDSrQ",                                                            
+      authDomain: "tesla-lock-sounds.firebaseapp.com",                                                              
+      projectId: "tesla-lock-sounds",                                                                               
+      storageBucket: "tesla-lock-sounds.firebasestorage.app",                                                       
+      messagingSenderId: "1067424699027",                                                                           
+      appId: "1:1067424699027:web:3c7105f523f26c3005f366"                                                           
+  }; 
 
 // Gallery constants
 const GALLERY_COLLECTION = 'sounds';

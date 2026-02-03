@@ -6,23 +6,23 @@
  * and won't work offline, but the app UI will load.
  */
 
-const CACHE_NAME = 'tesla-lock-sound-v3';
-const OFFLINE_URL = '/offline.html';
+const CACHE_NAME = 'tesla-lock-sound-v4';
+const OFFLINE_URL = './offline.html';
 
 // Files to cache for offline use
 const STATIC_ASSETS = [
-    '/',
-    '/index.html',
-    '/offline.html',
-    '/css/styles.css',
-    '/js/audio-data.js',
-    '/js/audio-processor.js',
-    '/js/file-system.js',
-    '/js/waveform.js',
-    '/js/gallery.js',
-    '/js/app.js',
-    '/manifest.json',
-    '/images/icon-192.svg'
+    './',
+    './index.html',
+    './offline.html',
+    './css/styles.css',
+    './js/audio-data.js',
+    './js/audio-processor.js',
+    './js/file-system.js',
+    './js/waveform.js',
+    './js/gallery.js',
+    './js/app.js',
+    './manifest.json',
+    './images/icon-192.svg'
 ];
 
 // Install event - cache static assets
@@ -122,11 +122,11 @@ self.addEventListener('push', (event) => {
 
     const options = {
         body: data.body || 'New update available!',
-        icon: '/images/icon-192.png',
-        badge: '/images/icon-72.png',
+        icon: './images/icon-192.svg',
+        badge: './images/icon-192.svg',
         vibrate: [100, 50, 100],
         data: {
-            url: data.url || '/'
+            url: data.url || './'
         }
     };
 
