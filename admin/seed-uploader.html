@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gallery Seed Uploader - Admin</title>
+    <style>
+        :root {
+            --color-primary: #e82127;
+            --color-bg: #0f0f0f;
+            --color-surface: #1a1a1a;
+            --color-border: #333;
+            --color-text: #ffffff;
+            --color-text-secondary: #a0a0a0;
+            --color-success: #22c55e;
+            --color-error: #ef4444;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--color-bg);
+            color: var(--color-text);
+            padding: 2rem;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            margin-bottom: 1rem;
+            color: var(--color-primary);
+        }
+
+        .warning {
+            background-color: rgba(239, 68, 68, 0.1);
+            border: 1px solid var(--color-error);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .section {
+            background-color: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .section h2 {
+            margin-bottom: 1rem;
+            font-size: 1.25rem;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--color-text-secondary);
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 0.75rem;
+            background-color: var(--color-bg);
+            border: 1px solid var(--color-border);
+            border-radius: 4px;
+            color: var(--color-text);
+            font-size: 1rem;
+        }
+
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 4px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-primary {
+            background-color: var(--color-primary);
+            color: white;
+        }
+
+        .btn-secondary {
+            background-color: var(--color-border);
+            color: var(--color-text);
+        }
+
+        .btn-success {
+            background-color: var(--color-success);
+            color: white;
+        }
+
+        .progress {
+            margin-top: 1rem;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background-color: var(--color-border);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background-color: var(--color-success);
+            transition: width 0.3s;
+        }
+
+        .progress-text {
+            margin-top: 0.5rem;
+            font-size: 0.875rem;
+            color: var(--color-text-secondary);
+        }
+
+        .log {
+            background-color: var(--color-bg);
+            border: 1px solid var(--color-border);
+            border-radius: 4px;
+            padding: 1rem;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 0.875rem;
+        }
+
+        .log-entry {
+            margin-bottom: 0.25rem;
+        }
+
+        .log-entry.success {
+            color: var(--color-success);
+        }
+
+        .log-entry.error {
+            color: var(--color-error);
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .stat-card {
+            background-color: var(--color-bg);
+            border-radius: 4px;
+            padding: 1rem;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--color-primary);
+        }
+
+        .stat-label {
+            font-size: 0.875rem;
+            color: var(--color-text-secondary);
+        }
+
+        .sound-preview {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .sound-card {
+            background-color: var(--color-bg);
+            border: 1px solid var(--color-border);
+            border-radius: 4px;
+            padding: 0.75rem;
+        }
+
+        .sound-name {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .sound-category {
+            font-size: 0.75rem;
+            color: var(--color-text-secondary);
+            text-transform: uppercase;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Gallery Seed Uploader</h1>
+
+        <div class="warning">
+            <strong>Admin Tool</strong> - This page is for seeding the gallery with initial content.
+            Make sure Firebase is properly configured before uploading.
+        </div>
+
+        <div class="section">
+            <h2>1. Firebase Status</h2>
+            <div id="firebase-status">Checking Firebase connection...</div>
+            <button class="btn btn-secondary" onclick="checkFirebase()" style="margin-top: 1rem;">
+                Refresh Status
+            </button>
+        </div>
+
+        <div class="section">
+            <h2>2. Seed Data Preview</h2>
+            <div class="stats" id="seed-stats">
+                <div class="stat-card">
+                    <div class="stat-number" id="stat-total">0</div>
+                    <div class="stat-label">Total Sounds</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="stat-categories">0</div>
+                    <div class="stat-label">Categories</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="stat-uploaded">0</div>
+                    <div class="stat-label">Uploaded</div>
+                </div>
+            </div>
+            <div class="sound-preview" id="sound-preview">
+                <!-- Sound cards will be generated here -->
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>3. Upload Options</h2>
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" id="opt-generate-audio" checked>
+                    Generate audio programmatically
+                </label>
+            </div>
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" id="opt-random-stats" checked>
+                    Add random likes/downloads (makes gallery look active)
+                </label>
+            </div>
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" id="opt-stagger-dates" checked>
+                    Stagger creation dates (for "trending this week" to work)
+                </label>
+            </div>
+            <div class="form-group">
+                <label for="upload-count">Number of sounds to upload:</label>
+                <input type="number" id="upload-count" value="30" min="1" max="100">
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>4. Upload</h2>
+            <button class="btn btn-primary" id="btn-upload" onclick="startUpload()">
+                Start Upload
+            </button>
+            <button class="btn btn-secondary" id="btn-stop" onclick="stopUpload()" disabled>
+                Stop
+            </button>
+
+            <div class="progress" id="progress" style="display: none;">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+                </div>
+                <div class="progress-text" id="progress-text">0 / 0 uploaded</div>
+            </div>
+
+            <div class="log" id="log" style="margin-top: 1rem; display: none;"></div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+
+    <script>
+        // Seed sounds data
+        const SEED_SOUNDS = [
+            // Classic
+            { name: 'Classic Beep', description: 'Simple and clean beep sound', category: 'classic', type: 'beep' },
+            { name: 'Gentle Chime', description: 'Soft melodic chime', category: 'classic', type: 'chime' },
+            { name: 'Double Beep', description: 'Two quick beeps for confirmation', category: 'classic', type: 'beep' },
+            { name: 'Zen Bell', description: 'Peaceful meditation bell tone', category: 'classic', type: 'chime' },
+            { name: 'Pocket Watch', description: 'Vintage timepiece tick', category: 'classic', type: 'beep' },
+
+            // Modern
+            { name: 'Digital Confirmation', description: 'Modern digital sound with a tech feel', category: 'modern', type: 'chirp' },
+            { name: 'Smooth Lock', description: 'Sleek modern locking sound', category: 'modern', type: 'beep' },
+            { name: 'Tech Pulse', description: 'Electronic pulse for the modern Tesla owner', category: 'modern', type: 'chirp' },
+            { name: 'Stealth Mode', description: 'Subtle confirmation for the discreet driver', category: 'modern', type: 'beep' },
+            { name: 'Neon Pulse', description: '80s inspired electronic sound', category: 'modern', type: 'chirp' },
+
+            // Futuristic
+            { name: 'Sci-Fi Chirp', description: 'Sound straight from a spaceship', category: 'futuristic', type: 'chirp' },
+            { name: 'Cyber Lock', description: 'Cyberpunk-inspired locking sound', category: 'futuristic', type: 'chirp' },
+            { name: 'Space Confirmation', description: 'Like locking your car on Mars', category: 'futuristic', type: 'chirp' },
+            { name: 'Robot Friend', description: 'Your car says hello in robot', category: 'futuristic', type: 'boing' },
+            { name: 'Electric Dreams', description: 'Synthwave-inspired confirmation', category: 'futuristic', type: 'chirp' },
+
+            // Funny
+            { name: 'Cartoon Boing', description: 'Fun bouncy sound that makes people smile', category: 'funny', type: 'boing' },
+            { name: 'Video Game Power Up', description: 'Classic 8-bit power up sound', category: 'funny', type: 'chime' },
+            { name: 'Duck Quack', description: 'Quack quack! Your car is now a duck', category: 'funny', type: 'boing' },
+            { name: 'Arcade Classic', description: 'Nostalgic gaming vibes', category: 'funny', type: 'chime' },
+            { name: 'Coin Drop', description: 'Satisfying coin collection sound', category: 'funny', type: 'chime' },
+
+            // Musical
+            { name: 'Piano Note', description: 'Single elegant piano key press', category: 'musical', type: 'chime' },
+            { name: 'Guitar Strum', description: 'Quick acoustic guitar strum', category: 'musical', type: 'chime' },
+            { name: 'Orchestral Hit', description: 'Dramatic orchestral accent', category: 'musical', type: 'chime' },
+            { name: 'Symphony Snippet', description: 'A touch of classical elegance', category: 'musical', type: 'chime' },
+            { name: 'Harp Gliss', description: 'Angelic harp glissando', category: 'musical', type: 'chime' },
+
+            // Custom
+            { name: 'Minimalist Click', description: 'Ultra-minimal, barely-there click', category: 'custom', type: 'beep' },
+            { name: 'Luxury Tone', description: 'Premium feel for your premium car', category: 'custom', type: 'chime' },
+            { name: 'Nature Whisper', description: 'Gentle wind-like sound', category: 'custom', type: 'chirp' },
+            { name: 'Bird Song', description: 'Quick chirp from nature', category: 'custom', type: 'chirp' },
+            { name: 'Thunder Rumble', description: 'Dramatic low thunder for impact', category: 'custom', type: 'boing' }
+        ];
+
+        let db = null;
+        let storage = null;
+        let isUploading = false;
+        let uploadedCount = 0;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            checkFirebase();
+            renderSeedPreview();
+        });
+
+        // Check Firebase connection
+        async function checkFirebase() {
+            const statusEl = document.getElementById('firebase-status');
+
+            try {
+                // Try to initialize Firebase
+                if (!firebase.apps.length) {
+                    // You need to add your Firebase config here
+                    const firebaseConfig = {
+                        // Add your Firebase config
+                        apiKey: "YOUR_API_KEY",
+                        authDomain: "YOUR_PROJECT.firebaseapp.com",
+                        projectId: "YOUR_PROJECT_ID",
+                        storageBucket: "YOUR_PROJECT.appspot.com",
+                        messagingSenderId: "YOUR_SENDER_ID",
+                        appId: "YOUR_APP_ID"
+                    };
+
+                    firebase.initializeApp(firebaseConfig);
+                }
+
+                db = firebase.firestore();
+                storage = firebase.storage();
+
+                // Test connection
+                await db.collection('sounds').limit(1).get();
+
+                statusEl.innerHTML = '<span style="color: var(--color-success);">Firebase Connected</span>';
+                document.getElementById('btn-upload').disabled = false;
+            } catch (error) {
+                statusEl.innerHTML = `<span style="color: var(--color-error);">Firebase Error: ${error.message}</span>
+                    <br><small>Make sure to configure Firebase credentials in this file.</small>`;
+                document.getElementById('btn-upload').disabled = true;
+            }
+        }
+
+        // Render seed preview
+        function renderSeedPreview() {
+            const previewEl = document.getElementById('sound-preview');
+            const categories = new Set();
+
+            previewEl.innerHTML = SEED_SOUNDS.map(sound => {
+                categories.add(sound.category);
+                return `
+                    <div class="sound-card">
+                        <div class="sound-name">${sound.name}</div>
+                        <div class="sound-category">${sound.category}</div>
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('stat-total').textContent = SEED_SOUNDS.length;
+            document.getElementById('stat-categories').textContent = categories.size;
+        }
+
+        // Generate WAV audio
+        function generateWav(type, duration = 2.5) {
+            const sampleRate = 44100;
+            const numSamples = Math.floor(sampleRate * duration);
+            const audioData = new Float32Array(numSamples);
+
+            switch (type) {
+                case 'beep':
+                    generateBeep(audioData, sampleRate, 880);
+                    break;
+                case 'chime':
+                    generateChime(audioData, sampleRate);
+                    break;
+                case 'chirp':
+                    generateChirp(audioData, sampleRate);
+                    break;
+                case 'boing':
+                    generateBoing(audioData, sampleRate);
+                    break;
+                default:
+                    generateBeep(audioData, sampleRate, 440);
+            }
+
+            return encodeWav(audioData, sampleRate);
+        }
+
+        function generateBeep(data, sampleRate, freq) {
+            const duration = data.length / sampleRate;
+            for (let i = 0; i < data.length; i++) {
+                const t = i / sampleRate;
+                const envelope = Math.min(1, t * 20) * Math.min(1, (duration - t) * 20);
+                data[i] = Math.sin(2 * Math.PI * freq * t) * envelope * 0.8;
+            }
+        }
+
+        function generateChime(data, sampleRate) {
+            const freqs = [523.25, 659.25, 783.99];
+            for (let i = 0; i < data.length; i++) {
+                const t = i / sampleRate;
+                const envelope = Math.min(1, t * 10) * Math.exp(-t * 2);
+                let sample = 0;
+                freqs.forEach((freq, idx) => {
+                    const delay = idx * 0.1;
+                    if (t > delay) {
+                        sample += Math.sin(2 * Math.PI * freq * (t - delay)) * Math.exp(-(t - delay) * 3);
+                    }
+                });
+                data[i] = (sample / freqs.length) * envelope * 0.7;
+            }
+        }
+
+        function generateChirp(data, sampleRate) {
+            const duration = data.length / sampleRate;
+            for (let i = 0; i < data.length; i++) {
+                const t = i / sampleRate;
+                const freq = 400 + (t / duration) * 800;
+                const envelope = Math.min(1, t * 20) * Math.exp(-t * 1.5);
+                data[i] = Math.sin(2 * Math.PI * freq * t) * envelope * 0.6;
+            }
+        }
+
+        function generateBoing(data, sampleRate) {
+            for (let i = 0; i < data.length; i++) {
+                const t = i / sampleRate;
+                const bounce = Math.abs(Math.sin(t * 15)) * Math.exp(-t * 2);
+                const freq = 200 + bounce * 600;
+                const envelope = Math.exp(-t * 1.2);
+                data[i] = Math.sin(2 * Math.PI * freq * t) * envelope * 0.7;
+            }
+        }
+
+        function encodeWav(samples, sampleRate) {
+            const buffer = new ArrayBuffer(44 + samples.length * 2);
+            const view = new DataView(buffer);
+
+            // WAV header
+            writeString(view, 0, 'RIFF');
+            view.setUint32(4, 36 + samples.length * 2, true);
+            writeString(view, 8, 'WAVE');
+            writeString(view, 12, 'fmt ');
+            view.setUint32(16, 16, true);
+            view.setUint16(20, 1, true);
+            view.setUint16(22, 1, true);
+            view.setUint32(24, sampleRate, true);
+            view.setUint32(28, sampleRate * 2, true);
+            view.setUint16(32, 2, true);
+            view.setUint16(34, 16, true);
+            writeString(view, 36, 'data');
+            view.setUint32(40, samples.length * 2, true);
+
+            // Audio data
+            for (let i = 0; i < samples.length; i++) {
+                const sample = Math.max(-1, Math.min(1, samples[i]));
+                view.setInt16(44 + i * 2, sample * 32767, true);
+            }
+
+            return new Blob([buffer], { type: 'audio/wav' });
+        }
+
+        function writeString(view, offset, string) {
+            for (let i = 0; i < string.length; i++) {
+                view.setUint8(offset + i, string.charCodeAt(i));
+            }
+        }
+
+        // Start upload process
+        async function startUpload() {
+            if (!db || !storage) {
+                alert('Firebase not connected');
+                return;
+            }
+
+            isUploading = true;
+            uploadedCount = 0;
+
+            const count = parseInt(document.getElementById('upload-count').value) || 30;
+            const useRandomStats = document.getElementById('opt-random-stats').checked;
+            const staggerDates = document.getElementById('opt-stagger-dates').checked;
+
+            document.getElementById('btn-upload').disabled = true;
+            document.getElementById('btn-stop').disabled = false;
+            document.getElementById('progress').style.display = 'block';
+            document.getElementById('log').style.display = 'block';
+            document.getElementById('log').innerHTML = '';
+
+            const soundsToUpload = SEED_SOUNDS.slice(0, count);
+
+            for (let i = 0; i < soundsToUpload.length; i++) {
+                if (!isUploading) break;
+
+                const sound = soundsToUpload[i];
+                await uploadSound(sound, i, soundsToUpload.length, useRandomStats, staggerDates);
+
+                // Update progress
+                uploadedCount = i + 1;
+                const percent = Math.round((uploadedCount / soundsToUpload.length) * 100);
+                document.getElementById('progress-fill').style.width = `${percent}%`;
+                document.getElementById('progress-text').textContent = `${uploadedCount} / ${soundsToUpload.length} uploaded`;
+                document.getElementById('stat-uploaded').textContent = uploadedCount;
+
+                // Small delay between uploads
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+
+            isUploading = false;
+            document.getElementById('btn-upload').disabled = false;
+            document.getElementById('btn-stop').disabled = true;
+
+            log('Upload complete!', 'success');
+        }
+
+        // Stop upload
+        function stopUpload() {
+            isUploading = false;
+            document.getElementById('btn-stop').disabled = true;
+            log('Upload stopped by user', 'error');
+        }
+
+        // Upload single sound
+        async function uploadSound(sound, index, total, useRandomStats, staggerDates) {
+            try {
+                log(`Uploading ${sound.name}...`);
+
+                // Generate audio
+                const wavBlob = generateWav(sound.type);
+
+                // Create unique filename
+                const filename = `seed-${Date.now()}-${index}.wav`;
+                const storageRef = storage.ref().child(`sounds/${filename}`);
+
+                // Upload to storage
+                await storageRef.put(wavBlob);
+                const downloadUrl = await storageRef.getDownloadURL();
+
+                // Calculate random stats if enabled
+                const likes = useRandomStats ? Math.floor(Math.random() * 50) + 5 : 0;
+                const downloads = useRandomStats ? Math.floor(Math.random() * 100) + 10 : 0;
+
+                // Calculate staggered date
+                const daysAgo = staggerDates ? Math.floor(index / 5) : 0;
+                const createdAt = new Date();
+                createdAt.setDate(createdAt.getDate() - daysAgo);
+
+                // Save to Firestore
+                await db.collection('sounds').add({
+                    name: sound.name,
+                    description: sound.description,
+                    category: sound.category,
+                    downloadUrl: downloadUrl,
+                    filename: filename,
+                    fileSize: wavBlob.size,
+                    duration: 2.5,
+                    likes: likes,
+                    downloads: downloads,
+                    creatorId: 'seed-bot',
+                    creatorName: 'Tesla Sound Bot',
+                    createdAt: firebase.firestore.Timestamp.fromDate(createdAt),
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                log(`Uploaded: ${sound.name}`, 'success');
+            } catch (error) {
+                log(`Failed: ${sound.name} - ${error.message}`, 'error');
+            }
+        }
+
+        // Log message
+        function log(message, type = '') {
+            const logEl = document.getElementById('log');
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logEl.appendChild(entry);
+            logEl.scrollTop = logEl.scrollHeight;
+        }
+    </script>
+</body>
+</html>
