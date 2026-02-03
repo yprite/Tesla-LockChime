@@ -73,10 +73,31 @@ class TeslaLockSoundApp {
             // Gallery elements
             gallerySection: document.getElementById('gallery-section'),
             galleryGrid: document.getElementById('gallery-grid'),
-            gallerySort: document.getElementById('gallery-sort'),
-            galleryLoadMore: document.getElementById('gallery-load-more'),
-            galleryStats: document.getElementById('gallery-stats')
+            gallerySort: document.getElementById('gallery-sort-select'),
+            galleryCategory: document.getElementById('gallery-category-select'),
+            gallerySearch: document.getElementById('gallery-search'),
+            gallerySearchBtn: document.getElementById('btn-gallery-search'),
+            galleryLoadMore: document.getElementById('btn-gallery-load-more'),
+            galleryStats: document.getElementById('gallery-stats'),
+            galleryEmpty: document.getElementById('gallery-empty'),
+            statTotalSounds: document.getElementById('stat-total-sounds'),
+            statTotalDownloads: document.getElementById('stat-total-downloads'),
+
+            // Tab navigation
+            tabCreate: document.getElementById('tab-create'),
+            tabCommunity: document.getElementById('tab-community'),
+            panelCreate: document.getElementById('panel-create'),
+            panelCommunity: document.getElementById('panel-community'),
+            communityCount: document.getElementById('community-count'),
+
+            // Community CTA
+            btnBrowseCommunity: document.getElementById('btn-browse-community'),
+            featuredSounds: document.getElementById('featured-sounds'),
+            btnUploadSoundHero: document.getElementById('btn-upload-sound-hero')
         };
+
+        // Current tab
+        this.currentTab = 'create';
 
         this.init();
     }
@@ -115,6 +136,9 @@ class TeslaLockSoundApp {
         // Set up upload functionality
         this.setupUpload();
 
+        // Set up tab navigation
+        this.setupTabs();
+
         // Initialize gallery
         await this.initGallery();
 
@@ -123,15 +147,144 @@ class TeslaLockSoundApp {
     }
 
     /**
+     * Set up tab navigation
+     */
+    setupTabs() {
+        // Tab click handlers
+        if (this.elements.tabCreate) {
+            this.elements.tabCreate.addEventListener('click', () => this.switchTab('create'));
+        }
+        if (this.elements.tabCommunity) {
+            this.elements.tabCommunity.addEventListener('click', () => this.switchTab('community'));
+        }
+
+        // Browse community button in Step 1
+        if (this.elements.btnBrowseCommunity) {
+            this.elements.btnBrowseCommunity.addEventListener('click', () => this.switchTab('community'));
+        }
+
+        // Upload sound button in gallery hero
+        if (this.elements.btnUploadSoundHero) {
+            this.elements.btnUploadSoundHero.addEventListener('click', () => {
+                if (this.selectedSound && this.audioProcessor.getDuration() > 0) {
+                    this.uploadToGallery();
+                } else {
+                    this.switchTab('create');
+                    this.showToast('Create a sound first, then upload it to the gallery!', 'info');
+                }
+            });
+        }
+    }
+
+    /**
+     * Switch between tabs
+     */
+    switchTab(tab) {
+        this.currentTab = tab;
+
+        // Update tab buttons
+        if (this.elements.tabCreate) {
+            this.elements.tabCreate.classList.toggle('active', tab === 'create');
+            this.elements.tabCreate.setAttribute('aria-selected', tab === 'create');
+        }
+        if (this.elements.tabCommunity) {
+            this.elements.tabCommunity.classList.toggle('active', tab === 'community');
+            this.elements.tabCommunity.setAttribute('aria-selected', tab === 'community');
+        }
+
+        // Update panels
+        if (this.elements.panelCreate) {
+            this.elements.panelCreate.classList.toggle('active', tab === 'create');
+            this.elements.panelCreate.style.display = tab === 'create' ? 'block' : 'none';
+        }
+        if (this.elements.panelCommunity) {
+            this.elements.panelCommunity.classList.toggle('active', tab === 'community');
+            this.elements.panelCommunity.style.display = tab === 'community' ? 'block' : 'none';
+        }
+
+        // Load gallery if switching to community tab
+        if (tab === 'community' && this.gallery.isAvailable()) {
+            this.loadGallerySounds(false);
+        }
+
+        this.trackEvent('tab_switch', { tab });
+    }
+
+    /**
      * Initialize gallery functionality
      */
     async initGallery() {
         const initialized = await this.gallery.init();
 
-        if (initialized && this.elements.gallerySection) {
-            this.elements.gallerySection.style.display = 'block';
-            await this.loadGallerySounds();
+        if (initialized) {
+            // Load featured sounds for the CTA
+            await this.loadFeaturedSounds();
+
+            // Setup gallery event listeners
             this.setupGalleryListeners();
+
+            // Update community count badge
+            await this.updateCommunityBadge();
+        } else {
+            // Hide community elements if gallery not available
+            if (this.elements.tabCommunity) {
+                this.elements.tabCommunity.style.display = 'none';
+            }
+            const communityCta = document.getElementById('community-cta');
+            if (communityCta) {
+                communityCta.style.display = 'none';
+            }
+        }
+    }
+
+    /**
+     * Load featured sounds for the CTA section
+     */
+    async loadFeaturedSounds() {
+        if (!this.gallery.isAvailable() || !this.elements.featuredSounds) return;
+
+        try {
+            const { sounds } = await this.gallery.getPopularSounds(3);
+
+            if (sounds.length === 0) {
+                this.elements.featuredSounds.innerHTML = '<p class="featured-empty">No community sounds yet. Be the first to share!</p>';
+                return;
+            }
+
+            this.elements.featuredSounds.innerHTML = sounds.map(sound => `
+                <div class="featured-sound-card" data-sound-id="${sound.id}">
+                    <span class="featured-sound-icon">🎵</span>
+                    <div class="featured-sound-info">
+                        <div class="featured-sound-name">${this.escapeHtml(sound.name)}</div>
+                        <div class="featured-sound-meta">❤️ ${sound.likes || 0} • ⬇️ ${sound.downloads || 0}</div>
+                    </div>
+                </div>
+            `).join('');
+
+            // Add click handlers
+            this.elements.featuredSounds.querySelectorAll('.featured-sound-card').forEach(card => {
+                card.addEventListener('click', () => {
+                    this.handleGalleryUse(card.dataset.soundId);
+                });
+            });
+        } catch (error) {
+            console.error('Failed to load featured sounds:', error);
+        }
+    }
+
+    /**
+     * Update community count badge
+     */
+    async updateCommunityBadge() {
+        if (!this.gallery.isAvailable()) return;
+
+        try {
+            const stats = await this.gallery.getStats();
+            if (this.elements.communityCount && stats.totalSounds > 0) {
+                this.elements.communityCount.textContent = stats.totalSounds;
+            }
+        } catch (error) {
+            console.error('Failed to update community badge:', error);
         }
     }
 
@@ -143,32 +296,77 @@ class TeslaLockSoundApp {
 
         try {
             const sortBy = this.elements.gallerySort?.value || 'createdAt';
-            const options = {
-                sortBy: sortBy === 'popular' ? 'likes' : sortBy === 'downloads' ? 'downloads' : 'createdAt',
-                startAfter: append ? this.gallery.lastDoc : null
-            };
+            const category = this.elements.galleryCategory?.value || 'all';
+            const searchQuery = this.elements.gallerySearch?.value?.trim() || '';
 
-            const { sounds, hasMore } = await this.gallery.getSounds(options);
+            // Show loading state
+            if (!append && this.elements.galleryEmpty) {
+                this.elements.galleryEmpty.innerHTML = '<p>Loading community sounds...</p>';
+                this.elements.galleryEmpty.style.display = 'block';
+            }
+
+            let sounds, hasMore;
+
+            if (searchQuery) {
+                // Search mode
+                const result = await this.gallery.searchSounds(searchQuery);
+                sounds = result.sounds;
+                hasMore = false;
+            } else {
+                // Normal browsing
+                const options = {
+                    sortBy: sortBy,
+                    category: category,
+                    startAfter: append ? this.gallery.lastDoc : null
+                };
+
+                const result = await this.gallery.getSounds(options);
+                sounds = result.sounds;
+                hasMore = result.hasMore;
+            }
 
             if (!append) {
                 this.elements.galleryGrid.innerHTML = '';
             }
 
-            sounds.forEach(sound => {
-                this.elements.galleryGrid.appendChild(this.createGalleryCard(sound));
-            });
+            if (sounds.length === 0 && !append) {
+                if (this.elements.galleryEmpty) {
+                    this.elements.galleryEmpty.innerHTML = searchQuery
+                        ? '<p>No sounds found matching your search.</p>'
+                        : '<p>No sounds in this category yet. Be the first to share!</p>';
+                    this.elements.galleryEmpty.style.display = 'block';
+                }
+            } else {
+                if (this.elements.galleryEmpty) {
+                    this.elements.galleryEmpty.style.display = 'none';
+                }
 
-            if (this.elements.galleryLoadMore) {
-                this.elements.galleryLoadMore.style.display = hasMore ? 'block' : 'none';
+                sounds.forEach(sound => {
+                    this.elements.galleryGrid.appendChild(this.createGalleryCard(sound));
+                });
             }
 
-            // Update stats
+            if (this.elements.galleryLoadMore) {
+                this.elements.galleryLoadMore.style.display = hasMore ? 'inline-block' : 'none';
+            }
+
+            // Update stats in hero section
             const stats = await this.gallery.getStats();
-            if (this.elements.galleryStats) {
-                this.elements.galleryStats.textContent = `${stats.totalSounds} sounds shared`;
+            if (this.elements.statTotalSounds) {
+                this.elements.statTotalSounds.textContent = stats.totalSounds;
+            }
+            if (this.elements.statTotalDownloads) {
+                this.elements.statTotalDownloads.textContent = stats.totalDownloads;
+            }
+            if (this.elements.communityCount && stats.totalSounds > 0) {
+                this.elements.communityCount.textContent = stats.totalSounds;
             }
         } catch (error) {
             console.error('Failed to load gallery:', error);
+            if (this.elements.galleryEmpty) {
+                this.elements.galleryEmpty.innerHTML = '<p>Failed to load gallery. Please try again.</p>';
+                this.elements.galleryEmpty.style.display = 'block';
+            }
         }
     }
 
@@ -230,18 +428,44 @@ class TeslaLockSoundApp {
      * Set up gallery event listeners
      */
     setupGalleryListeners() {
+        // Sort dropdown
         if (this.elements.gallerySort) {
             this.elements.gallerySort.addEventListener('change', () => {
                 this.loadGallerySounds(false);
             });
         }
 
+        // Category dropdown
+        if (this.elements.galleryCategory) {
+            this.elements.galleryCategory.addEventListener('change', () => {
+                this.loadGallerySounds(false);
+            });
+        }
+
+        // Search button
+        if (this.elements.gallerySearchBtn) {
+            this.elements.gallerySearchBtn.addEventListener('click', () => {
+                this.loadGallerySounds(false);
+            });
+        }
+
+        // Search input enter key
+        if (this.elements.gallerySearch) {
+            this.elements.gallerySearch.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    this.loadGallerySounds(false);
+                }
+            });
+        }
+
+        // Load more button
         if (this.elements.galleryLoadMore) {
             this.elements.galleryLoadMore.addEventListener('click', () => {
                 this.loadGallerySounds(true);
             });
         }
 
+        // Upload to gallery button (in Step 3)
         if (this.elements.btnUploadToGallery) {
             this.elements.btnUploadToGallery.addEventListener('click', () => {
                 this.uploadToGallery();

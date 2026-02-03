@@ -108,9 +108,31 @@
         </div>
     </aside>
 
+    <!-- Main Tab Navigation -->
+    <nav class="main-tabs" role="tablist" aria-label="Main navigation">
+        <button class="tab-btn active"
+                id="tab-create"
+                role="tab"
+                aria-selected="true"
+                aria-controls="panel-create">
+            <span class="tab-icon" aria-hidden="true">🎨</span>
+            <span class="tab-text">Create Sound</span>
+        </button>
+        <button class="tab-btn"
+                id="tab-community"
+                role="tab"
+                aria-selected="false"
+                aria-controls="panel-community">
+            <span class="tab-icon" aria-hidden="true">🌐</span>
+            <span class="tab-text">Community Gallery</span>
+            <span class="tab-badge" id="community-count"></span>
+        </button>
+    </nav>
 
     <!-- Main Content -->
     <main class="main-content" id="main-content" role="main">
+        <!-- Tab Panel: Create Sound -->
+        <div class="tab-panel active" id="panel-create" role="tabpanel" aria-labelledby="tab-create">
         <!-- Step 1: Select Sound -->
         <section class="step-section" id="step-select" aria-labelledby="step1-heading">
             <div class="step-header">
@@ -133,6 +155,26 @@
 
             <div class="sound-grid" id="sound-grid" role="listbox" aria-label="Available sounds">
                 <!-- Sound cards will be populated by JavaScript -->
+            </div>
+
+            <!-- Community CTA in Step 1 -->
+            <div class="community-cta" id="community-cta">
+                <div class="community-cta-divider">
+                    <span>Or explore community sounds</span>
+                </div>
+                <div class="community-cta-content">
+                    <div class="community-cta-info">
+                        <h3>🌐 Community Gallery</h3>
+                        <p>Discover sounds created by other Tesla owners</p>
+                    </div>
+                    <button class="btn btn-secondary" id="btn-browse-community">
+                        Browse Gallery →
+                    </button>
+                </div>
+                <!-- Featured Community Sounds Preview -->
+                <div class="featured-sounds" id="featured-sounds">
+                    <!-- Will be populated by JavaScript -->
+                </div>
             </div>
         </section>
 
@@ -302,12 +344,35 @@
             </button>
         </section>
 
+        </div><!-- End of panel-create -->
+
+        <!-- Tab Panel: Community Gallery -->
+        <div class="tab-panel" id="panel-community" role="tabpanel" aria-labelledby="tab-community" style="display: none;">
+
         <!-- Community Gallery Section -->
-        <section class="step-section gallery-section" id="gallery-section" aria-labelledby="gallery-heading">
-            <div class="step-header">
-                <span class="step-number gallery-number" aria-hidden="true">🌐</span>
-                <h2 id="gallery-heading">Community Gallery</h2>
-                <div class="gallery-stats" id="gallery-stats" role="status"></div>
+        <section class="gallery-section" id="gallery-section" aria-labelledby="gallery-heading">
+            <!-- Gallery Hero Header -->
+            <div class="gallery-hero">
+                <div class="gallery-hero-content">
+                    <h2 id="gallery-heading">
+                        <span aria-hidden="true">🌐</span>
+                        Community Gallery
+                    </h2>
+                    <p class="gallery-hero-subtitle">Discover and share custom Tesla lock sounds with owners worldwide</p>
+                    <div class="gallery-stats-bar" id="gallery-stats" role="status">
+                        <div class="stat-item">
+                            <span class="stat-number" id="stat-total-sounds">0</span>
+                            <span class="stat-label">Sounds</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number" id="stat-total-downloads">0</span>
+                            <span class="stat-label">Downloads</span>
+                        </div>
+                    </div>
+                </div>
+                <button class="btn btn-primary" id="btn-upload-sound-hero">
+                    <span aria-hidden="true">📤</span> Upload Your Sound
+                </button>
             </div>
 
             <div class="gallery-controls">
@@ -355,6 +420,8 @@
                 </button>
             </div>
         </section>
+
+        </div><!-- End of panel-community -->
 
         <!-- Loading Overlay -->
         <div class="loading-overlay" id="loading-overlay" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="loading-text">
