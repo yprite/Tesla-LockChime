@@ -1,0 +1,19 @@
+{
+    "hosting": {
+      "public": ".",
+      "ignore": [
+        "firebase.json",
+        "**/.*",
+        "**/node_modules/**",
+        "tests/**",
+        "src/**",
+        "doc/**",
+        "*.md",
+        "package*.json",
+        "vitest.config.js"
+      ]
+    },
+    "firestore": {
+      "rules": "firestore.rules"
+    }
+  }

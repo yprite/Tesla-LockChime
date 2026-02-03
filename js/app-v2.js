@@ -120,11 +120,18 @@ class TeslaLockSoundAppV2 {
     }
 
     async initGallery() {
-        const initialized = await this.gallery.init();
-        if (initialized) {
-            await this.loadGallerySounds();
-            await this.updateStats();
-        } else {
+        try {
+            const initialized = await this.gallery.init();
+            console.log('Gallery initialized:', initialized);
+            if (initialized) {
+                await this.loadGallerySounds();
+                await this.updateStats();
+            } else {
+                console.warn('Gallery initialization failed');
+                this.showEmptyState();
+            }
+        } catch (error) {
+            console.error('Gallery init error:', error);
             this.showEmptyState();
         }
     }
@@ -266,13 +273,14 @@ class TeslaLockSoundAppV2 {
 
     async loadGallerySounds(append = false) {
         if (!this.gallery.isAvailable()) {
+            console.warn('Gallery not available');
             this.showEmptyState();
             return;
         }
 
         try {
             if (!append) {
-                this.elements.soundsGrid.innerHTML = '';
+                this.elements.soundsGrid.innerHTML = '<div class="loading-placeholder">Loading sounds...</div>';
             }
 
             const options = {
@@ -286,6 +294,10 @@ class TeslaLockSoundAppV2 {
                 result = await this.gallery.searchSounds(this.state.searchQuery);
             } else {
                 result = await this.gallery.getSounds(options);
+            }
+
+            if (!append) {
+                this.elements.soundsGrid.innerHTML = '';
             }
 
             if (result.sounds.length === 0 && !append) {
@@ -302,7 +314,12 @@ class TeslaLockSoundAppV2 {
                 this.elements.loadMoreSection.style.display = result.hasMore ? 'block' : 'none';
             }
         } catch (error) {
-            this.showToast('Failed to load sounds', 'error');
+            console.error('Failed to load gallery sounds:', error);
+            if (!append) {
+                this.elements.soundsGrid.innerHTML = '';
+            }
+            this.showEmptyState();
+            this.showToast('Failed to load sounds: ' + error.message, 'error');
         }
     }
 
