@@ -87,9 +87,19 @@
         <div class="header-content">
             <h1 class="logo">
                 <span aria-hidden="true">🔔</span>
-                Tesla Lock Sound Creator
+                <span data-i18n="header.title">Tesla Lock Sound Creator</span>
             </h1>
-            <span class="free-badge" aria-label="This tool is 100% free">100% Free</span>
+            <div class="header-right">
+                <span class="free-badge" aria-label="This tool is 100% free" data-i18n="header.free">100% Free</span>
+                <div class="language-selector">
+                    <select id="language-select" aria-label="Select language">
+                        <option value="en">🇺🇸 EN</option>
+                        <option value="ko">🇰🇷 KO</option>
+                        <option value="ja">🇯🇵 JA</option>
+                        <option value="zh">🇨🇳 ZH</option>
+                    </select>
+                </div>
+            </div>
         </div>
         <!-- Ad Container - Header -->
         <div class="ad-container ad-header" id="ad-header" role="complementary" aria-label="Advertisement">
@@ -103,8 +113,8 @@
     <aside class="compatibility-notice" id="compatibility-notice" role="alert" aria-live="polite">
         <div class="notice-icon" aria-hidden="true">⚠️</div>
         <div class="notice-content">
-            <strong>PC Only - Chrome or Edge Required</strong>
-            <p>This tool uses the File System Access API which is only available in Chrome and Edge on desktop computers. Safari, Firefox, and mobile browsers are not supported.</p>
+            <strong data-i18n="header.compatibility">PC Only - Chrome or Edge Required</strong>
+            <p data-i18n="header.compatibilityNote">This tool uses the File System Access API which is only available in Chrome and Edge on desktop computers. Safari, Firefox, and mobile browsers are not supported.</p>
         </div>
     </aside>
 
@@ -116,7 +126,7 @@
                 aria-selected="true"
                 aria-controls="panel-create">
             <span class="tab-icon" aria-hidden="true">🎨</span>
-            <span class="tab-text">Create Sound</span>
+            <span class="tab-text" data-i18n="nav.createSound">Create Sound</span>
         </button>
         <button class="tab-btn"
                 id="tab-community"
@@ -124,7 +134,7 @@
                 aria-selected="false"
                 aria-controls="panel-community">
             <span class="tab-icon" aria-hidden="true">🌐</span>
-            <span class="tab-text">Community Gallery</span>
+            <span class="tab-text" data-i18n="nav.gallery">Community Gallery</span>
             <span class="tab-badge" id="community-count"></span>
         </button>
     </nav>
@@ -137,18 +147,18 @@
         <section class="step-section" id="step-select" aria-labelledby="step1-heading">
             <div class="step-header">
                 <span class="step-number" aria-hidden="true">1</span>
-                <h2 id="step1-heading">Select a Sound</h2>
+                <h2 id="step1-heading" data-i18n="step1.title">Select a Sound</h2>
             </div>
 
             <!-- Upload Your Own -->
             <div class="upload-section" id="upload-section">
                 <div class="upload-divider">
-                    <span>Or upload your own audio</span>
+                    <span data-i18n="upload.divider">Or upload your own audio</span>
                 </div>
                 <div class="upload-zone" id="upload-zone" role="button" tabindex="0" aria-label="Upload your own audio file">
                     <div class="upload-icon" aria-hidden="true">📁</div>
-                    <p class="upload-text"><strong>Click to upload</strong> or drag and drop</p>
-                    <p class="upload-hint">WAV, MP3, M4A, OGG (max 10MB)</p>
+                    <p class="upload-text"><strong data-i18n="upload.click">Click to upload</strong> <span data-i18n="upload.dragDrop">or drag and drop</span></p>
+                    <p class="upload-hint" data-i18n="upload.formats">WAV, MP3, M4A, OGG (max 10MB)</p>
                     <input type="file" id="file-upload" accept=".wav,.mp3,.m4a,.ogg,audio/*" hidden aria-hidden="true">
                 </div>
             </div>
@@ -160,14 +170,14 @@
             <!-- Community CTA in Step 1 -->
             <div class="community-cta" id="community-cta">
                 <div class="community-cta-divider">
-                    <span>Or explore community sounds</span>
+                    <span data-i18n="upload.explore">Or explore community sounds</span>
                 </div>
                 <div class="community-cta-content">
                     <div class="community-cta-info">
-                        <h3>🌐 Community Gallery</h3>
-                        <p>Discover sounds created by other Tesla owners</p>
+                        <h3>🌐 <span data-i18n="nav.gallery">Community Gallery</span></h3>
+                        <p data-i18n="gallery.subtitle">Discover sounds created by other Tesla owners</p>
                     </div>
-                    <button class="btn btn-secondary" id="btn-browse-community">
+                    <button class="btn btn-secondary" id="btn-browse-community" data-i18n="nav.browseGallery">
                         Browse Gallery →
                     </button>
                 </div>
@@ -182,8 +192,8 @@
         <section class="step-section" id="step-trim" style="display: none;" aria-labelledby="step2-heading">
             <div class="step-header">
                 <span class="step-number" aria-hidden="true">2</span>
-                <h2 id="step2-heading">Trim Your Sound</h2>
-                <span class="duration-info" role="note">Duration must be 2-5 seconds</span>
+                <h2 id="step2-heading" data-i18n="step2.title">Trim Your Sound</h2>
+                <span class="duration-info" role="note" data-i18n="step2.duration">Duration must be 2-5 seconds</span>
             </div>
 
             <div class="trim-container">
@@ -212,48 +222,48 @@
                 <div class="trim-controls">
                     <div class="time-inputs">
                         <div class="time-input-group">
-                            <label for="start-time">Start</label>
+                            <label for="start-time" data-i18n="form.start">Start</label>
                             <input type="number"
                                    id="start-time"
                                    min="0"
                                    step="0.1"
                                    value="0"
                                    aria-describedby="start-time-desc">
-                            <span class="time-unit" id="start-time-desc">sec</span>
+                            <span class="time-unit" id="start-time-desc" data-i18n="form.sec">sec</span>
                         </div>
                         <div class="time-input-group">
-                            <label for="end-time">End</label>
+                            <label for="end-time" data-i18n="form.end">End</label>
                             <input type="number"
                                    id="end-time"
                                    min="0"
                                    step="0.1"
                                    value="3"
                                    aria-describedby="end-time-desc">
-                            <span class="time-unit" id="end-time-desc">sec</span>
+                            <span class="time-unit" id="end-time-desc" data-i18n="form.sec">sec</span>
                         </div>
                         <div class="duration-display" role="status" aria-live="polite">
-                            <label>Duration</label>
+                            <label data-i18n="form.duration">Duration</label>
                             <span id="duration-value">3.0</span>
-                            <span class="time-unit">sec</span>
+                            <span class="time-unit" data-i18n="form.sec">sec</span>
                         </div>
                     </div>
 
                     <div class="playback-controls" role="group" aria-label="Playback controls">
                         <button class="btn btn-secondary" id="btn-preview" aria-label="Preview full sound">
-                            <span class="btn-icon" aria-hidden="true">▶</span> Preview
+                            <span class="btn-icon" aria-hidden="true">▶</span> <span data-i18n="btn.preview">Preview</span>
                         </button>
                         <button class="btn btn-secondary" id="btn-preview-trimmed" aria-label="Preview trimmed portion">
-                            <span class="btn-icon" aria-hidden="true">▶</span> Preview Trimmed
+                            <span class="btn-icon" aria-hidden="true">▶</span> <span data-i18n="btn.previewTrimmed">Preview Trimmed</span>
                         </button>
                         <button class="btn btn-outline" id="btn-change-sound" aria-label="Go back and choose a different sound">
-                            <span aria-hidden="true">←</span> Change Sound
+                            <span data-i18n="btn.changeSound">← Change Sound</span>
                         </button>
                     </div>
                 </div>
 
                 <!-- Volume Control -->
                 <div class="volume-control">
-                    <label for="volume-slider">Volume</label>
+                    <label for="volume-slider" data-i18n="form.volume">Volume</label>
                     <input type="range"
                            id="volume-slider"
                            min="0"
@@ -266,14 +276,14 @@
                 <!-- Fade Options -->
                 <div class="fade-controls">
                     <div class="fade-option">
-                        <label for="fade-in">Fade In</label>
+                        <label for="fade-in" data-i18n="form.fadeIn">Fade In</label>
                         <input type="number" id="fade-in" min="0" max="1" step="0.1" value="0">
-                        <span class="time-unit">sec</span>
+                        <span class="time-unit" data-i18n="form.sec">sec</span>
                     </div>
                     <div class="fade-option">
-                        <label for="fade-out">Fade Out</label>
+                        <label for="fade-out" data-i18n="form.fadeOut">Fade Out</label>
                         <input type="number" id="fade-out" min="0" max="1" step="0.1" value="0">
-                        <span class="time-unit">sec</span>
+                        <span class="time-unit" data-i18n="form.sec">sec</span>
                     </div>
                 </div>
             </div>
@@ -285,7 +295,7 @@
         <section class="step-section" id="step-save" style="display: none;" aria-labelledby="step3-heading">
             <div class="step-header">
                 <span class="step-number" aria-hidden="true">3</span>
-                <h2 id="step3-heading">Save & Share</h2>
+                <h2 id="step3-heading" data-i18n="step3.title">Save & Share</h2>
             </div>
 
             <div class="save-container">
@@ -299,23 +309,23 @@
 
                 <div class="save-actions">
                     <button class="btn btn-primary btn-large" id="btn-save-usb" aria-describedby="save-hint">
-                        <span class="btn-icon" aria-hidden="true">💾</span> Save to USB Drive
+                        <span class="btn-icon" aria-hidden="true">💾</span> <span data-i18n="btn.saveUsb">Save to USB Drive</span>
                     </button>
 
                     <div class="gallery-upload-section">
-                        <p class="gallery-upload-label">Share to Community</p>
+                        <p class="gallery-upload-label" data-i18n="share.social">Share to Community</p>
                         <div class="gallery-upload-actions" role="group" aria-label="Gallery options">
                             <button class="btn btn-secondary" id="btn-upload-gallery" title="Upload to community gallery">
-                                <span class="btn-icon" aria-hidden="true">🌐</span> Upload to Gallery
+                                <span class="btn-icon" aria-hidden="true">🌐</span> <span data-i18n="btn.uploadGallery">Upload to Gallery</span>
                             </button>
                             <button class="btn btn-secondary" id="btn-download" title="Download WAV file">
-                                <span class="btn-icon" aria-hidden="true">⬇️</span> Download
+                                <span class="btn-icon" aria-hidden="true">⬇️</span> <span data-i18n="btn.download">Download</span>
                             </button>
                         </div>
                     </div>
                 </div>
 
-                <p class="save-hint" id="save-hint">
+                <p class="save-hint" id="save-hint" data-i18n="inst.usbHint">
                     You'll be prompted to select your USB drive. Choose the <strong>root folder</strong> of the USB drive.
                 </p>
             </div>
@@ -324,22 +334,22 @@
         <!-- Success Message -->
         <section class="step-section success-section" id="step-success" style="display: none;" aria-labelledby="success-heading" role="status">
             <div class="success-icon" aria-hidden="true">✓</div>
-            <h2 id="success-heading">Success!</h2>
-            <p>Your custom lock sound has been saved to the USB drive.</p>
+            <h2 id="success-heading" data-i18n="success.title">Success!</h2>
+            <p data-i18n="success.saved">Your custom lock sound has been saved to the USB drive.</p>
 
             <div class="instructions-card">
-                <h3>How to use in your Tesla:</h3>
+                <h3 data-i18n="inst.howTo">How to use in your Tesla:</h3>
                 <ol class="tesla-instructions">
-                    <li>Safely eject the USB drive from your computer</li>
-                    <li>Plug the USB drive into your Tesla's USB port</li>
-                    <li>On the touchscreen, go to <strong>Toybox</strong></li>
-                    <li>Select <strong>Boombox</strong></li>
-                    <li>Tap <strong>Lock Sound</strong></li>
-                    <li>Choose <strong>USB</strong> to use your custom sound</li>
+                    <li data-i18n="inst.step1">Safely eject the USB drive from your computer</li>
+                    <li data-i18n="inst.step2">Plug the USB drive into your Tesla's USB port</li>
+                    <li data-i18n="inst.step3">On the touchscreen, go to <strong>Toybox</strong></li>
+                    <li data-i18n="inst.step4">Select <strong>Boombox</strong></li>
+                    <li data-i18n="inst.step5">Tap <strong>Lock Sound</strong></li>
+                    <li data-i18n="inst.step6">Choose <strong>USB</strong> to use your custom sound</li>
                 </ol>
             </div>
 
-            <button class="btn btn-secondary" id="btn-create-another">
+            <button class="btn btn-secondary" id="btn-create-another" data-i18n="btn.createAnother">
                 Create Another Sound
             </button>
         </section>
@@ -356,30 +366,30 @@
                 <div class="gallery-hero-content">
                     <h2 id="gallery-heading">
                         <span aria-hidden="true">🌐</span>
-                        Community Gallery
+                        <span data-i18n="gallery.title">Community Gallery</span>
                     </h2>
-                    <p class="gallery-hero-subtitle">Discover and share custom Tesla lock sounds with owners worldwide</p>
+                    <p class="gallery-hero-subtitle" data-i18n="gallery.subtitle">Discover and share custom Tesla lock sounds with owners worldwide</p>
                     <div class="gallery-stats-bar" id="gallery-stats" role="status">
                         <div class="stat-item">
                             <span class="stat-number" id="stat-total-sounds">0</span>
-                            <span class="stat-label">Sounds</span>
+                            <span class="stat-label" data-i18n="gallery.sounds">Sounds</span>
                         </div>
                         <div class="stat-item">
                             <span class="stat-number" id="stat-total-downloads">0</span>
-                            <span class="stat-label">Downloads</span>
+                            <span class="stat-label" data-i18n="gallery.downloads">Downloads</span>
                         </div>
                     </div>
                 </div>
                 <button class="btn btn-primary" id="btn-upload-sound-hero">
-                    <span aria-hidden="true">📤</span> Upload Your Sound
+                    <span aria-hidden="true">📤</span> <span data-i18n="gallery.uploadYour">Upload Your Sound</span>
                 </button>
             </div>
 
             <!-- Weekly Popular Section -->
             <div class="gallery-highlight-section" id="weekly-popular-section">
                 <div class="highlight-header">
-                    <h3><span aria-hidden="true">🔥</span> Trending This Week</h3>
-                    <span class="highlight-badge">Hot</span>
+                    <h3><span aria-hidden="true">🔥</span> <span data-i18n="gallery.trending">Trending This Week</span></h3>
+                    <span class="highlight-badge" data-i18n="gallery.hot">Hot</span>
                 </div>
                 <div class="highlight-grid" id="weekly-popular-grid" role="list">
                     <!-- Populated by JavaScript -->
@@ -389,16 +399,16 @@
             <!-- My Uploads Section -->
             <div class="gallery-highlight-section my-uploads-section" id="my-uploads-section" style="display: none;">
                 <div class="highlight-header">
-                    <h3><span aria-hidden="true">📁</span> My Uploads</h3>
+                    <h3><span aria-hidden="true">📁</span> <span data-i18n="gallery.myUploads">My Uploads</span></h3>
                     <div class="my-uploads-stats" id="my-uploads-stats">
-                        <span class="stat-mini"><span id="my-total-likes">0</span> likes</span>
-                        <span class="stat-mini"><span id="my-total-downloads">0</span> downloads</span>
+                        <span class="stat-mini"><span id="my-total-likes">0</span> <span data-i18n="gallery.likes">likes</span></span>
+                        <span class="stat-mini"><span id="my-total-downloads">0</span> <span data-i18n="gallery.downloads">downloads</span></span>
                     </div>
                 </div>
                 <div class="highlight-grid" id="my-uploads-grid" role="list">
                     <!-- Populated by JavaScript -->
                 </div>
-                <p class="my-uploads-empty" id="my-uploads-empty" style="display: none;">
+                <p class="my-uploads-empty" id="my-uploads-empty" style="display: none;" data-i18n="gallery.myEmpty">
                     You haven't uploaded any sounds yet. Create and share your first sound!
                 </p>
             </div>
@@ -407,30 +417,31 @@
                 <div class="gallery-search">
                     <input type="text"
                            id="gallery-search"
+                           data-i18n-placeholder="form.searchPlaceholder"
                            placeholder="Search sounds..."
                            aria-label="Search gallery sounds">
-                    <button class="btn btn-secondary btn-small" id="btn-gallery-search">
+                    <button class="btn btn-secondary btn-small" id="btn-gallery-search" data-i18n="btn.search">
                         Search
                     </button>
                 </div>
                 <div class="gallery-sort">
-                    <label for="gallery-sort-select">Sort by:</label>
+                    <label for="gallery-sort-select" data-i18n="form.sortBy">Sort by:</label>
                     <select id="gallery-sort-select" aria-label="Sort gallery by">
-                        <option value="createdAt">Newest</option>
-                        <option value="likes">Most Liked</option>
-                        <option value="downloads">Most Downloaded</option>
+                        <option value="createdAt" data-i18n="sort.newest">Newest</option>
+                        <option value="likes" data-i18n="sort.mostLiked">Most Liked</option>
+                        <option value="downloads" data-i18n="sort.mostDownloaded">Most Downloaded</option>
                     </select>
                 </div>
                 <div class="gallery-category">
-                    <label for="gallery-category-select">Category:</label>
+                    <label for="gallery-category-select" data-i18n="form.categoryFilter">Category:</label>
                     <select id="gallery-category-select" aria-label="Filter by category">
-                        <option value="all">All</option>
-                        <option value="classic">Classic</option>
-                        <option value="modern">Modern</option>
-                        <option value="futuristic">Futuristic</option>
-                        <option value="custom">Custom</option>
-                        <option value="funny">Funny</option>
-                        <option value="musical">Musical</option>
+                        <option value="all" data-i18n="cat.all">All</option>
+                        <option value="classic" data-i18n="cat.classic">Classic</option>
+                        <option value="modern" data-i18n="cat.modern">Modern</option>
+                        <option value="futuristic" data-i18n="cat.futuristic">Futuristic</option>
+                        <option value="custom" data-i18n="cat.custom">Custom</option>
+                        <option value="funny" data-i18n="cat.funny">Funny</option>
+                        <option value="musical" data-i18n="cat.musical">Musical</option>
                     </select>
                 </div>
             </div>
@@ -438,12 +449,12 @@
             <div class="gallery-grid" id="gallery-grid" role="list" aria-label="Community sounds">
                 <!-- Gallery cards will be populated by JavaScript -->
                 <div class="gallery-empty" id="gallery-empty">
-                    <p>Loading community sounds...</p>
+                    <p data-i18n="gallery.loading">Loading community sounds...</p>
                 </div>
             </div>
 
             <div class="gallery-pagination">
-                <button class="btn btn-secondary" id="btn-gallery-load-more" style="display: none;">
+                <button class="btn btn-secondary" id="btn-gallery-load-more" style="display: none;" data-i18n="btn.loadMore">
                     Load More
                 </button>
             </div>
@@ -468,15 +479,15 @@
 
         <div class="footer-content">
             <nav class="footer-links" aria-label="Footer navigation">
-                <a href="#privacy">Privacy Policy</a>
-                <a href="#terms">Terms of Use</a>
+                <a href="#privacy" data-i18n="footer.privacy">Privacy Policy</a>
+                <a href="#terms" data-i18n="footer.terms">Terms of Use</a>
                 <a href="https://github.com/yprite/Tesla-LockChime" target="_blank" rel="noopener noreferrer">GitHub</a>
             </nav>
-            <p class="disclaimer">
+            <p class="disclaimer" data-i18n="footer.disclaimer">
                 This is an unofficial tool and is not affiliated with Tesla, Inc.
                 Tesla and the Tesla logo are trademarks of Tesla, Inc.
             </p>
-            <p class="copyright">
+            <p class="copyright" data-i18n="footer.copyright">
                 © 2024 Tesla Lock Sound Creator. Free to use. No account required.
             </p>
         </div>
@@ -486,18 +497,18 @@
     <div class="modal" id="unsupported-modal" style="display: none;" role="alertdialog" aria-modal="true" aria-labelledby="modal-title" aria-describedby="modal-desc">
         <div class="modal-content">
             <div class="modal-icon" aria-hidden="true">🖥️</div>
-            <h2 id="modal-title">Desktop Browser Required</h2>
+            <h2 id="modal-title" data-i18n="compat.title">Desktop Browser Required</h2>
             <div id="modal-desc">
-                <p>This tool requires <strong>Chrome</strong> or <strong>Edge</strong> on a <strong>desktop computer</strong>.</p>
-                <p>The File System Access API needed to save files directly to USB is not available in:</p>
+                <p data-i18n="compat.requirement">This tool requires <strong>Chrome</strong> or <strong>Edge</strong> on a <strong>desktop computer</strong>.</p>
+                <p data-i18n="compat.explanation">The File System Access API needed to save files directly to USB is not available in:</p>
                 <ul>
-                    <li>Safari (any platform)</li>
-                    <li>Firefox (any platform)</li>
-                    <li>Mobile browsers</li>
-                    <li>Tablets</li>
+                    <li data-i18n="compat.safari">Safari (any platform)</li>
+                    <li data-i18n="compat.firefox">Firefox (any platform)</li>
+                    <li data-i18n="compat.mobile">Mobile browsers</li>
+                    <li data-i18n="compat.tablet">Tablets</li>
                 </ul>
             </div>
-            <p class="modal-hint">Please open this page in Chrome or Edge on your PC.</p>
+            <p class="modal-hint" data-i18n="compat.instruction">Please open this page in Chrome or Edge on your PC.</p>
         </div>
     </div>
 
@@ -505,55 +516,55 @@
     <div class="modal share-modal" id="share-modal" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="share-modal-title">
         <div class="modal-content share-modal-content">
             <button class="modal-close" id="share-modal-close" aria-label="Close share dialog">&times;</button>
-            <h2 id="share-modal-title">Share Sound</h2>
+            <h2 id="share-modal-title" data-i18n="share.title">Share Sound</h2>
             <p class="share-sound-name" id="share-sound-name"></p>
 
             <!-- Share Link -->
             <div class="share-link-section">
-                <label for="share-link-input">Share Link</label>
+                <label for="share-link-input" data-i18n="share.link">Share Link</label>
                 <div class="share-link-input-group">
                     <input type="text" id="share-link-input" readonly aria-label="Shareable link">
                     <button class="btn btn-secondary btn-small" id="btn-copy-link">
-                        <span aria-hidden="true">📋</span> Copy
+                        <span aria-hidden="true">📋</span> <span data-i18n="btn.copy">Copy</span>
                     </button>
                 </div>
             </div>
 
             <!-- Social Share Buttons -->
             <div class="share-social-section">
-                <p class="share-social-label">Share on Social Media</p>
+                <p class="share-social-label" data-i18n="share.social">Share on Social Media</p>
                 <div class="share-social-buttons">
                     <button class="share-btn share-btn-twitter" data-platform="twitter" aria-label="Share on Twitter">
                         <span class="share-icon">𝕏</span>
-                        <span>Twitter</span>
+                        <span data-i18n="share.twitter">Twitter</span>
                     </button>
                     <button class="share-btn share-btn-facebook" data-platform="facebook" aria-label="Share on Facebook">
                         <span class="share-icon">f</span>
-                        <span>Facebook</span>
+                        <span data-i18n="share.facebook">Facebook</span>
                     </button>
                     <button class="share-btn share-btn-whatsapp" data-platform="whatsapp" aria-label="Share on WhatsApp">
                         <span class="share-icon">📱</span>
-                        <span>WhatsApp</span>
+                        <span data-i18n="share.whatsapp">WhatsApp</span>
                     </button>
                     <button class="share-btn share-btn-telegram" data-platform="telegram" aria-label="Share on Telegram">
                         <span class="share-icon">✈️</span>
-                        <span>Telegram</span>
+                        <span data-i18n="share.telegram">Telegram</span>
                     </button>
                 </div>
             </div>
 
             <!-- QR Code -->
             <div class="share-qr-section">
-                <p class="share-qr-label">QR Code</p>
+                <p class="share-qr-label" data-i18n="share.qr">QR Code</p>
                 <div class="share-qr-container">
                     <img id="share-qr-image" src="" alt="QR Code for sharing" style="display: none;">
-                    <p class="share-qr-hint">Scan to open on another device</p>
+                    <p class="share-qr-hint" data-i18n="inst.qrHint">Scan to open on another device</p>
                 </div>
             </div>
 
             <!-- Native Share (mobile) -->
             <button class="btn btn-primary share-native-btn" id="btn-native-share" style="display: none;">
-                <span aria-hidden="true">📤</span> Share...
+                <span aria-hidden="true">📤</span> <span data-i18n="btn.share">Share...</span>
             </button>
         </div>
     </div>
@@ -562,37 +573,37 @@
     <div class="modal upload-modal" id="upload-modal" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="upload-modal-title">
         <div class="modal-content upload-modal-content">
             <button class="modal-close" id="upload-modal-close" aria-label="Close upload dialog">&times;</button>
-            <h2 id="upload-modal-title">Upload to Gallery</h2>
+            <h2 id="upload-modal-title" data-i18n="uploadModal.title">Upload to Gallery</h2>
 
             <form id="upload-form" class="upload-form">
                 <div class="form-group">
-                    <label for="upload-name">Sound Name *</label>
-                    <input type="text" id="upload-name" maxlength="50" required placeholder="Give your sound a name">
+                    <label for="upload-name" data-i18n="form.soundName">Sound Name *</label>
+                    <input type="text" id="upload-name" maxlength="50" required data-i18n-placeholder="form.namePlaceholder" placeholder="Give your sound a name">
                     <span class="char-count"><span id="upload-name-count">0</span>/50</span>
                 </div>
 
                 <div class="form-group">
-                    <label for="upload-description">Description</label>
-                    <textarea id="upload-description" maxlength="200" placeholder="Describe your sound (optional)"></textarea>
+                    <label for="upload-description" data-i18n="form.description">Description</label>
+                    <textarea id="upload-description" maxlength="200" data-i18n-placeholder="form.descPlaceholder" placeholder="Describe your sound (optional)"></textarea>
                     <span class="char-count"><span id="upload-desc-count">0</span>/200</span>
                 </div>
 
                 <div class="form-group">
-                    <label for="upload-category">Category</label>
+                    <label for="upload-category" data-i18n="form.category">Category</label>
                     <select id="upload-category">
-                        <option value="custom">Custom</option>
-                        <option value="classic">Classic</option>
-                        <option value="modern">Modern</option>
-                        <option value="futuristic">Futuristic</option>
-                        <option value="funny">Funny</option>
-                        <option value="musical">Musical</option>
+                        <option value="custom" data-i18n="cat.custom">Custom</option>
+                        <option value="classic" data-i18n="cat.classic">Classic</option>
+                        <option value="modern" data-i18n="cat.modern">Modern</option>
+                        <option value="futuristic" data-i18n="cat.futuristic">Futuristic</option>
+                        <option value="funny" data-i18n="cat.funny">Funny</option>
+                        <option value="musical" data-i18n="cat.musical">Musical</option>
                     </select>
                 </div>
 
                 <div class="form-actions">
-                    <button type="button" class="btn btn-outline" id="btn-upload-cancel">Cancel</button>
+                    <button type="button" class="btn btn-outline" id="btn-upload-cancel" data-i18n="btn.cancel">Cancel</button>
                     <button type="submit" class="btn btn-primary" id="btn-upload-submit">
-                        <span aria-hidden="true">📤</span> Upload
+                        <span aria-hidden="true">📤</span> <span data-i18n="btn.upload">Upload</span>
                     </button>
                 </div>
             </form>
@@ -605,12 +616,31 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
 
     <!-- Scripts -->
+    <script src="js/i18n.js"></script>
     <script src="js/audio-data.js"></script>
     <script src="js/audio-processor.js"></script>
     <script src="js/file-system.js"></script>
     <script src="js/waveform.js"></script>
     <script src="js/gallery.js"></script>
     <script src="js/app.js"></script>
+
+    <!-- i18n Initialization -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Set initial language
+            document.documentElement.lang = i18n.getLanguage();
+            i18n.updatePage();
+
+            // Language selector
+            const langSelect = document.getElementById('language-select');
+            if (langSelect) {
+                langSelect.value = i18n.getLanguage();
+                langSelect.addEventListener('change', (e) => {
+                    i18n.setLanguage(e.target.value);
+                });
+            }
+        });
+    </script>
 
     <!-- Google AdSense (load after content) -->
     <!-- <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXX" crossorigin="anonymous"></script> -->
