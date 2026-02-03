@@ -1259,6 +1259,28 @@ input:focus-visible,
     color: var(--color-primary);
 }
 
+/* Gallery Like Button */
+.gallery-like-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    background: transparent;
+    border: none;
+    padding: 0;
+    font-size: 0.75rem;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.gallery-like-btn:hover {
+    color: var(--color-primary);
+}
+
+.gallery-like-btn.liked {
+    color: var(--color-primary);
+}
+
 .gallery-pagination {
     text-align: center;
     margin-top: 1.5rem;
