@@ -30,14 +30,14 @@
 
     <!-- PWA Meta Tags -->
     <meta name="theme-color" content="#e82127">
-    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Tesla Lock Sound">
     <link rel="manifest" href="manifest.json">
 
     <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔔</text></svg>">
-    <link rel="apple-touch-icon" href="images/icon-192.png">
+    <link rel="apple-touch-icon" href="images/icon-192.svg">
 
     <!-- Preconnect for performance -->
     <link rel="preconnect" href="https://www.googletagmanager.com">
@@ -375,6 +375,34 @@
                 </button>
             </div>
 
+            <!-- Weekly Popular Section -->
+            <div class="gallery-highlight-section" id="weekly-popular-section">
+                <div class="highlight-header">
+                    <h3><span aria-hidden="true">🔥</span> Trending This Week</h3>
+                    <span class="highlight-badge">Hot</span>
+                </div>
+                <div class="highlight-grid" id="weekly-popular-grid" role="list">
+                    <!-- Populated by JavaScript -->
+                </div>
+            </div>
+
+            <!-- My Uploads Section -->
+            <div class="gallery-highlight-section my-uploads-section" id="my-uploads-section" style="display: none;">
+                <div class="highlight-header">
+                    <h3><span aria-hidden="true">📁</span> My Uploads</h3>
+                    <div class="my-uploads-stats" id="my-uploads-stats">
+                        <span class="stat-mini"><span id="my-total-likes">0</span> likes</span>
+                        <span class="stat-mini"><span id="my-total-downloads">0</span> downloads</span>
+                    </div>
+                </div>
+                <div class="highlight-grid" id="my-uploads-grid" role="list">
+                    <!-- Populated by JavaScript -->
+                </div>
+                <p class="my-uploads-empty" id="my-uploads-empty" style="display: none;">
+                    You haven't uploaded any sounds yet. Create and share your first sound!
+                </p>
+            </div>
+
             <div class="gallery-controls">
                 <div class="gallery-search">
                     <input type="text"
@@ -473,6 +501,104 @@
         </div>
     </div>
 
+    <!-- Share Modal -->
+    <div class="modal share-modal" id="share-modal" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="share-modal-title">
+        <div class="modal-content share-modal-content">
+            <button class="modal-close" id="share-modal-close" aria-label="Close share dialog">&times;</button>
+            <h2 id="share-modal-title">Share Sound</h2>
+            <p class="share-sound-name" id="share-sound-name"></p>
+
+            <!-- Share Link -->
+            <div class="share-link-section">
+                <label for="share-link-input">Share Link</label>
+                <div class="share-link-input-group">
+                    <input type="text" id="share-link-input" readonly aria-label="Shareable link">
+                    <button class="btn btn-secondary btn-small" id="btn-copy-link">
+                        <span aria-hidden="true">📋</span> Copy
+                    </button>
+                </div>
+            </div>
+
+            <!-- Social Share Buttons -->
+            <div class="share-social-section">
+                <p class="share-social-label">Share on Social Media</p>
+                <div class="share-social-buttons">
+                    <button class="share-btn share-btn-twitter" data-platform="twitter" aria-label="Share on Twitter">
+                        <span class="share-icon">𝕏</span>
+                        <span>Twitter</span>
+                    </button>
+                    <button class="share-btn share-btn-facebook" data-platform="facebook" aria-label="Share on Facebook">
+                        <span class="share-icon">f</span>
+                        <span>Facebook</span>
+                    </button>
+                    <button class="share-btn share-btn-whatsapp" data-platform="whatsapp" aria-label="Share on WhatsApp">
+                        <span class="share-icon">📱</span>
+                        <span>WhatsApp</span>
+                    </button>
+                    <button class="share-btn share-btn-telegram" data-platform="telegram" aria-label="Share on Telegram">
+                        <span class="share-icon">✈️</span>
+                        <span>Telegram</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- QR Code -->
+            <div class="share-qr-section">
+                <p class="share-qr-label">QR Code</p>
+                <div class="share-qr-container">
+                    <img id="share-qr-image" src="" alt="QR Code for sharing" style="display: none;">
+                    <p class="share-qr-hint">Scan to open on another device</p>
+                </div>
+            </div>
+
+            <!-- Native Share (mobile) -->
+            <button class="btn btn-primary share-native-btn" id="btn-native-share" style="display: none;">
+                <span aria-hidden="true">📤</span> Share...
+            </button>
+        </div>
+    </div>
+
+    <!-- Upload to Gallery Modal -->
+    <div class="modal upload-modal" id="upload-modal" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="upload-modal-title">
+        <div class="modal-content upload-modal-content">
+            <button class="modal-close" id="upload-modal-close" aria-label="Close upload dialog">&times;</button>
+            <h2 id="upload-modal-title">Upload to Gallery</h2>
+
+            <form id="upload-form" class="upload-form">
+                <div class="form-group">
+                    <label for="upload-name">Sound Name *</label>
+                    <input type="text" id="upload-name" maxlength="50" required placeholder="Give your sound a name">
+                    <span class="char-count"><span id="upload-name-count">0</span>/50</span>
+                </div>
+
+                <div class="form-group">
+                    <label for="upload-description">Description</label>
+                    <textarea id="upload-description" maxlength="200" placeholder="Describe your sound (optional)"></textarea>
+                    <span class="char-count"><span id="upload-desc-count">0</span>/200</span>
+                </div>
+
+                <div class="form-group">
+                    <label for="upload-category">Category</label>
+                    <select id="upload-category">
+                        <option value="custom">Custom</option>
+                        <option value="classic">Classic</option>
+                        <option value="modern">Modern</option>
+                        <option value="futuristic">Futuristic</option>
+                        <option value="funny">Funny</option>
+                        <option value="musical">Musical</option>
+                    </select>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-outline" id="btn-upload-cancel">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="btn-upload-submit">
+                        <span aria-hidden="true">📤</span> Upload
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Firebase SDK (optional - for community gallery) -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
@@ -493,7 +619,7 @@
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js')
+                navigator.serviceWorker.register('./sw.js')
                     .then(reg => console.log('SW registered'))
                     .catch(err => console.log('SW registration failed:', err));
             });

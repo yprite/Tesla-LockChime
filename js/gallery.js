@@ -9,14 +9,14 @@
  */
 
 // Firebase configuration - Replace with your Firebase project config
-const FIREBASE_CONFIG = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_PROJECT.firebaseapp.com",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_PROJECT.appspot.com",
-    messagingSenderId: "YOUR_SENDER_ID",
-    appId: "YOUR_APP_ID"
-};
+const FIREBASE_CONFIG = {                                                                                         
+      apiKey: "AIzaSyAsrRsJVRCF-2nDCGNucE9FT_25OenDSrQ",                                                            
+      authDomain: "tesla-lock-sounds.firebaseapp.com",                                                              
+      projectId: "tesla-lock-sounds",                                                                               
+      storageBucket: "tesla-lock-sounds.firebasestorage.app",                                                       
+      messagingSenderId: "1067424699027",                                                                           
+      appId: "1:1067424699027:web:3c7105f523f26c3005f366"                                                           
+  }; 
 
 // Gallery constants
 const GALLERY_COLLECTION = 'sounds';
@@ -401,6 +401,208 @@ class GalleryHandler {
             };
         } catch (error) {
             return { totalSounds: 0, totalDownloads: 0 };
+        }
+    }
+
+    /**
+     * Get sounds uploaded by current user
+     */
+    async getMySounds() {
+        if (!this.isInitialized) {
+            throw new Error('Gallery not initialized');
+        }
+
+        const myId = this.getAnonymousId();
+
+        try {
+            const snapshot = await this.db.collection(GALLERY_COLLECTION)
+                .where('creatorId', '==', myId)
+                .orderBy('createdAt', 'desc')
+                .get();
+
+            const sounds = [];
+            let totalLikes = 0;
+            let totalDownloads = 0;
+
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                sounds.push({ id: doc.id, ...data });
+                totalLikes += data.likes || 0;
+                totalDownloads += data.downloads || 0;
+            });
+
+            return {
+                sounds,
+                stats: {
+                    totalUploads: sounds.length,
+                    totalLikes,
+                    totalDownloads
+                }
+            };
+        } catch (error) {
+            console.error('Failed to get my sounds:', error);
+            throw new Error('Failed to load your sounds');
+        }
+    }
+
+    /**
+     * Get weekly popular sounds (last 7 days)
+     */
+    async getWeeklyPopular(limit = 5) {
+        if (!this.isInitialized) {
+            throw new Error('Gallery not initialized');
+        }
+
+        try {
+            // Get sounds from last 7 days, sorted by likes
+            const weekAgo = new Date();
+            weekAgo.setDate(weekAgo.getDate() - 7);
+
+            const snapshot = await this.db.collection(GALLERY_COLLECTION)
+                .where('createdAt', '>=', weekAgo)
+                .orderBy('createdAt', 'desc')
+                .limit(50)
+                .get();
+
+            const sounds = [];
+            snapshot.forEach(doc => {
+                sounds.push({ id: doc.id, ...doc.data() });
+            });
+
+            // Sort by combined score (likes + downloads)
+            sounds.sort((a, b) => {
+                const scoreA = (a.likes || 0) * 2 + (a.downloads || 0);
+                const scoreB = (b.likes || 0) * 2 + (b.downloads || 0);
+                return scoreB - scoreA;
+            });
+
+            return {
+                sounds: sounds.slice(0, limit),
+                period: 'weekly'
+            };
+        } catch (error) {
+            // Fallback to all-time popular if date query fails
+            console.warn('Weekly query failed, falling back to all-time:', error);
+            return this.getPopularSounds(limit);
+        }
+    }
+
+    /**
+     * Generate shareable URL for a sound
+     */
+    generateShareUrl(soundId) {
+        const baseUrl = window.location.origin + window.location.pathname;
+        return `${baseUrl}?sound=${soundId}`;
+    }
+
+    /**
+     * Generate QR code data URL
+     */
+    async generateQRCode(soundId, size = 200) {
+        const shareUrl = this.generateShareUrl(soundId);
+
+        // Use QR code API (no external library needed)
+        const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(shareUrl)}`;
+
+        return {
+            url: shareUrl,
+            qrCodeUrl: qrApiUrl
+        };
+    }
+
+    /**
+     * Share sound to social media
+     */
+    shareToSocial(sound, platform) {
+        const shareUrl = this.generateShareUrl(sound.id);
+        const text = `🔔 Check out this Tesla lock sound: "${sound.name}" - Create your own custom lock chime!`;
+
+        const urls = {
+            twitter: `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(shareUrl)}`,
+            facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}&quote=${encodeURIComponent(text)}`,
+            whatsapp: `https://wa.me/?text=${encodeURIComponent(text + ' ' + shareUrl)}`,
+            telegram: `https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(text)}`,
+            linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`
+        };
+
+        if (urls[platform]) {
+            window.open(urls[platform], '_blank', 'width=600,height=400');
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Copy share link to clipboard
+     */
+    async copyShareLink(soundId) {
+        const shareUrl = this.generateShareUrl(soundId);
+
+        try {
+            await navigator.clipboard.writeText(shareUrl);
+            return { success: true, url: shareUrl };
+        } catch (error) {
+            // Fallback for older browsers
+            const textarea = document.createElement('textarea');
+            textarea.value = shareUrl;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+            return { success: true, url: shareUrl };
+        }
+    }
+
+    /**
+     * Use native share API if available
+     */
+    async nativeShare(sound) {
+        const shareUrl = this.generateShareUrl(sound.id);
+
+        if (navigator.share) {
+            try {
+                await navigator.share({
+                    title: `Tesla Lock Sound: ${sound.name}`,
+                    text: `Check out this custom Tesla lock chime!`,
+                    url: shareUrl
+                });
+                return { success: true, method: 'native' };
+            } catch (error) {
+                if (error.name !== 'AbortError') {
+                    console.error('Native share failed:', error);
+                }
+                return { success: false, error };
+            }
+        }
+
+        return { success: false, error: 'Native share not supported' };
+    }
+
+    /**
+     * Check for shared sound in URL
+     */
+    getSharedSoundId() {
+        const params = new URLSearchParams(window.location.search);
+        return params.get('sound');
+    }
+
+    /**
+     * Get uploaded sounds IDs from localStorage
+     */
+    getMyUploadedSoundIds() {
+        const uploaded = localStorage.getItem('gallery_my_uploads');
+        return uploaded ? JSON.parse(uploaded) : [];
+    }
+
+    /**
+     * Add to my uploaded sounds
+     */
+    addToMyUploads(soundId) {
+        const uploaded = this.getMyUploadedSoundIds();
+        if (!uploaded.includes(soundId)) {
+            uploaded.push(soundId);
+            localStorage.setItem('gallery_my_uploads', JSON.stringify(uploaded));
         }
     }
 }

@@ -93,7 +93,37 @@ class TeslaLockSoundApp {
             // Community CTA
             btnBrowseCommunity: document.getElementById('btn-browse-community'),
             featuredSounds: document.getElementById('featured-sounds'),
-            btnUploadSoundHero: document.getElementById('btn-upload-sound-hero')
+            btnUploadSoundHero: document.getElementById('btn-upload-sound-hero'),
+
+            // Weekly Popular & My Uploads
+            weeklyPopularSection: document.getElementById('weekly-popular-section'),
+            weeklyPopularGrid: document.getElementById('weekly-popular-grid'),
+            myUploadsSection: document.getElementById('my-uploads-section'),
+            myUploadsGrid: document.getElementById('my-uploads-grid'),
+            myUploadsEmpty: document.getElementById('my-uploads-empty'),
+            myTotalLikes: document.getElementById('my-total-likes'),
+            myTotalDownloads: document.getElementById('my-total-downloads'),
+
+            // Share Modal
+            shareModal: document.getElementById('share-modal'),
+            shareModalClose: document.getElementById('share-modal-close'),
+            shareSoundName: document.getElementById('share-sound-name'),
+            shareLinkInput: document.getElementById('share-link-input'),
+            btnCopyLink: document.getElementById('btn-copy-link'),
+            shareQrImage: document.getElementById('share-qr-image'),
+            btnNativeShare: document.getElementById('btn-native-share'),
+
+            // Upload Modal
+            uploadModal: document.getElementById('upload-modal'),
+            uploadModalClose: document.getElementById('upload-modal-close'),
+            uploadForm: document.getElementById('upload-form'),
+            uploadName: document.getElementById('upload-name'),
+            uploadDescription: document.getElementById('upload-description'),
+            uploadCategory: document.getElementById('upload-category'),
+            uploadNameCount: document.getElementById('upload-name-count'),
+            uploadDescCount: document.getElementById('upload-desc-count'),
+            btnUploadCancel: document.getElementById('btn-upload-cancel'),
+            btnUploadSubmit: document.getElementById('btn-upload-submit')
         };
 
         // Current tab
@@ -223,8 +253,17 @@ class TeslaLockSoundApp {
             // Setup gallery event listeners
             this.setupGalleryListeners();
 
+            // Setup share modal
+            this.setupShareModal();
+
+            // Setup upload modal
+            this.setupUploadModal();
+
             // Update community count badge
             await this.updateCommunityBadge();
+
+            // Check for shared sound in URL
+            this.checkSharedSoundInUrl();
         } else {
             // Hide community elements if gallery not available
             if (this.elements.tabCommunity) {
@@ -235,6 +274,427 @@ class TeslaLockSoundApp {
                 communityCta.style.display = 'none';
             }
         }
+    }
+
+    /**
+     * Check for shared sound in URL and load it
+     */
+    async checkSharedSoundInUrl() {
+        const sharedSoundId = this.gallery.getSharedSoundId();
+        if (sharedSoundId) {
+            this.showLoading('Loading shared sound...');
+            try {
+                const sound = await this.gallery.getSound(sharedSoundId);
+                if (sound) {
+                    // Switch to community tab and highlight the sound
+                    this.switchTab('community');
+                    await this.loadGallerySounds(false);
+
+                    // Scroll to the sound or show a modal
+                    this.showToast(`Loading "${sound.name}" from shared link`, 'success');
+
+                    // Automatically start using the sound
+                    await this.handleGalleryUse(sharedSoundId);
+                }
+            } catch (error) {
+                console.error('Failed to load shared sound:', error);
+                this.showToast('Could not find the shared sound', 'error');
+            } finally {
+                this.hideLoading();
+            }
+        }
+    }
+
+    /**
+     * Setup share modal handlers
+     */
+    setupShareModal() {
+        // Close button
+        if (this.elements.shareModalClose) {
+            this.elements.shareModalClose.addEventListener('click', () => this.closeShareModal());
+        }
+
+        // Click outside to close
+        if (this.elements.shareModal) {
+            this.elements.shareModal.addEventListener('click', (e) => {
+                if (e.target === this.elements.shareModal) {
+                    this.closeShareModal();
+                }
+            });
+        }
+
+        // Copy link button
+        if (this.elements.btnCopyLink) {
+            this.elements.btnCopyLink.addEventListener('click', async () => {
+                const soundId = this.elements.shareModal.dataset.soundId;
+                if (soundId) {
+                    const result = await this.gallery.copyShareLink(soundId);
+                    if (result.success) {
+                        this.elements.btnCopyLink.innerHTML = '<span aria-hidden="true">✓</span> Copied!';
+                        setTimeout(() => {
+                            this.elements.btnCopyLink.innerHTML = '<span aria-hidden="true">📋</span> Copy';
+                        }, 2000);
+                    }
+                }
+            });
+        }
+
+        // Social share buttons
+        document.querySelectorAll('.share-btn[data-platform]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const platform = btn.dataset.platform;
+                const soundId = this.elements.shareModal.dataset.soundId;
+                const soundName = this.elements.shareSoundName.textContent;
+
+                if (soundId) {
+                    this.gallery.shareToSocial({ id: soundId, name: soundName }, platform);
+                    this.trackEvent('social_share', { platform, sound_id: soundId });
+                }
+            });
+        });
+
+        // Native share button
+        if (this.elements.btnNativeShare) {
+            // Show native share button only if supported
+            if (navigator.share) {
+                this.elements.btnNativeShare.style.display = 'block';
+            }
+
+            this.elements.btnNativeShare.addEventListener('click', async () => {
+                const soundId = this.elements.shareModal.dataset.soundId;
+                const soundName = this.elements.shareSoundName.textContent;
+
+                if (soundId) {
+                    await this.gallery.nativeShare({ id: soundId, name: soundName });
+                }
+            });
+        }
+
+        // Escape key to close
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && this.elements.shareModal?.style.display === 'flex') {
+                this.closeShareModal();
+            }
+        });
+    }
+
+    /**
+     * Open share modal for a sound
+     */
+    async openShareModal(sound) {
+        if (!this.elements.shareModal) return;
+
+        this.elements.shareModal.dataset.soundId = sound.id;
+        this.elements.shareSoundName.textContent = sound.name;
+
+        // Generate share URL
+        const shareUrl = this.gallery.generateShareUrl(sound.id);
+        this.elements.shareLinkInput.value = shareUrl;
+
+        // Generate QR code
+        const { qrCodeUrl } = await this.gallery.generateQRCode(sound.id);
+        this.elements.shareQrImage.src = qrCodeUrl;
+        this.elements.shareQrImage.style.display = 'block';
+
+        // Show modal
+        this.elements.shareModal.style.display = 'flex';
+        this.elements.shareLinkInput.select();
+
+        this.trackEvent('share_modal_opened', { sound_id: sound.id });
+    }
+
+    /**
+     * Close share modal
+     */
+    closeShareModal() {
+        if (this.elements.shareModal) {
+            this.elements.shareModal.style.display = 'none';
+        }
+    }
+
+    /**
+     * Setup upload modal handlers
+     */
+    setupUploadModal() {
+        // Close button
+        if (this.elements.uploadModalClose) {
+            this.elements.uploadModalClose.addEventListener('click', () => this.closeUploadModal());
+        }
+
+        // Cancel button
+        if (this.elements.btnUploadCancel) {
+            this.elements.btnUploadCancel.addEventListener('click', () => this.closeUploadModal());
+        }
+
+        // Click outside to close
+        if (this.elements.uploadModal) {
+            this.elements.uploadModal.addEventListener('click', (e) => {
+                if (e.target === this.elements.uploadModal) {
+                    this.closeUploadModal();
+                }
+            });
+        }
+
+        // Character counters
+        if (this.elements.uploadName) {
+            this.elements.uploadName.addEventListener('input', () => {
+                if (this.elements.uploadNameCount) {
+                    this.elements.uploadNameCount.textContent = this.elements.uploadName.value.length;
+                }
+            });
+        }
+
+        if (this.elements.uploadDescription) {
+            this.elements.uploadDescription.addEventListener('input', () => {
+                if (this.elements.uploadDescCount) {
+                    this.elements.uploadDescCount.textContent = this.elements.uploadDescription.value.length;
+                }
+            });
+        }
+
+        // Form submission
+        if (this.elements.uploadForm) {
+            this.elements.uploadForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                await this.submitUpload();
+            });
+        }
+
+        // Escape key to close
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && this.elements.uploadModal?.style.display === 'flex') {
+                this.closeUploadModal();
+            }
+        });
+    }
+
+    /**
+     * Open upload modal
+     */
+    openUploadModal() {
+        if (!this.elements.uploadModal) return;
+
+        // Pre-fill name if available
+        if (this.elements.uploadName) {
+            this.elements.uploadName.value = this.customAudioName || '';
+            if (this.elements.uploadNameCount) {
+                this.elements.uploadNameCount.textContent = this.elements.uploadName.value.length;
+            }
+        }
+
+        // Reset other fields
+        if (this.elements.uploadDescription) {
+            this.elements.uploadDescription.value = '';
+            if (this.elements.uploadDescCount) {
+                this.elements.uploadDescCount.textContent = '0';
+            }
+        }
+
+        if (this.elements.uploadCategory) {
+            this.elements.uploadCategory.value = 'custom';
+        }
+
+        // Show modal
+        this.elements.uploadModal.style.display = 'flex';
+        this.elements.uploadName?.focus();
+    }
+
+    /**
+     * Close upload modal
+     */
+    closeUploadModal() {
+        if (this.elements.uploadModal) {
+            this.elements.uploadModal.style.display = 'none';
+        }
+    }
+
+    /**
+     * Submit upload from modal
+     */
+    async submitUpload() {
+        if (!this.gallery.isAvailable()) {
+            this.showError('Gallery is not available. Please try again later.');
+            return;
+        }
+
+        const name = this.elements.uploadName?.value?.trim();
+        const description = this.elements.uploadDescription?.value?.trim() || '';
+        const category = this.elements.uploadCategory?.value || 'custom';
+
+        // Validate
+        const validation = this.gallery.validateMetadata({ name, description, category });
+        if (!validation.valid) {
+            this.showError(validation.errors.join('\n'));
+            return;
+        }
+
+        this.closeUploadModal();
+        this.showLoading('Uploading to gallery...');
+
+        try {
+            const wavBlob = this.audioProcessor.exportToWav(this.trimStart, this.trimEnd, {
+                normalize: true
+            });
+
+            const result = await this.gallery.uploadSound(wavBlob, {
+                name,
+                description,
+                category,
+                duration: this.trimEnd - this.trimStart
+            });
+
+            // Track upload in localStorage
+            this.gallery.addToMyUploads(result.soundId);
+
+            this.showToast('Sound uploaded to gallery!', 'success');
+            this.trackEvent('gallery_upload', { sound_id: result.soundId });
+
+            // Refresh gallery sections
+            await this.loadGallerySounds(false);
+            await this.loadMyUploads();
+            await this.updateCommunityBadge();
+        } catch (error) {
+            console.error('Upload failed:', error);
+            this.showError('Failed to upload: ' + error.message);
+        } finally {
+            this.hideLoading();
+        }
+    }
+
+    /**
+     * Load weekly popular sounds
+     */
+    async loadWeeklyPopular() {
+        if (!this.gallery.isAvailable() || !this.elements.weeklyPopularGrid) return;
+
+        try {
+            const { sounds } = await this.gallery.getWeeklyPopular(5);
+
+            if (sounds.length === 0) {
+                if (this.elements.weeklyPopularSection) {
+                    this.elements.weeklyPopularSection.style.display = 'none';
+                }
+                return;
+            }
+
+            if (this.elements.weeklyPopularSection) {
+                this.elements.weeklyPopularSection.style.display = 'block';
+            }
+
+            this.elements.weeklyPopularGrid.innerHTML = sounds.map(sound => this.createHighlightCard(sound)).join('');
+
+            // Add event listeners
+            this.attachHighlightCardListeners(this.elements.weeklyPopularGrid);
+        } catch (error) {
+            console.error('Failed to load weekly popular:', error);
+            if (this.elements.weeklyPopularSection) {
+                this.elements.weeklyPopularSection.style.display = 'none';
+            }
+        }
+    }
+
+    /**
+     * Load my uploads
+     */
+    async loadMyUploads() {
+        if (!this.gallery.isAvailable() || !this.elements.myUploadsGrid) return;
+
+        try {
+            const { sounds, stats } = await this.gallery.getMySounds();
+
+            if (sounds.length === 0) {
+                if (this.elements.myUploadsSection) {
+                    this.elements.myUploadsSection.style.display = 'none';
+                }
+                return;
+            }
+
+            if (this.elements.myUploadsSection) {
+                this.elements.myUploadsSection.style.display = 'block';
+            }
+
+            if (this.elements.myUploadsEmpty) {
+                this.elements.myUploadsEmpty.style.display = 'none';
+            }
+
+            // Update stats
+            if (this.elements.myTotalLikes) {
+                this.elements.myTotalLikes.textContent = stats.totalLikes;
+            }
+            if (this.elements.myTotalDownloads) {
+                this.elements.myTotalDownloads.textContent = stats.totalDownloads;
+            }
+
+            this.elements.myUploadsGrid.innerHTML = sounds.map(sound => this.createHighlightCard(sound, true)).join('');
+
+            // Add event listeners
+            this.attachHighlightCardListeners(this.elements.myUploadsGrid);
+        } catch (error) {
+            console.error('Failed to load my uploads:', error);
+            if (this.elements.myUploadsSection) {
+                this.elements.myUploadsSection.style.display = 'none';
+            }
+        }
+    }
+
+    /**
+     * Create a highlight card for weekly popular / my uploads
+     */
+    createHighlightCard(sound, showShare = false) {
+        const isLiked = this.gallery.isLiked(sound.id);
+
+        return `
+            <div class="gallery-card highlight-card" data-sound-id="${sound.id}">
+                <div class="gallery-card-header">
+                    <span class="gallery-card-name">${this.escapeHtml(sound.name)}</span>
+                    <span class="gallery-card-category">${sound.category}</span>
+                </div>
+                <div class="gallery-card-stats">
+                    <span class="gallery-card-stat">${isLiked ? '❤️' : '🤍'} ${sound.likes || 0}</span>
+                    <span class="gallery-card-stat">⬇️ ${sound.downloads || 0}</span>
+                </div>
+                <div class="gallery-card-actions has-share">
+                    <button class="btn btn-small btn-secondary gallery-preview-btn" data-sound-id="${sound.id}" data-url="${sound.downloadUrl}">
+                        ▶
+                    </button>
+                    <button class="btn btn-small btn-primary gallery-use-btn" data-sound-id="${sound.id}">
+                        Use
+                    </button>
+                    <button class="btn btn-small btn-share gallery-share-btn" data-sound-id="${sound.id}" data-name="${this.escapeHtml(sound.name)}">
+                        📤
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+
+    /**
+     * Attach event listeners to highlight cards
+     */
+    attachHighlightCardListeners(container) {
+        container.querySelectorAll('.gallery-preview-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.handleGalleryPreview(btn.dataset.url, btn);
+            });
+        });
+
+        container.querySelectorAll('.gallery-use-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.handleGalleryUse(btn.dataset.soundId);
+            });
+        });
+
+        container.querySelectorAll('.gallery-share-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.openShareModal({
+                    id: btn.dataset.soundId,
+                    name: btn.dataset.name
+                });
+            });
+        });
     }
 
     /**
@@ -293,6 +753,14 @@ class TeslaLockSoundApp {
      */
     async loadGallerySounds(append = false) {
         if (!this.gallery.isAvailable()) return;
+
+        // Load highlight sections only on initial load
+        if (!append) {
+            await Promise.all([
+                this.loadWeeklyPopular(),
+                this.loadMyUploads()
+            ]);
+        }
 
         try {
             const sortBy = this.elements.gallerySort?.value || 'createdAt';
@@ -395,12 +863,15 @@ class TeslaLockSoundApp {
                 </button>
                 <span>⬇️ ${sound.downloads || 0}</span>
             </div>
-            <div class="gallery-card-actions">
+            <div class="gallery-card-actions has-share">
                 <button class="btn btn-small btn-secondary gallery-preview-btn" data-sound-id="${sound.id}" data-url="${sound.downloadUrl}">
                     ▶ Preview
                 </button>
                 <button class="btn btn-small btn-primary gallery-use-btn" data-sound-id="${sound.id}">
-                    Use This
+                    Use
+                </button>
+                <button class="btn btn-small btn-share gallery-share-btn" data-sound-id="${sound.id}" data-name="${this.escapeHtml(sound.name)}">
+                    📤
                 </button>
             </div>
         `;
@@ -419,6 +890,11 @@ class TeslaLockSoundApp {
         card.querySelector('.gallery-use-btn').addEventListener('click', (e) => {
             e.stopPropagation();
             this.handleGalleryUse(sound.id);
+        });
+
+        card.querySelector('.gallery-share-btn').addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.openShareModal({ id: sound.id, name: sound.name });
         });
 
         return card;
@@ -556,35 +1032,8 @@ class TeslaLockSoundApp {
             return;
         }
 
-        const name = prompt('Enter a name for your sound:', this.customAudioName || 'My Custom Sound');
-        if (!name) return;
-
-        const category = prompt('Category (classic, modern, futuristic, custom, funny, musical):', 'custom');
-
-        this.showLoading('Uploading to gallery...');
-
-        try {
-            const wavBlob = this.audioProcessor.exportToWav(this.trimStart, this.trimEnd, {
-                normalize: true
-            });
-
-            const result = await this.gallery.uploadSound(wavBlob, {
-                name: name,
-                category: category || 'custom',
-                duration: this.trimEnd - this.trimStart
-            });
-
-            this.showToast('Sound uploaded to gallery!', 'success');
-            this.trackEvent('gallery_upload', { sound_id: result.soundId });
-
-            // Refresh gallery
-            await this.loadGallerySounds(false);
-        } catch (error) {
-            console.error('Upload failed:', error);
-            this.showError('Failed to upload: ' + error.message);
-        } finally {
-            this.hideLoading();
-        }
+        // Open upload modal instead of using prompts
+        this.openUploadModal();
     }
 
     /**
