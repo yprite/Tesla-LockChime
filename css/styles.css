@@ -75,6 +75,48 @@ body {
     text-transform: uppercase;
 }
 
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-left: auto;
+}
+
+.language-selector {
+    position: relative;
+}
+
+.language-selector select {
+    appearance: none;
+    background-color: var(--color-surface-elevated);
+    color: var(--color-text);
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
+    padding: 0.4rem 2rem 0.4rem 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--transition);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23a0a0a0' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.5rem center;
+}
+
+.language-selector select:hover {
+    border-color: var(--color-primary);
+}
+
+.language-selector select:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px rgba(232, 33, 39, 0.2);
+}
+
+.language-selector select option {
+    background-color: var(--color-surface);
+    color: var(--color-text);
+}
+
 /* ===========================
    Ad Containers
    =========================== */
@@ -1256,6 +1298,28 @@ input:focus-visible,
 .btn-like.liked {
     background-color: rgba(232, 33, 39, 0.1);
     border-color: var(--color-primary);
+    color: var(--color-primary);
+}
+
+/* Gallery Like Button */
+.gallery-like-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    background: transparent;
+    border: none;
+    padding: 0;
+    font-size: 0.75rem;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.gallery-like-btn:hover {
+    color: var(--color-primary);
+}
+
+.gallery-like-btn.liked {
     color: var(--color-primary);
 }
 
