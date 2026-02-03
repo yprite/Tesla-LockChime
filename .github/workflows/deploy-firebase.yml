@@ -1,0 +1,72 @@
+name: Deploy to Firebase Hosting
+
+on:
+  workflow_dispatch:  # Manual trigger only
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - preview
+
+# Note: This workflow requires Firebase secrets to be configured
+# 1. Go to Firebase Console > Project Settings > Service accounts
+# 2. Generate new private key
+# 3. Add to GitHub repository secrets as FIREBASE_SERVICE_ACCOUNT
+# 4. Also set FIREBASE_PROJECT_ID secret
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+  deploy:
+    name: Deploy to Firebase
+    needs: test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Deploy to Firebase Hosting (Production)
+        if: ${{ github.event.inputs.environment == 'production' }}
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          projectId: ${{ secrets.FIREBASE_PROJECT_ID }}
+          channelId: live
+
+      - name: Deploy to Firebase Hosting (Preview)
+        if: ${{ github.event.inputs.environment == 'preview' }}
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          projectId: ${{ secrets.FIREBASE_PROJECT_ID }}
+          # Preview channel - creates a temporary URL
+
+      - name: Deployment summary
+        run: |
+          echo "## Firebase Deployment Complete! :fire:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Environment: ${{ github.event.inputs.environment }}" >> $GITHUB_STEP_SUMMARY
