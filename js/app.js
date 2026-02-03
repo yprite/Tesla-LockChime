@@ -1514,6 +1514,15 @@ class TeslaLockSoundApp {
      * Play the full sound
      */
     async playFull() {
+        // Toggle: if already playing, just stop
+        if (this.audioProcessor.isPlaying) {
+            this.audioProcessor.stop();
+            this.waveform.stopPlayheadAnimation();
+            this.waveform.hidePlayhead();
+            this.elements.btnPreview.innerHTML = '<span class="btn-icon" aria-hidden="true">▶</span> Preview';
+            return;
+        }
+
         this.audioProcessor.stop();
         this.waveform.stopPlayheadAnimation();
 
@@ -1537,6 +1546,15 @@ class TeslaLockSoundApp {
      * Play the trimmed portion
      */
     async playTrimmed() {
+        // Toggle: if already playing, just stop
+        if (this.audioProcessor.isPlaying) {
+            this.audioProcessor.stop();
+            this.waveform.stopPlayheadAnimation();
+            this.waveform.hidePlayhead();
+            this.elements.btnPreviewTrimmed.innerHTML = '<span class="btn-icon" aria-hidden="true">▶</span> Preview Trimmed';
+            return;
+        }
+
         this.audioProcessor.stop();
         this.waveform.stopPlayheadAnimation();
 
