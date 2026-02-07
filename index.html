@@ -60,17 +60,17 @@
             <!-- Gallery Header -->
             <div class="gallery-header">
                 <div class="gallery-title-section">
-                    <h1 class="gallery-title">Sound Library</h1>
-                    <p class="gallery-subtitle">Discover, preview, and use community sounds</p>
+                    <h1 class="gallery-title" data-i18n="gallery.title">Community Gallery</h1>
+                    <p class="gallery-subtitle" data-i18n="gallery.subtitle">Discover and share custom Tesla lock sounds with owners worldwide</p>
                 </div>
                 <div class="gallery-stats">
                     <div class="stat-pill">
                         <span class="stat-value" id="stat-sounds">0</span>
-                        <span class="stat-label">sounds</span>
+                        <span class="stat-label" data-i18n="gallery.sounds">Sounds</span>
                     </div>
                     <div class="stat-pill">
                         <span class="stat-value" id="stat-downloads">0</span>
-                        <span class="stat-label">downloads</span>
+                        <span class="stat-label" data-i18n="gallery.downloads">Downloads</span>
                     </div>
                 </div>
             </div>
@@ -82,14 +82,14 @@
                         <circle cx="11" cy="11" r="8"/>
                         <path d="M21 21l-4.35-4.35"/>
                     </svg>
-                    <input type="text" id="search-input" placeholder="Search sounds...">
+                    <input type="text" id="search-input" data-i18n-placeholder="form.searchPlaceholder" placeholder="Search sounds...">
                 </div>
                 <div class="filter-pills">
-                    <button class="filter-pill active" data-category="all">All</button>
-                    <button class="filter-pill" data-category="trending">Trending</button>
-                    <button class="filter-pill" data-category="classic">Classic</button>
-                    <button class="filter-pill" data-category="modern">Modern</button>
-                    <button class="filter-pill" data-category="funny">Funny</button>
+                    <button class="filter-pill active" data-category="all" data-i18n="cat.all">All</button>
+                    <button class="filter-pill" data-category="trending" data-i18n="gallery.trending">Trending This Week</button>
+                    <button class="filter-pill" data-category="classic" data-i18n="cat.classic">Classic</button>
+                    <button class="filter-pill" data-category="modern" data-i18n="cat.modern">Modern</button>
+                    <button class="filter-pill" data-category="funny" data-i18n="cat.funny">Funny</button>
                 </div>
                 <button class="btn-upload" id="btn-upload-sound">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -97,8 +97,39 @@
                         <polyline points="17,8 12,3 7,8"/>
                         <line x1="12" y1="3" x2="12" y2="15"/>
                     </svg>
-                    <span>Upload</span>
+                    <span data-i18n="btn.upload">Upload</span>
                 </button>
+            </div>
+
+            <!-- Fleet & Growth Panels -->
+            <div class="growth-panels">
+                <section class="growth-card">
+                    <h2 class="growth-card-title">Tesla Fleet Compatibility</h2>
+                    <p class="growth-card-subtitle">Connect with a Tesla Fleet API access token to verify if your vehicle is ready.</p>
+                    <div class="fleet-form">
+                        <input type="password" id="fleet-token-input" placeholder="Tesla Fleet access token">
+                        <input type="url" id="fleet-base-url-input" placeholder="Fleet API base URL (optional)">
+                        <button class="btn-secondary" id="btn-fleet-connect">Connect Tesla</button>
+                        <select id="fleet-vehicle-select"></select>
+                        <button class="btn-primary" id="btn-fleet-check">Check Compatibility</button>
+                    </div>
+                    <div id="fleet-status-message" class="growth-status">Not connected</div>
+                </section>
+
+                <section class="growth-card">
+                    <h2 class="growth-card-title">Release Update Watcher</h2>
+                    <p class="growth-card-subtitle">Detect new release notes and get sound recommendations instantly.</p>
+                    <button class="btn-secondary" id="btn-release-check">Check Release Notes</button>
+                    <div id="release-update-message" class="growth-status">No release checks yet</div>
+                    <ul id="release-recommendations" class="recommendation-list"></ul>
+                </section>
+
+                <section class="growth-card">
+                    <h2 class="growth-card-title">Weekly Challenge & Ranking</h2>
+                    <p class="growth-card-subtitle">Save, upload, and share to complete this week&apos;s challenge.</p>
+                    <div id="challenge-progress" class="challenge-progress"></div>
+                    <ol id="weekly-ranking-list" class="ranking-list"></ol>
+                </section>
             </div>
 
             <!-- Sound Cards Grid -->
@@ -108,7 +139,7 @@
 
             <!-- Load More -->
             <div class="load-more-section" id="load-more-section" style="display: none;">
-                <button class="btn-load-more" id="btn-load-more">Load More Sounds</button>
+                <button class="btn-load-more" id="btn-load-more" data-i18n="btn.loadMore">Load More</button>
             </div>
 
             <!-- Empty State -->
@@ -175,7 +206,7 @@
                                 <polygon points="11,5 6,9 2,9 2,15 6,15 11,19"/>
                                 <path d="M15.54 8.46a5 5 0 010 7.07"/>
                             </svg>
-                            Volume
+                            <span data-i18n="form.volume">Volume</span>
                         </label>
                         <input type="range" class="range-slider" id="volume-slider-v2" min="0" max="100" value="100">
                         <span class="range-value" id="volume-value-v2">100%</span>
@@ -229,6 +260,16 @@
                         Share to Gallery
                     </button>
                 </div>
+
+                <section class="workspace-section">
+                    <h3 class="workspace-title">My Workspace</h3>
+                    <p class="workspace-subtitle">Save drafts with version history and continue later.</p>
+                    <div class="workspace-controls">
+                        <input type="text" id="workspace-draft-name" placeholder="Draft name">
+                        <button class="btn-secondary" id="btn-save-draft">Save Draft Version</button>
+                    </div>
+                    <div id="workspace-drafts-list" class="workspace-drafts-list"></div>
+                </section>
             </div>
         </aside>
     </main>
@@ -383,6 +424,8 @@
     <script src="js/audio-processor.js"></script>
     <script src="js/file-system.js"></script>
     <script src="js/gallery.js"></script>
+    <script src="js/tesla-features.js"></script>
+    <script src="js/i18n.js"></script>
     <script src="js/app-v2.js"></script>
 </body>
 </html>

@@ -1663,6 +1663,129 @@ body.editor-open .gallery-panel {
 }
 
 /* ===========================
+   Growth Panels
+   =========================== */
+.growth-panels {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.growth-card {
+    background: linear-gradient(160deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.01));
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: 1rem;
+}
+
+.growth-card-title {
+    font-size: 1rem;
+    font-weight: 650;
+    margin-bottom: 0.25rem;
+}
+
+.growth-card-subtitle {
+    font-size: 0.8rem;
+    color: var(--color-text-secondary);
+    margin-bottom: 0.75rem;
+}
+
+.fleet-form {
+    display: grid;
+    gap: 0.5rem;
+}
+
+.fleet-form input,
+.fleet-form select,
+.workspace-controls input {
+    width: 100%;
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+    color: var(--color-text);
+    border-radius: var(--radius-sm);
+    padding: 0.55rem 0.65rem;
+    font-size: 0.85rem;
+}
+
+.growth-status {
+    margin-top: 0.6rem;
+    font-size: 0.8rem;
+    color: var(--color-text-secondary);
+}
+
+.recommendation-list,
+.ranking-list {
+    margin-top: 0.6rem;
+    padding-left: 1rem;
+    color: var(--color-text-secondary);
+    font-size: 0.8rem;
+    display: grid;
+    gap: 0.35rem;
+}
+
+.challenge-progress {
+    margin-top: 0.6rem;
+    display: grid;
+    gap: 0.25rem;
+    font-size: 0.8rem;
+    color: var(--color-text-secondary);
+}
+
+/* ===========================
+   Workspace
+   =========================== */
+.workspace-section {
+    margin-top: 1rem;
+    padding: 0.9rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.workspace-title {
+    font-size: 0.95rem;
+    font-weight: 650;
+}
+
+.workspace-subtitle {
+    font-size: 0.8rem;
+    color: var(--color-text-secondary);
+    margin-bottom: 0.5rem;
+}
+
+.workspace-controls {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.workspace-drafts-list {
+    display: grid;
+    gap: 0.45rem;
+}
+
+.workspace-draft-item {
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    padding: 0.55rem;
+    background: var(--color-surface);
+}
+
+.workspace-draft-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.workspace-draft-meta {
+    color: var(--color-text-secondary);
+    font-size: 0.75rem;
+}
+
+/* ===========================
    Responsive Design
    =========================== */
 @media (max-width: 1024px) {
@@ -1678,6 +1801,10 @@ body.editor-open .gallery-panel {
 
     body.editor-open .gallery-panel {
         margin-right: 0;
+    }
+
+    .growth-panels {
+        grid-template-columns: 1fr;
     }
 }
 
@@ -1702,6 +1829,10 @@ body.editor-open .gallery-panel {
     .quick-actions {
         flex-direction: column;
         align-items: stretch;
+    }
+
+    .workspace-controls {
+        grid-template-columns: 1fr;
     }
 
     .search-box {

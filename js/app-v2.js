@@ -12,6 +12,35 @@ class TeslaLockSoundAppV2 {
         this.audioProcessor = new AudioProcessor();
         this.fileSystem = new FileSystemHandler();
         this.gallery = new GalleryHandler();
+        this.featureUtils = (typeof window !== 'undefined' && window.TeslaFeatureUtils) ? window.TeslaFeatureUtils : {
+            normalizeVehicle: (vehicle) => ({
+                vin: vehicle?.vin || '',
+                displayName: vehicle?.display_name || 'Tesla',
+                state: vehicle?.state || 'unknown',
+                vehicleConfig: vehicle?.vehicle_config || null,
+                optionCodes: vehicle?.option_codes || ''
+            }),
+            evaluateCompatibility: () => ({ ready: false, reasons: ['Fleet utility unavailable.'] }),
+            detectReleaseUpdate: () => ({ updated: false, previous: null, current: null }),
+            deriveRecommendationsFromRelease: () => [{ category: 'custom', reason: 'Fleet utility unavailable.' }],
+            addWeeklyAction: () => ({}),
+            getWeeklyActionStats: () => ({ saves: 0, uploads: 0, shares: 0 }),
+            getChallengeProgress: () => ({ saveProgress: 0, uploadProgress: 0, shareProgress: 0, completed: false })
+        };
+        this.fleetClient = (typeof TeslaFleetClient !== 'undefined') ? new TeslaFleetClient() : {
+            getToken: () => '',
+            getBaseUrl: () => '',
+            setToken: () => {},
+            setBaseUrl: () => {},
+            getVehicles: async () => [],
+            getFleetStatus: async () => null,
+            getReleaseNotes: async () => null
+        };
+        this.workspaceStore = (typeof WorkspaceStore !== 'undefined') ? new WorkspaceStore() : {
+            listDrafts: () => [],
+            saveDraftVersion: () => { throw new Error('Workspace unavailable'); },
+            deleteDraft: () => {}
+        };
 
         this.state = {
             selectedSoundId: null,
@@ -24,7 +53,9 @@ class TeslaLockSoundAppV2 {
             volume: 100,
             isEditorOpen: false,
             currentCategory: 'all',
-            searchQuery: ''
+            searchQuery: '',
+            fleetVehicles: [],
+            currentVehicleVin: null
         };
 
         this.waveformCanvas = null;
@@ -103,20 +134,69 @@ class TeslaLockSoundAppV2 {
             statSounds: document.getElementById('stat-sounds'),
             statDownloads: document.getElementById('stat-downloads'),
 
-            languageSelect: document.getElementById('language-select')
+            languageSelect: document.getElementById('language-select'),
+
+            fleetTokenInput: document.getElementById('fleet-token-input'),
+            fleetBaseUrlInput: document.getElementById('fleet-base-url-input'),
+            btnFleetConnect: document.getElementById('btn-fleet-connect'),
+            fleetVehicleSelect: document.getElementById('fleet-vehicle-select'),
+            btnFleetCheck: document.getElementById('btn-fleet-check'),
+            fleetStatusMessage: document.getElementById('fleet-status-message'),
+            btnReleaseCheck: document.getElementById('btn-release-check'),
+            releaseUpdateMessage: document.getElementById('release-update-message'),
+            releaseRecommendations: document.getElementById('release-recommendations'),
+            challengeProgress: document.getElementById('challenge-progress'),
+            weeklyRankingList: document.getElementById('weekly-ranking-list'),
+            workspaceDraftName: document.getElementById('workspace-draft-name'),
+            btnSaveDraft: document.getElementById('btn-save-draft'),
+            workspaceDraftsList: document.getElementById('workspace-drafts-list')
         };
     }
 
     async init() {
         this.waveformCanvas = this.elements.waveformCanvas;
         this.waveformCtx = this.waveformCanvas?.getContext('2d');
+        this.initLanguageSettings();
 
         await this.initGallery();
+        this.initGrowthFeatures();
         this.setupEventListeners();
         this.populatePresets();
         this.resizeWaveformCanvas();
 
         window.addEventListener('resize', () => this.resizeWaveformCanvas());
+    }
+
+    initLanguageSettings() {
+        const i18nApi = window.i18n;
+        const languageSelect = this.elements.languageSelect;
+
+        if (!languageSelect || !i18nApi) {
+            return;
+        }
+
+        if (typeof i18nApi.getLanguage === 'function') {
+            const currentLang = i18nApi.getLanguage();
+            languageSelect.value = currentLang;
+            document.documentElement.lang = currentLang;
+        }
+
+        if (typeof i18nApi.updatePage === 'function') {
+            i18nApi.updatePage();
+        }
+
+        languageSelect.addEventListener('change', (e) => {
+            if (typeof i18nApi.setLanguage === 'function') {
+                i18nApi.setLanguage(e.target.value);
+            }
+        });
+
+        window.addEventListener('languageChanged', (e) => {
+            const changedLanguage = e?.detail?.language;
+            if (changedLanguage && languageSelect.value !== changedLanguage) {
+                languageSelect.value = changedLanguage;
+            }
+        });
     }
 
     async initGallery() {
@@ -134,6 +214,20 @@ class TeslaLockSoundAppV2 {
             console.error('Gallery init error:', error);
             this.showEmptyState();
         }
+    }
+
+    initGrowthFeatures() {
+        if (this.elements.fleetTokenInput) {
+            this.elements.fleetTokenInput.value = this.fleetClient.getToken();
+        }
+
+        if (this.elements.fleetBaseUrlInput) {
+            this.elements.fleetBaseUrlInput.value = this.fleetClient.getBaseUrl();
+        }
+
+        this.renderChallengeProgress();
+        this.renderWorkspaceDrafts();
+        this.loadWeeklyRanking();
     }
 
     setupEventListeners() {
@@ -163,6 +257,10 @@ class TeslaLockSoundAppV2 {
         this.setupModals();
 
         this.elements.btnLoadMore?.addEventListener('click', () => this.loadGallerySounds(true));
+        this.elements.btnFleetConnect?.addEventListener('click', () => this.connectFleetApi());
+        this.elements.btnFleetCheck?.addEventListener('click', () => this.checkFleetCompatibility());
+        this.elements.btnReleaseCheck?.addEventListener('click', () => this.checkReleaseUpdates());
+        this.elements.btnSaveDraft?.addEventListener('click', () => this.saveWorkspaceDraft());
     }
 
     setupTrimHandles() {
@@ -698,6 +796,7 @@ class TeslaLockSoundAppV2 {
 
             if (result.success) {
                 this.hideLoading();
+                this.incrementWeeklyAction('save');
                 this.showSuccessModal();
             } else if (!result.cancelled) {
                 throw new Error(result.message);
@@ -742,11 +841,284 @@ class TeslaLockSoundAppV2 {
 
             this.hideLoading();
             this.showToast('Shared to gallery!', 'success');
+            this.incrementWeeklyAction('share');
             await this.loadGallerySounds();
+            await this.loadWeeklyRanking();
         } catch (error) {
             this.hideLoading();
             this.showToast('Upload failed', 'error');
         }
+    }
+
+    async connectFleetApi() {
+        const token = this.elements.fleetTokenInput?.value?.trim() || '';
+        const baseUrl = this.elements.fleetBaseUrlInput?.value?.trim();
+
+        if (!token) {
+            this.setFleetMessage('Please enter a Tesla Fleet access token.', true);
+            return;
+        }
+
+        this.fleetClient.setToken(token);
+        if (baseUrl) {
+            this.fleetClient.setBaseUrl(baseUrl);
+        }
+
+        this.setFleetMessage('Connecting to Tesla Fleet API...');
+
+        try {
+            const vehicles = await this.fleetClient.getVehicles();
+            this.state.fleetVehicles = vehicles.map(v => this.featureUtils.normalizeVehicle(v));
+            this.populateVehicleSelect();
+
+            if (this.state.fleetVehicles.length === 0) {
+                this.setFleetMessage('Connected, but no vehicles were returned for this account.', true);
+                return;
+            }
+
+            this.setFleetMessage(`Connected: ${this.state.fleetVehicles.length} vehicle(s) loaded.`);
+        } catch (error) {
+            this.setFleetMessage(`Connection failed: ${error.message}`, true);
+        }
+    }
+
+    populateVehicleSelect() {
+        const select = this.elements.fleetVehicleSelect;
+        if (!select) return;
+
+        const vehicles = this.state.fleetVehicles || [];
+        if (vehicles.length === 0) {
+            select.innerHTML = '<option value=\"\">No vehicles</option>';
+            return;
+        }
+
+        select.innerHTML = vehicles.map(vehicle =>
+            `<option value=\"${this.escapeHtml(vehicle.vin)}\">${this.escapeHtml(vehicle.displayName)} (${this.escapeHtml(vehicle.vin.slice(-6))})</option>`
+        ).join('');
+
+        this.state.currentVehicleVin = vehicles[0].vin;
+        select.value = vehicles[0].vin;
+        select.onchange = () => {
+            this.state.currentVehicleVin = select.value;
+        };
+    }
+
+    async checkFleetCompatibility() {
+        const vin = this.elements.fleetVehicleSelect?.value || this.state.currentVehicleVin;
+        if (!vin) {
+            this.setFleetMessage('Select a vehicle first.', true);
+            return;
+        }
+
+        const vehicle = (this.state.fleetVehicles || []).find(v => v.vin === vin);
+        if (!vehicle) {
+            this.setFleetMessage('Selected vehicle is not available.', true);
+            return;
+        }
+
+        this.setFleetMessage('Checking compatibility...');
+
+        try {
+            const status = await this.fleetClient.getFleetStatus(vin);
+            const result = this.featureUtils.evaluateCompatibility(vehicle, status);
+            const reasonText = result.reasons.length > 0 ? ` Notes: ${result.reasons.join(' ')}` : '';
+            this.setFleetMessage(
+                result.ready
+                    ? `Compatible: ${vehicle.displayName} is likely ready for custom lock chimes.${reasonText}`
+                    : `Needs attention: ${vehicle.displayName} may need additional checks.${reasonText}`,
+                !result.ready
+            );
+        } catch (error) {
+            this.setFleetMessage(`Compatibility check failed: ${error.message}`, true);
+        }
+    }
+
+    async checkReleaseUpdates() {
+        const vin = this.elements.fleetVehicleSelect?.value || this.state.currentVehicleVin;
+        if (!vin) {
+            this.elements.releaseUpdateMessage.textContent = 'Connect Tesla and select a vehicle first.';
+            return;
+        }
+
+        try {
+            const releaseResponse = await this.fleetClient.getReleaseNotes(vin);
+            const latest = Array.isArray(releaseResponse) ? releaseResponse[0] : releaseResponse;
+            const currentVersion = latest?.version || latest?.name || latest?.release_version || null;
+            const noteText = latest?.notes || latest?.body || JSON.stringify(latest || {});
+
+            const updateInfo = this.featureUtils.detectReleaseUpdate(vin, currentVersion);
+
+            if (!currentVersion) {
+                this.elements.releaseUpdateMessage.textContent = 'No release version found in response.';
+                return;
+            }
+
+            if (updateInfo.updated) {
+                this.elements.releaseUpdateMessage.textContent = `Update detected: ${updateInfo.previous} -> ${currentVersion}`;
+            } else {
+                this.elements.releaseUpdateMessage.textContent = `No new update detected. Current version: ${currentVersion}`;
+            }
+
+            const weekly = await this.gallery.getWeeklyPopular(5);
+            const recommendations = this.featureUtils.deriveRecommendationsFromRelease(
+                noteText,
+                weekly?.sounds || []
+            );
+            this.renderReleaseRecommendations(recommendations);
+        } catch (error) {
+            this.elements.releaseUpdateMessage.textContent = `Release check failed: ${error.message}`;
+        }
+    }
+
+    renderReleaseRecommendations(recommendations) {
+        if (!this.elements.releaseRecommendations) return;
+        this.elements.releaseRecommendations.innerHTML = '';
+
+        recommendations.forEach(item => {
+            const li = document.createElement('li');
+            li.textContent = `${item.category}: ${item.reason}`;
+            this.elements.releaseRecommendations.appendChild(li);
+        });
+    }
+
+    setFleetMessage(message, isError = false) {
+        if (!this.elements.fleetStatusMessage) return;
+        this.elements.fleetStatusMessage.textContent = message;
+        this.elements.fleetStatusMessage.style.color = isError ? 'var(--color-error)' : 'var(--color-text-secondary)';
+    }
+
+    incrementWeeklyAction(type) {
+        this.featureUtils.addWeeklyAction(type);
+        this.renderChallengeProgress();
+    }
+
+    renderChallengeProgress() {
+        if (!this.elements.challengeProgress) return;
+
+        const stats = this.featureUtils.getWeeklyActionStats() || { saves: 0, uploads: 0, shares: 0 };
+        const progress = this.featureUtils.getChallengeProgress(stats);
+
+        this.elements.challengeProgress.innerHTML = [
+            `Save to USB: ${stats.saves || 0}/2 (${progress.saveProgress}%)`,
+            `Upload to Gallery: ${stats.uploads || 0}/1 (${progress.uploadProgress}%)`,
+            `Share to Gallery: ${stats.shares || 0}/1 (${progress.shareProgress}%)`,
+            progress.completed ? 'Challenge complete. Weekly creator badge unlocked.' : 'Complete all 3 to finish this week.'
+        ].map(text => `<div>${this.escapeHtml(text)}</div>`).join('');
+    }
+
+    async loadWeeklyRanking() {
+        if (!this.elements.weeklyRankingList || !this.gallery.isAvailable()) return;
+
+        try {
+            const result = await this.gallery.getWeeklyPopular(5);
+            const sounds = result?.sounds || [];
+
+            if (sounds.length === 0) {
+                this.elements.weeklyRankingList.innerHTML = '<li>No ranking data yet.</li>';
+                return;
+            }
+
+            this.elements.weeklyRankingList.innerHTML = sounds.map((sound, index) => {
+                const score = ((sound.likes || 0) * 2) + (sound.downloads || 0);
+                return `<li>#${index + 1} ${this.escapeHtml(sound.name)} (${score} pts)</li>`;
+            }).join('');
+        } catch (error) {
+            this.elements.weeklyRankingList.innerHTML = '<li>Ranking unavailable right now.</li>';
+        }
+    }
+
+    saveWorkspaceDraft() {
+        const name = this.elements.workspaceDraftName?.value?.trim();
+        if (!name) {
+            this.showToast('Enter a draft name first.', 'error');
+            return;
+        }
+
+        try {
+            this.workspaceStore.saveDraftVersion({
+                name,
+                source: {
+                    id: this.state.selectedSoundId,
+                    name: this.state.selectedSoundName,
+                    url: this.state.selectedSoundUrl
+                },
+                trimStart: this.state.trimStart,
+                trimEnd: this.state.trimEnd,
+                volume: this.state.volume
+            });
+            this.renderWorkspaceDrafts();
+            this.showToast('Draft version saved.', 'success');
+        } catch (error) {
+            this.showToast(error.message, 'error');
+        }
+    }
+
+    renderWorkspaceDrafts() {
+        if (!this.elements.workspaceDraftsList) return;
+        const drafts = this.workspaceStore.listDrafts();
+
+        if (drafts.length === 0) {
+            this.elements.workspaceDraftsList.innerHTML = '<div class=\"workspace-draft-meta\">No drafts saved yet.</div>';
+            return;
+        }
+
+        this.elements.workspaceDraftsList.innerHTML = '';
+
+        drafts.forEach(draft => {
+            const latest = draft.versions?.[0];
+            const container = document.createElement('div');
+            container.className = 'workspace-draft-item';
+            container.innerHTML = `
+                <div class=\"workspace-draft-row\">
+                    <strong>${this.escapeHtml(draft.name)}</strong>
+                    <div>
+                        <button class=\"btn-secondary\" data-action=\"load\">Load</button>
+                        <button class=\"btn-secondary\" data-action=\"delete\">Delete</button>
+                    </div>
+                </div>
+                <div class=\"workspace-draft-meta\">
+                    Versions: ${draft.versions?.length || 0} | Latest trim: ${(latest?.trimStart || 0).toFixed(1)}s - ${(latest?.trimEnd || 0).toFixed(1)}s
+                </div>
+            `;
+
+            container.querySelector('[data-action=\"load\"]')?.addEventListener('click', () => this.applyDraftVersion(draft));
+            container.querySelector('[data-action=\"delete\"]')?.addEventListener('click', () => {
+                this.workspaceStore.deleteDraft(draft.id);
+                this.renderWorkspaceDrafts();
+            });
+
+            this.elements.workspaceDraftsList.appendChild(container);
+        });
+    }
+
+    async applyDraftVersion(draft) {
+        const version = draft?.versions?.[0];
+        if (!version) return;
+
+        const sourceId = version.source?.id || '';
+        if (sourceId && sourceId.startsWith('sound_') && this.gallery.isAvailable()) {
+            try {
+                const sound = await this.gallery.getSound(sourceId);
+                await this.useSound(sound);
+            } catch (error) {
+                this.showToast('Could not load draft source from gallery.', 'error');
+                return;
+            }
+        } else if (sourceId && typeof AUDIO_SAMPLES !== 'undefined' && AUDIO_SAMPLES.some(s => s.id === sourceId)) {
+            await this.selectPreset(sourceId);
+        }
+
+        this.state.trimStart = Math.max(0, version.trimStart || 0);
+        this.state.trimEnd = Math.min(this.state.duration || 5, version.trimEnd || 3);
+        this.state.volume = Math.min(100, Math.max(0, version.volume || 100));
+        if (this.elements.volumeSlider) {
+            this.elements.volumeSlider.value = String(this.state.volume);
+            this.elements.volumeValue.textContent = `${this.state.volume}%`;
+        }
+        this.audioProcessor.setVolume(this.state.volume / 100);
+        this.updateTrimUI();
+        this.validateDuration();
+        this.showToast(`Loaded draft: ${draft.name}`, 'success');
     }
 
     openUploadModal() {
@@ -826,7 +1198,9 @@ class TeslaLockSoundAppV2 {
 
             this.hideLoading();
             this.showToast('Uploaded to gallery!', 'success');
+            this.incrementWeeklyAction('upload');
             await this.loadGallerySounds();
+            await this.loadWeeklyRanking();
         } catch (error) {
             this.hideLoading();
             this.showToast('Upload failed', 'error');
