@@ -208,6 +208,8 @@ const TRANSLATIONS = {
     'admin.confirmDelete': 'Confirm Delete',
     'admin.deleteWarning': 'Are you sure you want to delete this sound? This action cannot be undone.',
     'admin.delete': 'Delete',
+    'admin.mobileTitle': 'View Only Mode',
+    'admin.mobileMessage': 'Sound deletion is only available on desktop. You can view statistics and browse sounds on mobile.',
   },
 
   ko: {
@@ -414,6 +416,8 @@ const TRANSLATIONS = {
     'admin.confirmDelete': '삭제 확인',
     'admin.deleteWarning': '이 사운드를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.',
     'admin.delete': '삭제',
+    'admin.mobileTitle': '보기 전용 모드',
+    'admin.mobileMessage': '사운드 삭제는 데스크톱에서만 가능합니다. 모바일에서는 통계 확인과 사운드 목록 조회가 가능합니다.',
   },
 
   ja: {
@@ -620,6 +624,8 @@ const TRANSLATIONS = {
     'admin.confirmDelete': '削除の確認',
     'admin.deleteWarning': 'このサウンドを削除しますか？この操作は元に戻せません。',
     'admin.delete': '削除',
+    'admin.mobileTitle': '閲覧専用モード',
+    'admin.mobileMessage': 'サウンドの削除はデスクトップでのみ可能です。モバイルでは統計の確認とサウンドの閲覧ができます。',
   },
 
   zh: {
@@ -826,6 +832,8 @@ const TRANSLATIONS = {
     'admin.confirmDelete': '确认删除',
     'admin.deleteWarning': '确定要删除此声音吗？此操作无法撤销。',
     'admin.delete': '删除',
+    'admin.mobileTitle': '仅查看模式',
+    'admin.mobileMessage': '声音删除仅在桌面端可用。您可以在移动端查看统计数据和浏览声音。',
   }
 };
 

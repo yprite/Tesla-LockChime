@@ -19,6 +19,7 @@ build/
 # Logs
 *.log
 npm-debug.log*
+generation-log.json
 
 # Environment files
 .env

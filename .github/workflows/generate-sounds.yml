@@ -1,0 +1,63 @@
+name: Generate AI Sounds
+
+on:
+  schedule:
+    - cron: '0 17 * * *'  # 17:00 UTC = 02:00 KST (daily)
+  workflow_dispatch:
+    inputs:
+      batch_size:
+        description: 'Number of sounds to generate'
+        required: false
+        default: '5'
+        type: string
+      dry_run:
+        description: 'Dry run (generate but do not upload)'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: generate-sounds
+  cancel-in-progress: false
+
+jobs:
+  generate:
+    name: Generate AI Sounds
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify ffmpeg
+        run: ffmpeg -version
+
+      - name: Generate sounds
+        env:
+          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          BATCH_SIZE: ${{ inputs.batch_size || '5' }}
+          DRY_RUN: ${{ inputs.dry_run || 'false' }}
+          MAX_DAILY_CREDITS: '500'
+        run: node scripts/generate-sounds.js
+
+      - name: Upload generation log
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: generation-log-${{ github.run_id }}
+          path: generation-log.json
+          retention-days: 30

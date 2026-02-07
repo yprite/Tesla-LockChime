@@ -593,3 +593,236 @@
         font-size: 1.5rem;
     }
 }
+
+/* ===========================
+   Mobile Restriction Notice
+   =========================== */
+.mobile-notice {
+    display: none;
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(245, 158, 11, 0.05));
+    border: 1px solid var(--color-warning);
+    border-radius: var(--border-radius-lg);
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
+
+.mobile-notice-icon {
+    font-size: 2.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.mobile-notice h3 {
+    color: var(--color-warning);
+    margin-bottom: 0.5rem;
+}
+
+.mobile-notice p {
+    color: var(--color-text-secondary);
+    font-size: 0.875rem;
+    margin: 0;
+}
+
+@media (max-width: 768px) {
+    .mobile-notice {
+        display: block;
+    }
+
+    /* Disable delete actions on mobile */
+    .bulk-actions,
+    .action-btn.delete-btn {
+        display: none !important;
+    }
+
+    .sounds-table .checkbox-col {
+        display: none;
+    }
+}
+
+/* ===========================
+   Animations
+   =========================== */
+
+/* Fade In Animation */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Slide In Animation */
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Scale In Animation */
+@keyframes scaleIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Pulse Animation */
+@keyframes pulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+    }
+}
+
+/* Apply animations to elements */
+.stat-card {
+    animation: slideInUp 0.4s ease-out forwards;
+    opacity: 0;
+}
+
+.stat-card:nth-child(1) { animation-delay: 0.1s; }
+.stat-card:nth-child(2) { animation-delay: 0.2s; }
+.stat-card:nth-child(3) { animation-delay: 0.3s; }
+.stat-card:nth-child(4) { animation-delay: 0.4s; }
+
+.chart-card {
+    animation: fadeIn 0.5s ease-out forwards;
+    opacity: 0;
+}
+
+.chart-card:nth-child(1) { animation-delay: 0.3s; }
+.chart-card:nth-child(2) { animation-delay: 0.4s; }
+
+.top-card {
+    animation: fadeIn 0.5s ease-out forwards;
+    animation-delay: 0.5s;
+    opacity: 0;
+}
+
+.management-section {
+    animation: fadeIn 0.5s ease-out forwards;
+    animation-delay: 0.6s;
+    opacity: 0;
+}
+
+/* Hover animations */
+.stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+}
+
+.stat-card:hover .stat-card-icon {
+    animation: pulse 0.6s ease-in-out;
+}
+
+.sounds-table tbody tr {
+    transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.sounds-table tbody tr:hover {
+    background-color: var(--color-surface-elevated);
+}
+
+/* Button hover effects */
+.btn {
+    transition: all 0.2s ease;
+}
+
+.btn:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow);
+}
+
+.btn:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+/* Modal animation */
+.modal {
+    animation: fadeIn 0.2s ease-out;
+}
+
+.modal-content {
+    animation: scaleIn 0.3s ease-out;
+}
+
+/* Login card animation */
+.login-card {
+    animation: scaleIn 0.4s ease-out;
+}
+
+/* Loading spinner pulse */
+.loading-spinner {
+    animation: spin 1s linear infinite;
+}
+
+/* Toast animation override */
+.toast {
+    animation: slideInUp 0.3s ease-out;
+}
+
+/* Chart container fade */
+.chart-container canvas {
+    animation: fadeIn 0.6s ease-out;
+    animation-delay: 0.5s;
+    opacity: 0;
+    animation-fill-mode: forwards;
+}
+
+/* Table row stagger animation */
+.sounds-table tbody tr {
+    animation: fadeIn 0.3s ease-out forwards;
+    opacity: 0;
+}
+
+.sounds-table tbody tr:nth-child(1) { animation-delay: 0.05s; }
+.sounds-table tbody tr:nth-child(2) { animation-delay: 0.1s; }
+.sounds-table tbody tr:nth-child(3) { animation-delay: 0.15s; }
+.sounds-table tbody tr:nth-child(4) { animation-delay: 0.2s; }
+.sounds-table tbody tr:nth-child(5) { animation-delay: 0.25s; }
+.sounds-table tbody tr:nth-child(6) { animation-delay: 0.3s; }
+.sounds-table tbody tr:nth-child(7) { animation-delay: 0.35s; }
+.sounds-table tbody tr:nth-child(8) { animation-delay: 0.4s; }
+.sounds-table tbody tr:nth-child(9) { animation-delay: 0.45s; }
+.sounds-table tbody tr:nth-child(10) { animation-delay: 0.5s; }
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    .stat-card,
+    .chart-card,
+    .top-card,
+    .management-section,
+    .login-card,
+    .modal,
+    .modal-content,
+    .toast,
+    .sounds-table tbody tr,
+    .chart-container canvas {
+        animation: none;
+        opacity: 1;
+        transform: none;
+    }
+
+    .stat-card:hover {
+        transform: none;
+    }
+
+    .btn:hover:not(:disabled) {
+        transform: none;
+    }
+}

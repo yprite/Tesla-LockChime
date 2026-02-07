@@ -1,5 +1,10 @@
-import '@testing-library/jest-dom';
 import { vi } from 'vitest';
+
+const isNodeEnv = typeof window === 'undefined';
+
+if (!isNodeEnv) {
+  await import('@testing-library/jest-dom');
+}
 
 // Mock Web Audio API
 class MockAudioContext {
@@ -70,6 +75,10 @@ global.AudioContext = MockAudioContext;
 global.webkitAudioContext = MockAudioContext;
 global.AudioBuffer = MockAudioBuffer;
 
+if (isNodeEnv) {
+  // Skip DOM-specific mocks in Node environment
+} else {
+
 // Mock canvas context
 HTMLCanvasElement.prototype.getContext = function(type) {
   if (type === '2d') {
@@ -117,3 +126,5 @@ if (!Blob.prototype.arrayBuffer) {
         });
     };
 }
+
+} // end of isNodeEnv else block

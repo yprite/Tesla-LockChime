@@ -9,7 +9,9 @@
     "test:coverage": "vitest run --coverage",
     "dev": "npx serve -p 3000",
     "lint": "eslint js/",
-    "build": "echo 'Static site - no build required'"
+    "build": "echo 'Static site - no build required'",
+    "generate-sounds": "node scripts/generate-sounds.js",
+    "generate-sounds:dry": "DRY_RUN=true node scripts/generate-sounds.js"
   },
   "repository": {
     "type": "git",
@@ -25,6 +27,9 @@
   ],
   "author": "",
   "license": "MIT",
+  "dependencies": {
+    "firebase-admin": "^13.0.0"
+  },
   "devDependencies": {
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.9.1",
