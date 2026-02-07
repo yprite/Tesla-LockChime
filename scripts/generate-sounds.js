@@ -26,16 +26,22 @@ function readConfig() {
     throw new Error('ELEVENLABS_API_KEY environment variable is required');
   }
 
-  const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT;
+  const serviceAccountJson =
+    process.env.FIREBASE_SERVICE_ACCOUNT_TESLA_LOCK_SOUNDS ||
+    process.env.FIREBASE_SERVICE_ACCOUNT;
   if (!serviceAccountJson) {
-    throw new Error('FIREBASE_SERVICE_ACCOUNT environment variable is required');
+    throw new Error(
+      'FIREBASE_SERVICE_ACCOUNT_TESLA_LOCK_SOUNDS (or FIREBASE_SERVICE_ACCOUNT) environment variable is required'
+    );
   }
 
   let serviceAccount;
   try {
     serviceAccount = JSON.parse(serviceAccountJson);
   } catch {
-    throw new Error('FIREBASE_SERVICE_ACCOUNT contains invalid JSON');
+    throw new Error(
+      'FIREBASE_SERVICE_ACCOUNT_TESLA_LOCK_SOUNDS (or FIREBASE_SERVICE_ACCOUNT) contains invalid JSON'
+    );
   }
 
   return {

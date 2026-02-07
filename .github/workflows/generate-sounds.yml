@@ -53,7 +53,7 @@ jobs:
       - name: Generate sounds
         env:
           ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
-          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          FIREBASE_SERVICE_ACCOUNT_TESLA_LOCK_SOUNDS: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_TESLA_LOCK_SOUNDS || secrets.FIREBASE_SERVICE_ACCOUNT }}
           BATCH_SIZE: ${{ inputs.batch_size || '5' }}
           DRY_RUN: ${{ inputs.dry_run || 'false' }}
           MAX_DAILY_CREDITS: '500'
