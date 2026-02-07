@@ -38,7 +38,7 @@
                 <span class="logo-text">Tesla Lock Sound</span>
             </div>
             <div class="header-actions">
-                <button class="btn-icon-ghost" id="btn-create-new" title="Create from scratch">
+                <button class="btn-icon-ghost" id="btn-create-new" title="Create from scratch" data-i18n-title="v2.createFromScratch">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M12 5v14M5 12h14"/>
                     </svg>
@@ -104,29 +104,29 @@
             <!-- Fleet & Growth Panels -->
             <div class="growth-panels">
                 <section class="growth-card">
-                    <h2 class="growth-card-title">Tesla Fleet Compatibility</h2>
-                    <p class="growth-card-subtitle">Connect with a Tesla Fleet API access token to verify if your vehicle is ready.</p>
+                    <h2 class="growth-card-title" data-i18n="v2.fleet.title">Tesla Fleet Compatibility</h2>
+                    <p class="growth-card-subtitle" data-i18n="v2.fleet.subtitle">Connect with a Tesla Fleet API access token to verify if your vehicle is ready.</p>
                     <div class="fleet-form">
-                        <input type="password" id="fleet-token-input" placeholder="Tesla Fleet access token">
-                        <input type="url" id="fleet-base-url-input" placeholder="Fleet API base URL (optional)">
-                        <button class="btn-secondary" id="btn-fleet-connect">Connect Tesla</button>
+                        <input type="password" id="fleet-token-input" data-i18n-placeholder="v2.fleet.tokenPlaceholder" placeholder="Tesla Fleet access token">
+                        <input type="url" id="fleet-base-url-input" data-i18n-placeholder="v2.fleet.baseUrlPlaceholder" placeholder="Fleet API base URL (optional)">
+                        <button class="btn-secondary" id="btn-fleet-connect" data-i18n="v2.fleet.connect">Connect Tesla</button>
                         <select id="fleet-vehicle-select"></select>
-                        <button class="btn-primary" id="btn-fleet-check">Check Compatibility</button>
+                        <button class="btn-primary" id="btn-fleet-check" data-i18n="v2.fleet.check">Check Compatibility</button>
                     </div>
-                    <div id="fleet-status-message" class="growth-status">Not connected</div>
+                    <div id="fleet-status-message" class="growth-status" data-i18n="v2.fleet.notConnected">Not connected</div>
                 </section>
 
                 <section class="growth-card">
-                    <h2 class="growth-card-title">Release Update Watcher</h2>
-                    <p class="growth-card-subtitle">Detect new release notes and get sound recommendations instantly.</p>
-                    <button class="btn-secondary" id="btn-release-check">Check Release Notes</button>
-                    <div id="release-update-message" class="growth-status">No release checks yet</div>
+                    <h2 class="growth-card-title" data-i18n="v2.release.title">Release Update Watcher</h2>
+                    <p class="growth-card-subtitle" data-i18n="v2.release.subtitle">Detect new release notes and get sound recommendations instantly.</p>
+                    <button class="btn-secondary" id="btn-release-check" data-i18n="v2.release.check">Check Release Notes</button>
+                    <div id="release-update-message" class="growth-status" data-i18n="v2.release.noChecks">No release checks yet</div>
                     <ul id="release-recommendations" class="recommendation-list"></ul>
                 </section>
 
                 <section class="growth-card">
-                    <h2 class="growth-card-title">Weekly Challenge & Ranking</h2>
-                    <p class="growth-card-subtitle">Save, upload, and share to complete this week&apos;s challenge.</p>
+                    <h2 class="growth-card-title" data-i18n="v2.challenge.title">Weekly Challenge & Ranking</h2>
+                    <p class="growth-card-subtitle" data-i18n="v2.challenge.subtitle">Save, upload, and share to complete this week&apos;s challenge.</p>
                     <div id="challenge-progress" class="challenge-progress"></div>
                     <ol id="weekly-ranking-list" class="ranking-list"></ol>
                 </section>
@@ -145,8 +145,8 @@
             <!-- Empty State -->
             <div class="empty-state" id="empty-state" style="display: none;">
                 <div class="empty-icon">🎵</div>
-                <h3>No sounds yet</h3>
-                <p>Be the first to upload a custom lock sound!</p>
+                <h3 data-i18n="v2.emptyTitle">No sounds yet</h3>
+                <p data-i18n="v2.emptySubtitle">Be the first to upload a custom lock sound!</p>
             </div>
         </section>
 
@@ -160,7 +160,7 @@
                             <path d="M18 6L6 18M6 6l12 12"/>
                         </svg>
                     </button>
-                    <h2 class="editor-title" id="editor-title">Edit Sound</h2>
+                    <h2 class="editor-title" id="editor-title" data-i18n="v2.editorTitle">Edit Sound</h2>
                     <div class="editor-sound-name" id="editor-sound-name">Selected Sound</div>
                 </div>
 
@@ -235,7 +235,7 @@
                             <polyline points="7,10 12,15 17,10"/>
                             <line x1="12" y1="15" x2="12" y2="3"/>
                         </svg>
-                        Download
+                        <span data-i18n="btn.download">Download</span>
                     </button>
                     <button class="btn-primary" id="btn-save-usb-v2">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -243,7 +243,7 @@
                             <path d="M6 8h.01M10 8h.01"/>
                             <path d="M14 8h6"/>
                         </svg>
-                        Save to USB
+                        <span data-i18n="btn.saveUsb">Save to USB</span>
                     </button>
                 </div>
 
@@ -257,16 +257,16 @@
                             <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
                             <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
                         </svg>
-                        Share to Gallery
+                        <span data-i18n="btn.uploadGallery">Upload to Gallery</span>
                     </button>
                 </div>
 
                 <section class="workspace-section">
-                    <h3 class="workspace-title">My Workspace</h3>
-                    <p class="workspace-subtitle">Save drafts with version history and continue later.</p>
+                    <h3 class="workspace-title" data-i18n="v2.workspace.title">My Workspace</h3>
+                    <p class="workspace-subtitle" data-i18n="v2.workspace.subtitle">Save drafts with version history and continue later.</p>
                     <div class="workspace-controls">
-                        <input type="text" id="workspace-draft-name" placeholder="Draft name">
-                        <button class="btn-secondary" id="btn-save-draft">Save Draft Version</button>
+                        <input type="text" id="workspace-draft-name" data-i18n-placeholder="v2.workspace.draftPlaceholder" placeholder="Draft name">
+                        <button class="btn-secondary" id="btn-save-draft" data-i18n="v2.workspace.saveDraft">Save Draft Version</button>
                     </div>
                     <div id="workspace-drafts-list" class="workspace-drafts-list"></div>
                 </section>
@@ -283,7 +283,7 @@
                     <path d="M18 6L6 18M6 6l12 12"/>
                 </svg>
             </button>
-            <h2 class="modal-title">Upload Your Sound</h2>
+            <h2 class="modal-title" data-i18n="v2.uploadModal.title">Upload Your Sound</h2>
 
             <div class="upload-dropzone" id="upload-dropzone">
                 <div class="dropzone-icon">
@@ -293,30 +293,30 @@
                         <line x1="12" y1="3" x2="12" y2="15"/>
                     </svg>
                 </div>
-                <p class="dropzone-text">Drop audio file here or <span>browse</span></p>
-                <p class="dropzone-hint">WAV, MP3, M4A, OGG (max 10MB)</p>
+                <p class="dropzone-text" data-i18n="v2.uploadModal.dropText">Drop audio file here or browse</p>
+                <p class="dropzone-hint" data-i18n="upload.formats">WAV, MP3, M4A, OGG (max 10MB)</p>
                 <input type="file" id="file-input" accept=".wav,.mp3,.m4a,.ogg,audio/*" hidden>
             </div>
 
             <form id="upload-form" class="upload-form" style="display: none;">
                 <div class="form-field">
-                    <label for="upload-name">Sound Name</label>
-                    <input type="text" id="upload-name-v2" maxlength="50" placeholder="My awesome sound" required>
+                    <label for="upload-name-v2" data-i18n="form.soundName">Sound Name</label>
+                    <input type="text" id="upload-name-v2" maxlength="50" data-i18n-placeholder="form.namePlaceholder" placeholder="My awesome sound" required>
                 </div>
                 <div class="form-field">
-                    <label for="upload-category">Category</label>
+                    <label for="upload-category-v2" data-i18n="form.category">Category</label>
                     <select id="upload-category-v2">
-                        <option value="custom">Custom</option>
-                        <option value="classic">Classic</option>
-                        <option value="modern">Modern</option>
-                        <option value="futuristic">Futuristic</option>
-                        <option value="funny">Funny</option>
-                        <option value="musical">Musical</option>
+                        <option value="custom" data-i18n="cat.custom">Custom</option>
+                        <option value="classic" data-i18n="cat.classic">Classic</option>
+                        <option value="modern" data-i18n="cat.modern">Modern</option>
+                        <option value="futuristic" data-i18n="cat.futuristic">Futuristic</option>
+                        <option value="funny" data-i18n="cat.funny">Funny</option>
+                        <option value="musical" data-i18n="cat.musical">Musical</option>
                     </select>
                 </div>
                 <div class="form-actions">
-                    <button type="button" class="btn-secondary" id="btn-upload-cancel">Cancel</button>
-                    <button type="submit" class="btn-primary">Upload to Gallery</button>
+                    <button type="button" class="btn-secondary" id="btn-upload-cancel" data-i18n="btn.cancel">Cancel</button>
+                    <button type="submit" class="btn-primary" data-i18n="btn.uploadGallery">Upload to Gallery</button>
                 </div>
             </form>
         </div>
@@ -357,19 +357,19 @@
                 </div>
             </div>
 
-            <h2 class="success-title">Sound Applied!</h2>
-            <p class="success-subtitle">Your custom lock sound is ready</p>
+            <h2 class="success-title" data-i18n="v2.success.title">Sound Applied!</h2>
+            <p class="success-subtitle" data-i18n="v2.success.subtitle">Your custom lock sound is ready</p>
 
             <div class="instructions-compact">
-                <h4>Next Steps:</h4>
+                <h4 data-i18n="v2.success.nextSteps">Next Steps:</h4>
                 <ol>
-                    <li>Eject USB safely</li>
-                    <li>Plug into Tesla</li>
-                    <li>Toybox → Boombox → Lock Sound → USB</li>
+                    <li data-i18n="v2.success.step1">Eject USB safely</li>
+                    <li data-i18n="v2.success.step2">Plug into Tesla</li>
+                    <li data-i18n="v2.success.step3">Toybox → Boombox → Lock Sound → USB</li>
                 </ol>
             </div>
 
-            <button class="btn-primary btn-full" id="btn-done">Done</button>
+            <button class="btn-primary btn-full" id="btn-done" data-i18n="v2.done">Done</button>
         </div>
     </div>
 
@@ -382,15 +382,15 @@
                     <path d="M18 6L6 18M6 6l12 12"/>
                 </svg>
             </button>
-            <h2 class="modal-title">Create New Sound</h2>
-            <p class="modal-subtitle">Choose a preset or upload your own</p>
+            <h2 class="modal-title" data-i18n="v2.createModal.title">Create New Sound</h2>
+            <p class="modal-subtitle" data-i18n="v2.createModal.subtitle">Choose a preset or upload your own</p>
 
             <div class="preset-grid" id="preset-grid">
                 <!-- Preset sounds populated by JS -->
             </div>
 
             <div class="divider">
-                <span>or</span>
+                <span data-i18n="v2.or">or</span>
             </div>
 
             <button class="btn-upload-large" id="btn-upload-own">
@@ -399,7 +399,7 @@
                     <polyline points="17,8 12,3 7,8"/>
                     <line x1="12" y1="3" x2="12" y2="15"/>
                 </svg>
-                <span>Upload Your Own Audio</span>
+                <span data-i18n="v2.createModal.uploadOwn">Upload Your Own Audio</span>
             </button>
         </div>
     </div>
@@ -412,7 +412,7 @@
                     <circle cx="25" cy="25" r="20" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
                 </svg>
             </div>
-            <p class="loading-text" id="loading-text">Loading...</p>
+            <p class="loading-text" id="loading-text" data-i18n="status.loading">Loading...</p>
         </div>
     </div>
 

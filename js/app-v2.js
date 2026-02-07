@@ -167,6 +167,14 @@ class TeslaLockSoundAppV2 {
         window.addEventListener('resize', () => this.resizeWaveformCanvas());
     }
 
+    t(key, params = {}, fallback = key) {
+        const i18nApi = window.i18n;
+        if (i18nApi && typeof i18nApi.t === 'function') {
+            return i18nApi.t(key, params);
+        }
+        return fallback;
+    }
+
     initLanguageSettings() {
         const i18nApi = window.i18n;
         const languageSelect = this.elements.languageSelect;
@@ -196,7 +204,16 @@ class TeslaLockSoundAppV2 {
             if (changedLanguage && languageSelect.value !== changedLanguage) {
                 languageSelect.value = changedLanguage;
             }
+            this.handleLanguageChanged();
         });
+    }
+
+    handleLanguageChanged() {
+        this.validateDuration();
+        this.updateTrimUI();
+        this.renderWorkspaceDrafts();
+        this.loadWeeklyRanking();
+        this.loadGallerySounds();
     }
 
     async initGallery() {
@@ -378,7 +395,7 @@ class TeslaLockSoundAppV2 {
 
         try {
             if (!append) {
-                this.elements.soundsGrid.innerHTML = '<div class="loading-placeholder">Loading sounds...</div>';
+                this.elements.soundsGrid.innerHTML = `<div class="loading-placeholder">${this.t('status.loading', {}, 'Loading...')}</div>`;
             }
 
             const options = {
@@ -417,7 +434,7 @@ class TeslaLockSoundAppV2 {
                 this.elements.soundsGrid.innerHTML = '';
             }
             this.showEmptyState();
-            this.showToast('Failed to load sounds: ' + error.message, 'error');
+            this.showToast(`${this.t('gallery.loadFailed', {}, 'Failed to load gallery. Please try again.')} ${error.message}`, 'error');
         }
     }
 
@@ -428,14 +445,19 @@ class TeslaLockSoundAppV2 {
 
         const isLiked = this.gallery.isLiked(sound.id);
 
+        const categoryCode = sound.category || 'custom';
+        const categoryLabel = this.t(`cat.${categoryCode}`, {}, categoryCode);
+        const previewLabel = this.t('btn.preview', {}, 'Preview');
+        const useLabel = this.t('v2.use', {}, 'Use');
+
         card.innerHTML = `
             <div class="sound-card-content">
                 <div class="sound-card-header">
                     <div class="sound-card-info">
                         <div class="sound-card-name">${this.escapeHtml(sound.name)}</div>
-                        <span class="sound-card-category">${sound.category || 'custom'}</span>
+                        <span class="sound-card-category">${this.escapeHtml(categoryLabel)}</span>
                     </div>
-                    <button class="sound-card-play" data-url="${sound.downloadUrl}" title="Preview">
+                    <button class="sound-card-play" data-url="${sound.downloadUrl}" title="${this.escapeHtml(previewLabel)}">
                         <svg viewBox="0 0 24 24" fill="currentColor">
                             <polygon points="5,3 19,12 5,21"/>
                         </svg>
@@ -453,7 +475,7 @@ class TeslaLockSoundAppV2 {
                         ⬇️ ${sound.downloads || 0}
                     </span>
                     <div class="sound-card-actions">
-                        <button class="btn-use" data-sound-id="${sound.id}">Use</button>
+                        <button class="btn-use" data-sound-id="${sound.id}">${this.escapeHtml(useLabel)}</button>
                     </div>
                 </div>
             </div>
@@ -518,7 +540,7 @@ class TeslaLockSoundAppV2 {
                     <polygon points="5,3 19,12 5,21"/>
                 </svg>
             `;
-            this.showToast('Failed to preview sound', 'error');
+            this.showToast(this.t('error.playFailed', {}, 'Could not play audio. Please check your audio settings.'), 'error');
         }
     }
 
@@ -529,12 +551,12 @@ class TeslaLockSoundAppV2 {
             element.classList.toggle('liked', liked);
             element.innerHTML = `${liked ? '❤️' : '🤍'} ${count + (liked ? 1 : -1)}`;
         } catch (error) {
-            this.showToast('Failed to like sound', 'error');
+            this.showToast(this.t('v2.likeFailed', {}, 'Failed to like sound.'), 'error');
         }
     }
 
     async useSound(sound) {
-        this.showLoading('Loading sound...');
+        this.showLoading(this.t('status.loading', {}, 'Loading...'));
 
         try {
             const { blob } = await this.gallery.downloadSound(sound.id);
@@ -557,7 +579,7 @@ class TeslaLockSoundAppV2 {
             this.hideLoading();
         } catch (error) {
             this.hideLoading();
-            this.showToast('Failed to load sound', 'error');
+            this.showToast(this.t('error.loadFailed', {}, 'Error loading sound. Please try again.'), 'error');
         }
     }
 
@@ -634,6 +656,7 @@ class TeslaLockSoundAppV2 {
 
     updateTrimUI() {
         if (!this.elements.trimRegion || !this.elements.waveformWrapper) return;
+        if (!this.state.duration || this.state.duration <= 0) return;
 
         const wrapper = this.elements.waveformWrapper;
         const width = wrapper.offsetWidth;
@@ -648,7 +671,7 @@ class TeslaLockSoundAppV2 {
         this.elements.timeEnd.textContent = `${this.state.trimEnd.toFixed(1)}s`;
 
         const duration = this.state.trimEnd - this.state.trimStart;
-        this.elements.timeDuration.textContent = `Duration: ${duration.toFixed(1)}s`;
+        this.elements.timeDuration.textContent = this.t('v2.durationLabel', { duration: duration.toFixed(1) }, `Duration: ${duration.toFixed(1)}s`);
     }
 
     validateDuration() {
@@ -667,11 +690,11 @@ class TeslaLockSoundAppV2 {
 
         if (this.elements.statusText) {
             if (isValid) {
-                this.elements.statusText.textContent = 'Ready for Tesla (2-5 seconds)';
+                this.elements.statusText.textContent = this.t('v2.readyForTesla', {}, 'Ready for Tesla (2-5 seconds)');
             } else if (duration < 2) {
-                this.elements.statusText.textContent = `Too short (${duration.toFixed(1)}s) - minimum 2s`;
+                this.elements.statusText.textContent = this.t('v2.tooShort', { duration: duration.toFixed(1) }, `Too short (${duration.toFixed(1)}s) - minimum 2s`);
             } else {
-                this.elements.statusText.textContent = `Too long (${duration.toFixed(1)}s) - maximum 5s`;
+                this.elements.statusText.textContent = this.t('v2.tooLong', { duration: duration.toFixed(1) }, `Too long (${duration.toFixed(1)}s) - maximum 5s`);
             }
         }
 
@@ -722,7 +745,7 @@ class TeslaLockSoundAppV2 {
         } catch (error) {
             this.state.isPlaying = false;
             this.updatePlayButton(false);
-            this.showToast('Playback failed', 'error');
+            this.showToast(this.t('error.playFailed', {}, 'Could not play audio. Please check your audio settings.'), 'error');
         }
     }
 
@@ -761,7 +784,7 @@ class TeslaLockSoundAppV2 {
 
     downloadSound() {
         if (!this.validateDuration()) {
-            this.showToast('Duration must be 2-5 seconds', 'error');
+            this.showToast(this.t('step2.duration', {}, 'Duration must be 2-5 seconds'), 'error');
             return;
         }
 
@@ -771,26 +794,26 @@ class TeslaLockSoundAppV2 {
             });
 
             this.fileSystem.downloadFile(wavBlob, 'LockChime.wav');
-            this.showToast('Downloaded successfully!', 'success');
+            this.showToast(this.t('success.downloaded', {}, 'File downloaded!'), 'success');
         } catch (error) {
-            this.showToast('Download failed', 'error');
+            this.showToast(this.t('error.downloadFailed', {}, 'Could not download file.'), 'error');
         }
     }
 
     async saveToUsb() {
         if (!this.validateDuration()) {
-            this.showToast('Duration must be 2-5 seconds', 'error');
+            this.showToast(this.t('step2.duration', {}, 'Duration must be 2-5 seconds'), 'error');
             return;
         }
 
-        this.showLoading('Processing audio...');
+        this.showLoading(this.t('status.processing', {}, 'Processing audio...'));
 
         try {
             const wavBlob = this.audioProcessor.exportToWav(this.state.trimStart, this.state.trimEnd, {
                 normalize: true
             });
 
-            this.showLoading('Saving to USB...');
+            this.showLoading(this.t('status.saving', {}, 'Saving to USB...'));
 
             const result = await this.fileSystem.saveFile(wavBlob, 'LockChime.wav');
 
@@ -806,7 +829,7 @@ class TeslaLockSoundAppV2 {
         } catch (error) {
             this.hideLoading();
 
-            if (confirm(`Could not save directly: ${error.message}\n\nWould you like to download the file instead?`)) {
+            if (confirm(`${this.t('error.saveFailed', {}, 'Could not save directly')}: ${error.message}\n\n${this.t('prompt.downloadInstead', {}, 'Would you like to download the file instead?')}`)) {
                 this.downloadSound();
             }
         }
@@ -814,19 +837,19 @@ class TeslaLockSoundAppV2 {
 
     async shareToGallery() {
         if (!this.gallery.isAvailable()) {
-            this.showToast('Gallery not available', 'error');
+            this.showToast(this.t('error.galleryUnavailable', {}, 'Gallery is not available. Please try again later.'), 'error');
             return;
         }
 
         if (!this.validateDuration()) {
-            this.showToast('Duration must be 2-5 seconds', 'error');
+            this.showToast(this.t('step2.duration', {}, 'Duration must be 2-5 seconds'), 'error');
             return;
         }
 
-        const name = prompt('Name your sound:', this.state.selectedSoundName);
+        const name = prompt(this.t('v2.nameYourSound', {}, 'Name your sound:'), this.state.selectedSoundName);
         if (!name) return;
 
-        this.showLoading('Uploading to gallery...');
+        this.showLoading(this.t('status.uploading', {}, 'Uploading to gallery...'));
 
         try {
             const wavBlob = this.audioProcessor.exportToWav(this.state.trimStart, this.state.trimEnd, {
@@ -840,13 +863,13 @@ class TeslaLockSoundAppV2 {
             });
 
             this.hideLoading();
-            this.showToast('Shared to gallery!', 'success');
+            this.showToast(this.t('success.uploaded', {}, 'Sound uploaded to gallery!'), 'success');
             this.incrementWeeklyAction('share');
             await this.loadGallerySounds();
             await this.loadWeeklyRanking();
         } catch (error) {
             this.hideLoading();
-            this.showToast('Upload failed', 'error');
+            this.showToast(this.t('v2.uploadFailed', {}, 'Upload failed'), 'error');
         }
     }
 
@@ -855,7 +878,7 @@ class TeslaLockSoundAppV2 {
         const baseUrl = this.elements.fleetBaseUrlInput?.value?.trim();
 
         if (!token) {
-            this.setFleetMessage('Please enter a Tesla Fleet access token.', true);
+            this.setFleetMessage(this.t('v2.fleet.enterToken', {}, 'Please enter a Tesla Fleet access token.'), true);
             return;
         }
 
@@ -864,7 +887,7 @@ class TeslaLockSoundAppV2 {
             this.fleetClient.setBaseUrl(baseUrl);
         }
 
-        this.setFleetMessage('Connecting to Tesla Fleet API...');
+        this.setFleetMessage(this.t('v2.fleet.connecting', {}, 'Connecting to Tesla Fleet API...'));
 
         try {
             const vehicles = await this.fleetClient.getVehicles();
@@ -872,13 +895,13 @@ class TeslaLockSoundAppV2 {
             this.populateVehicleSelect();
 
             if (this.state.fleetVehicles.length === 0) {
-                this.setFleetMessage('Connected, but no vehicles were returned for this account.', true);
+                this.setFleetMessage(this.t('v2.fleet.noVehicles', {}, 'Connected, but no vehicles were returned for this account.'), true);
                 return;
             }
 
-            this.setFleetMessage(`Connected: ${this.state.fleetVehicles.length} vehicle(s) loaded.`);
+            this.setFleetMessage(this.t('v2.fleet.connectedCount', { count: this.state.fleetVehicles.length }, `Connected: ${this.state.fleetVehicles.length} vehicle(s) loaded.`));
         } catch (error) {
-            this.setFleetMessage(`Connection failed: ${error.message}`, true);
+            this.setFleetMessage(this.t('v2.fleet.connectionFailed', { error: error.message }, `Connection failed: ${error.message}`), true);
         }
     }
 
@@ -888,7 +911,7 @@ class TeslaLockSoundAppV2 {
 
         const vehicles = this.state.fleetVehicles || [];
         if (vehicles.length === 0) {
-            select.innerHTML = '<option value=\"\">No vehicles</option>';
+            select.innerHTML = `<option value=\"\">${this.escapeHtml(this.t('v2.fleet.noVehiclesOption', {}, 'No vehicles'))}</option>`;
             return;
         }
 
@@ -906,37 +929,39 @@ class TeslaLockSoundAppV2 {
     async checkFleetCompatibility() {
         const vin = this.elements.fleetVehicleSelect?.value || this.state.currentVehicleVin;
         if (!vin) {
-            this.setFleetMessage('Select a vehicle first.', true);
+            this.setFleetMessage(this.t('v2.fleet.selectVehicle', {}, 'Select a vehicle first.'), true);
             return;
         }
 
         const vehicle = (this.state.fleetVehicles || []).find(v => v.vin === vin);
         if (!vehicle) {
-            this.setFleetMessage('Selected vehicle is not available.', true);
+            this.setFleetMessage(this.t('v2.fleet.vehicleUnavailable', {}, 'Selected vehicle is not available.'), true);
             return;
         }
 
-        this.setFleetMessage('Checking compatibility...');
+        this.setFleetMessage(this.t('v2.fleet.checking', {}, 'Checking compatibility...'));
 
         try {
             const status = await this.fleetClient.getFleetStatus(vin);
             const result = this.featureUtils.evaluateCompatibility(vehicle, status);
-            const reasonText = result.reasons.length > 0 ? ` Notes: ${result.reasons.join(' ')}` : '';
+            const reasonText = result.reasons.length > 0
+                ? ` ${this.t('v2.fleet.notesPrefix', {}, 'Notes')}: ${result.reasons.join(' ')}`
+                : '';
             this.setFleetMessage(
                 result.ready
-                    ? `Compatible: ${vehicle.displayName} is likely ready for custom lock chimes.${reasonText}`
-                    : `Needs attention: ${vehicle.displayName} may need additional checks.${reasonText}`,
+                    ? this.t('v2.fleet.compatible', { name: vehicle.displayName, notes: reasonText }, `Compatible: ${vehicle.displayName} is likely ready for custom lock chimes.${reasonText}`)
+                    : this.t('v2.fleet.needsAttention', { name: vehicle.displayName, notes: reasonText }, `Needs attention: ${vehicle.displayName} may need additional checks.${reasonText}`),
                 !result.ready
             );
         } catch (error) {
-            this.setFleetMessage(`Compatibility check failed: ${error.message}`, true);
+            this.setFleetMessage(this.t('v2.fleet.checkFailed', { error: error.message }, `Compatibility check failed: ${error.message}`), true);
         }
     }
 
     async checkReleaseUpdates() {
         const vin = this.elements.fleetVehicleSelect?.value || this.state.currentVehicleVin;
         if (!vin) {
-            this.elements.releaseUpdateMessage.textContent = 'Connect Tesla and select a vehicle first.';
+            this.elements.releaseUpdateMessage.textContent = this.t('v2.release.connectFirst', {}, 'Connect Tesla and select a vehicle first.');
             return;
         }
 
@@ -949,14 +974,14 @@ class TeslaLockSoundAppV2 {
             const updateInfo = this.featureUtils.detectReleaseUpdate(vin, currentVersion);
 
             if (!currentVersion) {
-                this.elements.releaseUpdateMessage.textContent = 'No release version found in response.';
+                this.elements.releaseUpdateMessage.textContent = this.t('v2.release.noVersion', {}, 'No release version found in response.');
                 return;
             }
 
             if (updateInfo.updated) {
-                this.elements.releaseUpdateMessage.textContent = `Update detected: ${updateInfo.previous} -> ${currentVersion}`;
+                this.elements.releaseUpdateMessage.textContent = this.t('v2.release.updated', { previous: updateInfo.previous, current: currentVersion }, `Update detected: ${updateInfo.previous} -> ${currentVersion}`);
             } else {
-                this.elements.releaseUpdateMessage.textContent = `No new update detected. Current version: ${currentVersion}`;
+                this.elements.releaseUpdateMessage.textContent = this.t('v2.release.noUpdate', { current: currentVersion }, `No new update detected. Current version: ${currentVersion}`);
             }
 
             const weekly = await this.gallery.getWeeklyPopular(5);
@@ -966,7 +991,7 @@ class TeslaLockSoundAppV2 {
             );
             this.renderReleaseRecommendations(recommendations);
         } catch (error) {
-            this.elements.releaseUpdateMessage.textContent = `Release check failed: ${error.message}`;
+            this.elements.releaseUpdateMessage.textContent = this.t('v2.release.failed', { error: error.message }, `Release check failed: ${error.message}`);
         }
     }
 
@@ -999,10 +1024,12 @@ class TeslaLockSoundAppV2 {
         const progress = this.featureUtils.getChallengeProgress(stats);
 
         this.elements.challengeProgress.innerHTML = [
-            `Save to USB: ${stats.saves || 0}/2 (${progress.saveProgress}%)`,
-            `Upload to Gallery: ${stats.uploads || 0}/1 (${progress.uploadProgress}%)`,
-            `Share to Gallery: ${stats.shares || 0}/1 (${progress.shareProgress}%)`,
-            progress.completed ? 'Challenge complete. Weekly creator badge unlocked.' : 'Complete all 3 to finish this week.'
+            this.t('v2.challenge.saveProgress', { current: stats.saves || 0, target: 2, percent: progress.saveProgress }, `Save to USB: ${stats.saves || 0}/2 (${progress.saveProgress}%)`),
+            this.t('v2.challenge.uploadProgress', { current: stats.uploads || 0, target: 1, percent: progress.uploadProgress }, `Upload to Gallery: ${stats.uploads || 0}/1 (${progress.uploadProgress}%)`),
+            this.t('v2.challenge.shareProgress', { current: stats.shares || 0, target: 1, percent: progress.shareProgress }, `Share to Gallery: ${stats.shares || 0}/1 (${progress.shareProgress}%)`),
+            progress.completed
+                ? this.t('v2.challenge.completed', {}, 'Challenge complete. Weekly creator badge unlocked.')
+                : this.t('v2.challenge.incomplete', {}, 'Complete all 3 to finish this week.')
         ].map(text => `<div>${this.escapeHtml(text)}</div>`).join('');
     }
 
@@ -1014,23 +1041,24 @@ class TeslaLockSoundAppV2 {
             const sounds = result?.sounds || [];
 
             if (sounds.length === 0) {
-                this.elements.weeklyRankingList.innerHTML = '<li>No ranking data yet.</li>';
+                this.elements.weeklyRankingList.innerHTML = `<li>${this.escapeHtml(this.t('v2.ranking.empty', {}, 'No ranking data yet.'))}</li>`;
                 return;
             }
 
             this.elements.weeklyRankingList.innerHTML = sounds.map((sound, index) => {
                 const score = ((sound.likes || 0) * 2) + (sound.downloads || 0);
-                return `<li>#${index + 1} ${this.escapeHtml(sound.name)} (${score} pts)</li>`;
+                const label = this.t('v2.ranking.item', { rank: index + 1, name: sound.name, score }, `#${index + 1} ${sound.name} (${score} pts)`);
+                return `<li>${this.escapeHtml(label)}</li>`;
             }).join('');
         } catch (error) {
-            this.elements.weeklyRankingList.innerHTML = '<li>Ranking unavailable right now.</li>';
+            this.elements.weeklyRankingList.innerHTML = `<li>${this.escapeHtml(this.t('v2.ranking.unavailable', {}, 'Ranking unavailable right now.'))}</li>`;
         }
     }
 
     saveWorkspaceDraft() {
         const name = this.elements.workspaceDraftName?.value?.trim();
         if (!name) {
-            this.showToast('Enter a draft name first.', 'error');
+            this.showToast(this.t('v2.draft.enterName', {}, 'Enter a draft name first.'), 'error');
             return;
         }
 
@@ -1047,7 +1075,7 @@ class TeslaLockSoundAppV2 {
                 volume: this.state.volume
             });
             this.renderWorkspaceDrafts();
-            this.showToast('Draft version saved.', 'success');
+            this.showToast(this.t('v2.draft.saved', {}, 'Draft version saved.'), 'success');
         } catch (error) {
             this.showToast(error.message, 'error');
         }
@@ -1058,7 +1086,7 @@ class TeslaLockSoundAppV2 {
         const drafts = this.workspaceStore.listDrafts();
 
         if (drafts.length === 0) {
-            this.elements.workspaceDraftsList.innerHTML = '<div class=\"workspace-draft-meta\">No drafts saved yet.</div>';
+            this.elements.workspaceDraftsList.innerHTML = `<div class=\"workspace-draft-meta\">${this.escapeHtml(this.t('v2.draft.empty', {}, 'No drafts saved yet.'))}</div>`;
             return;
         }
 
@@ -1066,18 +1094,29 @@ class TeslaLockSoundAppV2 {
 
         drafts.forEach(draft => {
             const latest = draft.versions?.[0];
+            const loadLabel = this.t('v2.draft.load', {}, 'Load');
+            const deleteLabel = this.t('v2.draft.delete', {}, 'Delete');
+            const metaLabel = this.t(
+                'v2.draft.meta',
+                {
+                    versions: draft.versions?.length || 0,
+                    start: (latest?.trimStart || 0).toFixed(1),
+                    end: (latest?.trimEnd || 0).toFixed(1)
+                },
+                `Versions: ${draft.versions?.length || 0} | Latest trim: ${(latest?.trimStart || 0).toFixed(1)}s - ${(latest?.trimEnd || 0).toFixed(1)}s`
+            );
             const container = document.createElement('div');
             container.className = 'workspace-draft-item';
             container.innerHTML = `
                 <div class=\"workspace-draft-row\">
                     <strong>${this.escapeHtml(draft.name)}</strong>
                     <div>
-                        <button class=\"btn-secondary\" data-action=\"load\">Load</button>
-                        <button class=\"btn-secondary\" data-action=\"delete\">Delete</button>
+                        <button class=\"btn-secondary\" data-action=\"load\">${this.escapeHtml(loadLabel)}</button>
+                        <button class=\"btn-secondary\" data-action=\"delete\">${this.escapeHtml(deleteLabel)}</button>
                     </div>
                 </div>
                 <div class=\"workspace-draft-meta\">
-                    Versions: ${draft.versions?.length || 0} | Latest trim: ${(latest?.trimStart || 0).toFixed(1)}s - ${(latest?.trimEnd || 0).toFixed(1)}s
+                    ${this.escapeHtml(metaLabel)}
                 </div>
             `;
 
@@ -1101,7 +1140,7 @@ class TeslaLockSoundAppV2 {
                 const sound = await this.gallery.getSound(sourceId);
                 await this.useSound(sound);
             } catch (error) {
-                this.showToast('Could not load draft source from gallery.', 'error');
+                this.showToast(this.t('v2.draft.sourceMissing', {}, 'Could not load draft source from gallery.'), 'error');
                 return;
             }
         } else if (sourceId && typeof AUDIO_SAMPLES !== 'undefined' && AUDIO_SAMPLES.some(s => s.id === sourceId)) {
@@ -1118,7 +1157,7 @@ class TeslaLockSoundAppV2 {
         this.audioProcessor.setVolume(this.state.volume / 100);
         this.updateTrimUI();
         this.validateDuration();
-        this.showToast(`Loaded draft: ${draft.name}`, 'success');
+        this.showToast(this.t('v2.draft.loaded', { name: draft.name }, `Loaded draft: ${draft.name}`), 'success');
     }
 
     openUploadModal() {
@@ -1137,16 +1176,16 @@ class TeslaLockSoundAppV2 {
         const ext = file.name.split('.').pop().toLowerCase();
 
         if (file.size > maxSize) {
-            this.showToast('File too large (max 10MB)', 'error');
+            this.showToast(this.t('error.fileTooLarge', {}, 'File is too large. Maximum size is 10MB.'), 'error');
             return;
         }
 
         if (!validExtensions.includes(ext)) {
-            this.showToast('Invalid file type', 'error');
+            this.showToast(this.t('error.invalidType', {}, 'Invalid file type. Please upload a WAV, MP3, M4A, or OGG file.'), 'error');
             return;
         }
 
-        this.showLoading('Processing audio...');
+        this.showLoading(this.t('status.processing', {}, 'Processing audio...'));
 
         try {
             await this.audioProcessor.init();
@@ -1166,10 +1205,10 @@ class TeslaLockSoundAppV2 {
             this.validateDuration();
 
             this.hideLoading();
-            this.showToast('Audio loaded!', 'success');
+            this.showToast(this.t('success.audioUploaded', {}, 'Audio uploaded successfully!'), 'success');
         } catch (error) {
             this.hideLoading();
-            this.showToast('Could not process audio file', 'error');
+            this.showToast(this.t('error.processAudio', {}, 'Could not process audio file. Please try a different file.'), 'error');
         }
     }
 
@@ -1178,12 +1217,12 @@ class TeslaLockSoundAppV2 {
         const category = this.elements.uploadCategory?.value || 'custom';
 
         if (!name) {
-            this.showToast('Please enter a name', 'error');
+            this.showToast(this.t('v2.nameRequired', {}, 'Please enter a name'), 'error');
             return;
         }
 
         this.closeUploadModal();
-        this.showLoading('Uploading to gallery...');
+        this.showLoading(this.t('status.uploading', {}, 'Uploading to gallery...'));
 
         try {
             const wavBlob = this.audioProcessor.exportToWav(this.state.trimStart, this.state.trimEnd, {
@@ -1197,13 +1236,13 @@ class TeslaLockSoundAppV2 {
             });
 
             this.hideLoading();
-            this.showToast('Uploaded to gallery!', 'success');
+            this.showToast(this.t('success.uploaded', {}, 'Sound uploaded to gallery!'), 'success');
             this.incrementWeeklyAction('upload');
             await this.loadGallerySounds();
             await this.loadWeeklyRanking();
         } catch (error) {
             this.hideLoading();
-            this.showToast('Upload failed', 'error');
+            this.showToast(this.t('v2.uploadFailed', {}, 'Upload failed'), 'error');
         }
     }
 
@@ -1232,7 +1271,7 @@ class TeslaLockSoundAppV2 {
     }
 
     async selectPreset(soundId) {
-        this.showLoading('Loading preset...');
+        this.showLoading(this.t('status.loading', {}, 'Loading...'));
 
         try {
             await this.audioProcessor.init();
@@ -1241,7 +1280,7 @@ class TeslaLockSoundAppV2 {
             const sound = AUDIO_SAMPLES.find(s => s.id === soundId);
 
             this.state.selectedSoundId = soundId;
-            this.state.selectedSoundName = sound?.name || 'Preset Sound';
+            this.state.selectedSoundName = sound?.name || this.t('v2.presetSound', {}, 'Preset Sound');
             this.state.selectedSoundUrl = null;
             this.state.duration = this.audioProcessor.getDuration();
             this.state.trimStart = 0;
@@ -1256,7 +1295,7 @@ class TeslaLockSoundAppV2 {
             this.hideLoading();
         } catch (error) {
             this.hideLoading();
-            this.showToast('Failed to load preset', 'error');
+            this.showToast(this.t('error.loadFailed', {}, 'Error loading sound. Please try again.'), 'error');
         }
     }
 
@@ -1312,7 +1351,7 @@ class TeslaLockSoundAppV2 {
         }
     }
 
-    showLoading(message = 'Loading...') {
+    showLoading(message = this.t('status.loading', {}, 'Loading...')) {
         if (this.elements.loadingText) {
             this.elements.loadingText.textContent = message;
         }
