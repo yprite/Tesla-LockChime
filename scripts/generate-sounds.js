@@ -47,6 +47,8 @@ function readConfig() {
   return {
     apiKey,
     serviceAccount,
+    firebaseProjectId: serviceAccount.project_id || 'unknown',
+    firebaseClientEmail: serviceAccount.client_email || 'unknown',
     batchSize: parseInt(process.env.BATCH_SIZE || '5', 10),
     dryRun: process.env.DRY_RUN === 'true',
     maxDailyCredits: parseInt(process.env.MAX_DAILY_CREDITS || '500', 10)
@@ -101,6 +103,17 @@ function isRetryableError(error) {
   const code = error.code || '';
   return ['ETIMEDOUT', 'ECONNRESET', 'ECONNREFUSED', 'UND_ERR_CONNECT_TIMEOUT']
     .includes(code);
+}
+
+function isPermissionDeniedError(error) {
+  if (!error) {
+    return false;
+  }
+  if (error.code === 7 || error.status === 403) {
+    return true;
+  }
+  const message = String(error.message || '');
+  return message.includes('PERMISSION_DENIED') || message.includes('Missing or insufficient permissions');
 }
 
 async function callElevenLabsApi(prompt, apiKey) {
@@ -321,10 +334,24 @@ async function generateBatch() {
 
   const config = readConfig();
   console.info(`Batch size: ${config.batchSize}, Dry run: ${config.dryRun}`);
+  console.info(`Firebase project: ${config.firebaseProjectId}`);
+  console.info(`Service account: ${config.firebaseClientEmail}`);
 
   const { db, bucket } = initFirebase(config.serviceAccount);
 
-  const existingIds = await getExistingPromptIds(db);
+  let existingIds;
+  try {
+    existingIds = await getExistingPromptIds(db);
+  } catch (error) {
+    if (isPermissionDeniedError(error)) {
+      throw new Error(
+        `Firestore access denied for ${config.firebaseClientEmail}. ` +
+        'Grant IAM role "Cloud Datastore User (roles/datastore.user)" on project ' +
+        `${config.firebaseProjectId}. Original error: ${error.message}`
+      );
+    }
+    throw error;
+  }
   console.info(`Found ${existingIds.length} existing AI-generated sounds`);
   console.info(`Total prompt templates available: ${PROMPT_TEMPLATES.length}`);
 
@@ -409,8 +436,18 @@ const currentFile = fileURLToPath(import.meta.url);
 const isDirectExecution = process.argv[1] === currentFile;
 
 if (isDirectExecution) {
-  generateBatch().catch(error => {
+  generateBatch().catch(async error => {
     console.error('Fatal error:', error.message);
+    const fatalSummary = {
+      timestamp: new Date().toISOString(),
+      fatal: true,
+      error: error.message
+    };
+    try {
+      await writeFile('generation-log.json', JSON.stringify(fatalSummary, null, 2));
+    } catch {
+      // ignore file-write failure on fatal path
+    }
     process.exit(1);
   });
 }
