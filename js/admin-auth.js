@@ -276,7 +276,7 @@ class AdminDashboardUI {
             this.elements.loginSection.style.display = 'none';
         }
         if (this.elements.dashboardSection) {
-            this.elements.dashboardSection.style.display = 'flex';
+            this.elements.dashboardSection.style.display = 'block';
         }
 
         if (this.elements.userAvatar && user.photoURL) {
