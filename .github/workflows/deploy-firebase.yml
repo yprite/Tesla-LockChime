@@ -17,8 +17,7 @@ on:
 # Note: This workflow requires Firebase secrets to be configured
 # 1. Go to Firebase Console > Project Settings > Service accounts
 # 2. Generate new private key
-# 3. Add to GitHub repository secrets as FIREBASE_SERVICE_ACCOUNT
-# 4. Also set FIREBASE_PROJECT_ID secret
+# 3. Add to GitHub repository secrets as FIREBASE_SERVICE_ACCOUNT_TESLA_LOCK_SOUNDS
 
 jobs:
   test:
@@ -54,8 +53,8 @@ jobs:
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
-          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-          projectId: ${{ secrets.FIREBASE_PROJECT_ID }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_TESLA_LOCK_SOUNDS }}
+          projectId: tesla-lock-sounds
           channelId: live
 
       - name: Deploy to Firebase Hosting (Preview)
@@ -63,8 +62,8 @@ jobs:
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
-          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-          projectId: ${{ secrets.FIREBASE_PROJECT_ID }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_TESLA_LOCK_SOUNDS }}
+          projectId: tesla-lock-sounds
           # Preview channel - creates a temporary URL
 
       - name: Deployment summary
