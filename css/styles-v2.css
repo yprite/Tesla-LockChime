@@ -1708,6 +1708,10 @@ body.editor-open .gallery-panel {
     font-size: 0.85rem;
 }
 
+.fleet-tutorial-link {
+    text-decoration: none;
+}
+
 .growth-status {
     margin-top: 0.6rem;
     font-size: 0.8rem;

@@ -1,0 +1,139 @@
+.tutorial-header {
+    position: sticky;
+}
+
+.tutorial-home-link {
+    text-decoration: none;
+}
+
+.tutorial-back-btn {
+    text-decoration: none;
+    padding: 0.55rem 0.85rem;
+    font-size: 0.8rem;
+}
+
+.tutorial-layout {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem 3rem;
+}
+
+.tutorial-hero {
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    background: linear-gradient(150deg, rgba(232, 33, 39, 0.18), rgba(26, 26, 31, 0.88));
+    padding: 2rem;
+    box-shadow: var(--shadow-md);
+}
+
+.hero-kicker {
+    font-size: 0.78rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--color-accent);
+    margin-bottom: 0.55rem;
+}
+
+.tutorial-hero h1 {
+    font-size: clamp(1.8rem, 4vw, 3rem);
+    line-height: 1.1;
+    letter-spacing: -0.03em;
+}
+
+.hero-subtitle {
+    margin-top: 0.85rem;
+    color: var(--color-text-secondary);
+    max-width: 760px;
+}
+
+.hero-meta {
+    margin-top: 1.2rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+}
+
+.hero-meta span {
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-full);
+    padding: 0.35rem 0.7rem;
+    font-size: 0.78rem;
+    color: var(--color-text-secondary);
+    background: rgba(17, 17, 20, 0.65);
+}
+
+.tutorial-grid {
+    margin-top: 1.2rem;
+    display: grid;
+    grid-template-columns: 1.35fr 1fr;
+    gap: 1rem;
+}
+
+.tutorial-card {
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: rgba(17, 17, 20, 0.86);
+    padding: 1.2rem;
+}
+
+.tutorial-card h2 {
+    font-size: 1.12rem;
+    margin-bottom: 0.8rem;
+}
+
+.tutorial-card h3 {
+    font-size: 0.98rem;
+    margin: 1.1rem 0 0.5rem;
+}
+
+.step-list {
+    display: grid;
+    gap: 0.75rem;
+    padding-left: 1.1rem;
+}
+
+.step-list li p {
+    margin-top: 0.2rem;
+    color: var(--color-text-secondary);
+    font-size: 0.9rem;
+}
+
+.check-list {
+    display: grid;
+    gap: 0.55rem;
+    padding-left: 1rem;
+    color: var(--color-text-secondary);
+    font-size: 0.9rem;
+}
+
+.tip-block {
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: rgba(0, 0, 0, 0.25);
+    padding: 0.8rem;
+    display: grid;
+    gap: 0.55rem;
+}
+
+.tip-block p {
+    font-size: 0.88rem;
+    color: var(--color-text-secondary);
+}
+
+.tip-block strong {
+    color: var(--color-text);
+}
+
+@media (max-width: 900px) {
+    .tutorial-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .tutorial-layout {
+        padding: 1.15rem 1rem 2.2rem;
+    }
+
+    .tutorial-hero {
+        padding: 1.2rem;
+    }
+}
