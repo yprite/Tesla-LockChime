@@ -458,26 +458,25 @@ class GalleryHandler {
 
         try {
             const modelFilter = options?.model || null;
-            // Get sounds from last 7 days, sorted by likes
+            // Use single-field indexed query only, then filter/sort in memory.
             const weekAgo = new Date();
             weekAgo.setDate(weekAgo.getDate() - 7);
 
-            let query = this.db.collection(GALLERY_COLLECTION)
-                .where('createdAt', '>=', weekAgo);
-
-            if (modelFilter) {
-                query = query.where('vehicleModel', '==', modelFilter);
-            }
-
-            const snapshot = await query
+            const fetchLimit = modelFilter ? 200 : 50;
+            const snapshot = await this.db.collection(GALLERY_COLLECTION)
+                .where('createdAt', '>=', weekAgo)
                 .orderBy('createdAt', 'desc')
-                .limit(50)
+                .limit(fetchLimit)
                 .get();
 
-            const sounds = [];
+            let sounds = [];
             snapshot.forEach(doc => {
                 sounds.push({ id: doc.id, ...doc.data() });
             });
+
+            if (modelFilter) {
+                sounds = sounds.filter(sound => sound.vehicleModel === modelFilter);
+            }
 
             // Sort by combined score (likes + downloads)
             sounds.sort((a, b) => {
@@ -492,8 +491,7 @@ class GalleryHandler {
                 model: modelFilter || null
             };
         } catch (error) {
-            // Fallback to all-time popular if date query fails
-            console.warn('Weekly query failed, falling back to all-time:', error);
+            // Fallback to all-time popular if weekly query fails.
             if (options?.model) {
                 const allTime = await this.getPopularSounds(50);
                 return {

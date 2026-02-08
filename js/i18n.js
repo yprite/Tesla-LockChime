@@ -162,7 +162,12 @@ const TRANSLATIONS = {
     // Footer
     'footer.privacy': 'Privacy Policy',
     'footer.terms': 'Terms of Use',
+    'footer.legalTitle': 'Copyright & Legal Notice',
     'footer.disclaimer': 'This is an unofficial tool and is not affiliated with Tesla, Inc. Tesla and the Tesla logo are trademarks of Tesla, Inc.',
+    'footer.legalClause1': 'Users must upload only audio they created or have explicit rights to use.',
+    'footer.legalClause2': 'Third-party trademarks, music, game sounds, and character voices remain the property of their respective rights holders.',
+    'footer.legalClause3': 'Reported infringing content may be removed without prior notice under applicable copyright law.',
+    'footer.legalClause4': 'Users are solely responsible for legal compliance of uploaded and shared content.',
     'footer.copyright': '© 2024 Tesla Lock Sound Creator. Free to use. No account required.',
 
     // Language
@@ -298,7 +303,9 @@ const TRANSLATIONS = {
     'v2.chat.send': 'Send',
     'v2.chat.welcome': 'Welcome. Connect to start chatting.',
     'v2.chat.urlRequired': 'Enter a WebSocket URL first.',
+    'v2.chat.urlInvalid': 'Use a valid WebSocket URL starting with ws:// or wss://.',
     'v2.chat.notSupported': 'WebSocket is not supported in this browser.',
+    'v2.chat.localhostBlocked': 'localhost chat server is available only in local development.',
     'v2.chat.connecting': 'Connecting...',
     'v2.chat.connected': 'Connected',
     'v2.chat.connectedNotice': 'Connected to chat server.',
@@ -510,7 +517,12 @@ const TRANSLATIONS = {
     // Footer
     'footer.privacy': '개인정보처리방침',
     'footer.terms': '이용약관',
+    'footer.legalTitle': '저작권 및 법적 고지',
     'footer.disclaimer': '이 도구는 비공식 도구이며 Tesla, Inc.와 관련이 없습니다. Tesla와 Tesla 로고는 Tesla, Inc.의 상표입니다.',
+    'footer.legalClause1': '사용자는 직접 제작했거나 명시적 사용 권한을 보유한 음원만 업로드해야 합니다.',
+    'footer.legalClause2': '제3자 상표, 음악, 게임 사운드, 캐릭터 음성의 권리는 각 권리자에게 귀속됩니다.',
+    'footer.legalClause3': '저작권 침해 신고가 접수된 콘텐츠는 관련 법령에 따라 사전 통지 없이 삭제될 수 있습니다.',
+    'footer.legalClause4': '업로드 및 공유 콘텐츠의 법적 준수 책임은 사용자에게 있습니다.',
     'footer.copyright': '© 2024 Tesla Lock Sound Creator. 무료 사용. 계정 불필요.',
 
     // Language
@@ -646,7 +658,9 @@ const TRANSLATIONS = {
     'v2.chat.send': '전송',
     'v2.chat.welcome': '환영합니다. 연결 후 채팅을 시작하세요.',
     'v2.chat.urlRequired': '먼저 WebSocket URL을 입력하세요.',
+    'v2.chat.urlInvalid': 'ws:// 또는 wss:// 로 시작하는 올바른 WebSocket URL을 입력하세요.',
     'v2.chat.notSupported': '이 브라우저는 WebSocket을 지원하지 않습니다.',
+    'v2.chat.localhostBlocked': 'localhost 채팅 서버는 로컬 개발 환경에서만 사용할 수 있습니다.',
     'v2.chat.connecting': '연결 중...',
     'v2.chat.connected': '연결됨',
     'v2.chat.connectedNotice': '채팅 서버에 연결되었습니다.',
@@ -858,7 +872,12 @@ const TRANSLATIONS = {
     // Footer
     'footer.privacy': 'プライバシーポリシー',
     'footer.terms': '利用規約',
+    'footer.legalTitle': '著作権および法的通知',
     'footer.disclaimer': 'このツールは非公式であり、Tesla, Inc.とは関係ありません。TeslaおよびTeslaロゴはTesla, Inc.の商標です。',
+    'footer.legalClause1': 'ユーザーは、自作または明示的な使用権を持つ音声のみをアップロードする必要があります。',
+    'footer.legalClause2': '第三者の商標、音楽、ゲーム音声、キャラクターボイスの権利は各権利者に帰属します。',
+    'footer.legalClause3': '著作権侵害の申告を受けたコンテンツは、適用法に基づき事前通知なく削除される場合があります。',
+    'footer.legalClause4': 'アップロードおよび共有コンテンツの法令遵守責任はユーザーにあります。',
     'footer.copyright': '© 2024 Tesla Lock Sound Creator. 無料で使用可能。アカウント不要。',
 
     // Language
@@ -1096,7 +1115,12 @@ const TRANSLATIONS = {
     // Footer
     'footer.privacy': '隐私政策',
     'footer.terms': '使用条款',
+    'footer.legalTitle': '版权与法律声明',
     'footer.disclaimer': '这是一个非官方工具，与Tesla, Inc.无关。Tesla和Tesla标志是Tesla, Inc.的商标。',
+    'footer.legalClause1': '用户仅可上传由本人创作或已获得明确授权使用的音频。',
+    'footer.legalClause2': '第三方商标、音乐、游戏音效及角色语音的权利归各自权利人所有。',
+    'footer.legalClause3': '被举报侵权的内容可依据适用版权法律在不另行通知的情况下删除。',
+    'footer.legalClause4': '上传与分享内容的法律合规责任由用户自行承担。',
     'footer.copyright': '© 2024 Tesla Lock Sound Creator. 免费使用。无需账户。',
 
     // Language

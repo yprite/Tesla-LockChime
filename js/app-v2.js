@@ -609,7 +609,7 @@ class TeslaLockSoundAppV2 {
         this.chatSocket = null;
         if (!this.elements.chatUrlInput || !this.elements.chatStatus || !this.elements.chatMessages) return;
 
-        const storedUrl = localStorage.getItem('chat_ws_url') || 'ws://localhost:8080';
+        const storedUrl = localStorage.getItem('chat_ws_url') || '';
         this.elements.chatUrlInput.value = storedUrl;
         this.setChatStatus(this.t('v2.chat.disconnected', {}, 'Disconnected'));
         this.appendChatMessage(this.t('v2.chat.welcome', {}, 'Welcome. Connect to start chatting.'), { type: 'system' });
@@ -646,8 +646,19 @@ class TeslaLockSoundAppV2 {
             this.showToast(this.t('v2.chat.urlRequired', {}, 'Enter a WebSocket URL first.'), 'error');
             return;
         }
+        if (!/^wss?:\/\//i.test(url)) {
+            this.showToast(this.t('v2.chat.urlInvalid', {}, 'Use a valid WebSocket URL starting with ws:// or wss://.'), 'error');
+            return;
+        }
         if (typeof WebSocket === 'undefined') {
             this.showToast(this.t('v2.chat.notSupported', {}, 'WebSocket is not supported in this browser.'), 'error');
+            return;
+        }
+        const currentHost = window.location.hostname;
+        const isLocalPage = currentHost === 'localhost' || currentHost === '127.0.0.1';
+        const isLocalSocketUrl = /^wss?:\/\/(localhost|127\.0\.0\.1)(:\d+)?(\/|$)/i.test(url);
+        if (!isLocalPage && isLocalSocketUrl) {
+            this.showToast(this.t('v2.chat.localhostBlocked', {}, 'localhost chat server is available only in local development.'), 'error');
             return;
         }
 
