@@ -72,7 +72,8 @@ const DEFAULT_STATE = {
   backgroundTheme: "tesla-red",
   backgroundImageUrl: "",
   widgets: createDefaultWidgetState(),
-  layouts: createDefaultLayouts()
+  layouts: createDefaultLayouts(),
+  widgetSettings: {}
 };
 
 class DashboardBuilder {
@@ -87,12 +88,24 @@ class DashboardBuilder {
     this.state = this.createState(DEFAULT_STATE);
     this.clockMainEl = null;
     this.dragState = null;
+    this.liveData = {
+      battery: null,
+      network: null,
+      storage: null,
+      weather: null
+    };
+    this.weatherDisabled = false;
+    this.weatherLastFetchMs = 0;
+    this.dataRefreshTimer = null;
+    this.modalWidgetId = "";
     this.els = this.cacheElements();
     this.initLanguageSettings();
+    this.initWidgetSettingsModal();
     this.populateFilterOptions();
     this.renderWidgetControls();
     this.bindEvents();
     this.startClock();
+    this.startDataPipeline();
     this.init();
   }
 
@@ -112,8 +125,19 @@ class DashboardBuilder {
         ...DEFAULT_STATE.widgets,
         ...((input.widgets && typeof input.widgets === "object") ? input.widgets : {})
       },
-      layouts: mergedLayouts
+      layouts: mergedLayouts,
+      widgetSettings: {
+        ...(DEFAULT_STATE.widgetSettings || {}),
+        ...((input.widgetSettings && typeof input.widgetSettings === "object") ? input.widgetSettings : {})
+      }
     };
+  }
+
+  getWidgetSettings(widgetId) {
+    const all = this.state.widgetSettings || {};
+    const settings = all[widgetId];
+    if (!settings || typeof settings !== "object") return {};
+    return settings;
   }
 
   normalizeLayout(layout, fallback) {
@@ -419,6 +443,158 @@ class DashboardBuilder {
 
     grid.addEventListener("pointerup", releaseDrag);
     grid.addEventListener("pointercancel", releaseDrag);
+
+    grid.addEventListener("dblclick", (event) => {
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      const card = target.closest(".dash-widget");
+      if (!card) return;
+      const widgetId = card.getAttribute("data-widget-id");
+      if (!widgetId) return;
+      this.openWidgetSettings(widgetId);
+      event.preventDefault();
+    });
+  }
+
+  initWidgetSettingsModal() {
+    const backdrop = document.createElement("div");
+    backdrop.className = "widget-settings-backdrop";
+    backdrop.innerHTML = `
+      <div class="widget-settings-modal" role="dialog" aria-modal="true" aria-label="Widget settings">
+        <div class="widget-settings-head">
+          <h3 class="widget-settings-title">Widget Settings</h3>
+          <button type="button" class="widget-settings-close" data-close>×</button>
+        </div>
+        <form class="widget-settings-form">
+          <label class="widget-settings-field">
+            <span>Title</span>
+            <input name="title" type="text" maxlength="48" placeholder="Custom title (optional)">
+          </label>
+          <label class="widget-settings-field widget-settings-time">
+            <span>Clock Format</span>
+            <select name="timeFormat">
+              <option value="auto">Auto</option>
+              <option value="12">12-hour</option>
+              <option value="24">24-hour</option>
+            </select>
+          </label>
+          <label class="widget-settings-field widget-settings-temp">
+            <span>Temperature Unit</span>
+            <select name="tempUnit">
+              <option value="c">Celsius</option>
+              <option value="f">Fahrenheit</option>
+            </select>
+          </label>
+          <label class="widget-settings-field widget-settings-distance">
+            <span>Distance Unit</span>
+            <select name="distanceUnit">
+              <option value="km">Kilometer</option>
+              <option value="mi">Mile</option>
+            </select>
+          </label>
+          <div class="widget-settings-actions">
+            <button type="button" data-close>Cancel</button>
+            <button type="submit">Save</button>
+          </div>
+        </form>
+      </div>
+    `;
+    document.body.appendChild(backdrop);
+    this.settingsModal = backdrop;
+    this.settingsForm = backdrop.querySelector(".widget-settings-form");
+
+    backdrop.addEventListener("click", (event) => {
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      if (target === backdrop || target.hasAttribute("data-close")) {
+        this.closeWidgetSettings();
+      }
+    });
+
+    this.settingsForm?.addEventListener("submit", (event) => {
+      event.preventDefault();
+      this.saveWidgetSettingsFromForm();
+    });
+  }
+
+  openWidgetSettings(widgetId) {
+    if (!this.settingsModal || !this.settingsForm) return;
+    this.modalWidgetId = widgetId;
+    const widget = WIDGET_LIBRARY.find((item) => item.id === widgetId);
+    const settings = this.getWidgetSettings(widgetId);
+
+    const titleEl = this.settingsForm.elements.namedItem("title");
+    const timeEl = this.settingsForm.elements.namedItem("timeFormat");
+    const tempEl = this.settingsForm.elements.namedItem("tempUnit");
+    const distanceEl = this.settingsForm.elements.namedItem("distanceUnit");
+
+    if (titleEl instanceof HTMLInputElement) {
+      titleEl.value = settings.title || "";
+    }
+    if (timeEl instanceof HTMLSelectElement) {
+      timeEl.value = settings.timeFormat || "auto";
+    }
+    if (tempEl instanceof HTMLSelectElement) {
+      tempEl.value = settings.tempUnit || "c";
+    }
+    if (distanceEl instanceof HTMLSelectElement) {
+      distanceEl.value = settings.distanceUnit || "km";
+    }
+
+    const showClockFormat = widgetId === "clock" || widgetId === "clockGrid";
+    const showTempUnit = widgetId === "weather" || widgetId === "weatherTiles";
+    const showDistance = widgetId === "range" || widgetId === "cityHop" || widgetId === "navigation";
+
+    this.settingsForm.querySelector(".widget-settings-time")?.classList.toggle("hidden", !showClockFormat);
+    this.settingsForm.querySelector(".widget-settings-temp")?.classList.toggle("hidden", !showTempUnit);
+    this.settingsForm.querySelector(".widget-settings-distance")?.classList.toggle("hidden", !showDistance);
+
+    const titleNode = this.settingsModal.querySelector(".widget-settings-title");
+    if (titleNode) {
+      titleNode.textContent = `Widget Settings - ${widget ? this.getWidgetLabel(widget) : widgetId}`;
+    }
+
+    this.settingsModal.classList.add("open");
+  }
+
+  closeWidgetSettings() {
+    if (!this.settingsModal) return;
+    this.settingsModal.classList.remove("open");
+    this.modalWidgetId = "";
+  }
+
+  saveWidgetSettingsFromForm() {
+    if (!this.modalWidgetId || !this.settingsForm) return;
+    const widgetId = this.modalWidgetId;
+    const current = this.getWidgetSettings(widgetId);
+    const next = { ...current };
+
+    const titleEl = this.settingsForm.elements.namedItem("title");
+    const timeEl = this.settingsForm.elements.namedItem("timeFormat");
+    const tempEl = this.settingsForm.elements.namedItem("tempUnit");
+    const distanceEl = this.settingsForm.elements.namedItem("distanceUnit");
+
+    if (titleEl instanceof HTMLInputElement) {
+      const value = titleEl.value.trim();
+      if (value) next.title = value;
+      else delete next.title;
+    }
+    if (timeEl instanceof HTMLSelectElement) {
+      next.timeFormat = timeEl.value || "auto";
+    }
+    if (tempEl instanceof HTMLSelectElement) {
+      next.tempUnit = tempEl.value === "f" ? "f" : "c";
+    }
+    if (distanceEl instanceof HTMLSelectElement) {
+      next.distanceUnit = distanceEl.value === "mi" ? "mi" : "km";
+    }
+
+    this.state.widgetSettings = {
+      ...(this.state.widgetSettings || {}),
+      [widgetId]: next
+    };
+    this.closeWidgetSettings();
+    this.renderPreview();
   }
 
   computeDragLayout(currentX, currentY) {
@@ -467,6 +643,155 @@ class DashboardBuilder {
   resetGridLayout() {
     this.state.layouts = createDefaultLayouts();
     this.renderPreview();
+  }
+
+  startDataPipeline() {
+    this.refreshLiveData();
+    this.dataRefreshTimer = setInterval(() => this.refreshLiveData(), 60 * 1000);
+  }
+
+  async refreshLiveData() {
+    await Promise.allSettled([
+      this.refreshBatteryData(),
+      this.refreshStorageData(),
+      this.refreshWeatherData()
+    ]);
+    this.refreshNetworkData();
+    if (!this.dragState && !this.modalWidgetId) {
+      this.renderPreview();
+    }
+  }
+
+  async refreshBatteryData() {
+    if (!("getBattery" in navigator)) return;
+    try {
+      if (!this.batteryManager) {
+        this.batteryManager = await navigator.getBattery();
+        const update = () => {
+          this.liveData.battery = {
+            levelPct: Math.round((this.batteryManager.level || 0) * 100),
+            charging: Boolean(this.batteryManager.charging)
+          };
+        };
+        this.batteryManager.addEventListener("chargingchange", update);
+        this.batteryManager.addEventListener("levelchange", update);
+        update();
+      } else {
+        this.liveData.battery = {
+          levelPct: Math.round((this.batteryManager.level || 0) * 100),
+          charging: Boolean(this.batteryManager.charging)
+        };
+      }
+    } catch (error) {
+    }
+  }
+
+  refreshNetworkData() {
+    const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+    if (!connection) return;
+    this.liveData.network = {
+      downlink: Number(connection.downlink || 0),
+      rtt: Number(connection.rtt || 0),
+      type: String(connection.effectiveType || connection.type || "")
+    };
+  }
+
+  async refreshStorageData() {
+    if (!navigator.storage || typeof navigator.storage.estimate !== "function") return;
+    try {
+      const estimate = await navigator.storage.estimate();
+      const usage = Number(estimate.usage || 0);
+      const quota = Number(estimate.quota || 0);
+      this.liveData.storage = {
+        usageMb: usage / (1024 * 1024),
+        quotaMb: quota / (1024 * 1024),
+        usedPct: quota > 0 ? Math.round((usage / quota) * 100) : null
+      };
+    } catch (error) {
+    }
+  }
+
+  async refreshWeatherData() {
+    if (this.weatherDisabled) return;
+    if (Date.now() - this.weatherLastFetchMs < 10 * 60 * 1000) return;
+    if (!("geolocation" in navigator) || typeof fetch !== "function") return;
+    try {
+      const position = await this.getCurrentPosition();
+      const latitude = Number(position.coords.latitude);
+      const longitude = Number(position.coords.longitude);
+      if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return;
+
+      const url = new URL("https://api.open-meteo.com/v1/forecast");
+      url.searchParams.set("latitude", String(latitude));
+      url.searchParams.set("longitude", String(longitude));
+      url.searchParams.set("current", "temperature_2m,weather_code");
+      url.searchParams.set("timezone", "auto");
+
+      const response = await fetch(url.toString());
+      if (!response.ok) return;
+      const payload = await response.json();
+      const current = payload?.current || {};
+      if (!Number.isFinite(current.temperature_2m)) return;
+
+      this.weatherLastFetchMs = Date.now();
+      this.liveData.weather = {
+        tempC: Number(current.temperature_2m),
+        code: Number(current.weather_code),
+        label: this.describeWeatherCode(Number(current.weather_code))
+      };
+    } catch (error) {
+      this.weatherDisabled = true;
+    }
+  }
+
+  getCurrentPosition() {
+    return new Promise((resolve, reject) => {
+      navigator.geolocation.getCurrentPosition(resolve, reject, {
+        enableHighAccuracy: false,
+        timeout: 5000,
+        maximumAge: 10 * 60 * 1000
+      });
+    });
+  }
+
+  describeWeatherCode(code) {
+    const map = {
+      0: "Clear sky",
+      1: "Mainly clear",
+      2: "Partly cloudy",
+      3: "Overcast",
+      45: "Fog",
+      48: "Fog",
+      51: "Drizzle",
+      53: "Drizzle",
+      55: "Drizzle",
+      61: "Rain",
+      63: "Rain",
+      65: "Heavy rain",
+      71: "Snow",
+      73: "Snow",
+      75: "Heavy snow",
+      80: "Rain showers",
+      81: "Rain showers",
+      82: "Heavy showers",
+      95: "Thunderstorm"
+    };
+    return map[code] || "Weather";
+  }
+
+  formatTemp(tempC, unit) {
+    if (!Number.isFinite(tempC)) return null;
+    if (unit === "f") {
+      const tempF = (tempC * 9) / 5 + 32;
+      return `${Math.round(tempF)} F`;
+    }
+    return `${Math.round(tempC)} C`;
+  }
+
+  formatDistance(km, unit) {
+    if (!Number.isFinite(km)) return null;
+    if (unit === "mi") return `${(km * 0.621371).toFixed(1)} mi`;
+    return `${Math.round(km)} km`;
   }
 
   async init() {
@@ -720,10 +1045,56 @@ class DashboardBuilder {
       };
     }
 
-    return {
+    const result = {
       ...map[widgetId],
       title: this.t(`dash.widget.${widgetId}`, {}, map[widgetId].title)
     };
+    const settings = this.getWidgetSettings(widgetId);
+    if (settings.title) {
+      result.title = settings.title;
+    }
+
+    if (widgetId === "battery" || widgetId === "chargeCard") {
+      const battery = this.liveData.battery;
+      if (battery && Number.isFinite(battery.levelPct)) {
+        result.main = `${battery.levelPct}%`;
+        result.meter = battery.levelPct;
+        result.subLines = [battery.charging ? "Charging now" : "On battery"];
+      }
+    }
+
+    if (widgetId === "streamDeck") {
+      const network = this.liveData.network;
+      if (network && Number.isFinite(network.downlink) && network.downlink > 0) {
+        result.main = `${Math.round(network.downlink * 1000)} Kbps`;
+        result.subLines = [`RTT ${network.rtt || "--"} ms · ${network.type || "network"}`];
+      }
+    }
+
+    if (widgetId === "weather" || widgetId === "weatherTiles") {
+      const weather = this.liveData.weather;
+      const tempUnit = settings.tempUnit === "f" ? "f" : "c";
+      const temp = this.formatTemp(weather?.tempC, tempUnit);
+      if (temp) {
+        result.main = temp;
+        result.subLines = [weather?.label || "Weather"];
+      }
+    }
+
+    if (widgetId === "range" || widgetId === "cityHop" || widgetId === "navigation") {
+      const unit = settings.distanceUnit === "mi" ? "mi" : "km";
+      const numeric = Number(String(result.main).replace(/[^\d.]/g, ""));
+      const converted = this.formatDistance(numeric, unit);
+      if (converted) result.main = converted;
+    }
+
+    if (widgetId === "cost" && this.liveData.storage?.usedPct != null) {
+      const usage = this.liveData.storage;
+      result.subLines = [`Storage ${usage.usedPct}% used`];
+      result.meter = Math.max(0, Math.min(100, usage.usedPct));
+    }
+
+    return result;
   }
 
   buildBarsHtml(values) {
@@ -772,8 +1143,17 @@ class DashboardBuilder {
 
   updateClockWidget() {
     if (!this.clockMainEl) return;
+    const settings = this.getWidgetSettings("clock");
+    const mode = settings.timeFormat || "auto";
+    const hour12 = mode === "12" ? true : mode === "24" ? false : undefined;
     const now = new Date();
-    this.clockMainEl.textContent = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+    const options = {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit"
+    };
+    if (typeof hour12 === "boolean") options.hour12 = hour12;
+    this.clockMainEl.textContent = now.toLocaleTimeString([], options);
   }
 
   startClock() {
