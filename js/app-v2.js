@@ -129,6 +129,9 @@ class TeslaLockSoundAppV2 {
             ownerTrimSelect: document.getElementById('owner-trim-select'),
             btnSaveProfile: document.getElementById('btn-save-profile'),
             btnGeneratePack: document.getElementById('btn-generate-pack'),
+            signinGateCard: document.getElementById('signin-gate-card'),
+            signatureCard: document.getElementById('signature-card'),
+            badgeCard: document.getElementById('badge-card'),
             authUserText: document.getElementById('auth-user-text'),
             btnAuthGoogle: document.getElementById('btn-auth-google'),
             btnAuthKakao: document.getElementById('btn-auth-kakao'),
@@ -528,6 +531,7 @@ class TeslaLockSoundAppV2 {
             if (this.elements.authUserText) {
                 this.elements.authUserText.textContent = this.t('v2.auth.unavailable', {}, 'Auth unavailable in this environment.');
             }
+            this.setAuthVisibility(false);
             return;
         }
 
@@ -555,10 +559,18 @@ class TeslaLockSoundAppV2 {
                 `Signed in as ${name}`
             );
             if (this.elements.btnAuthLogout) this.elements.btnAuthLogout.style.display = 'inline-flex';
+            this.setAuthVisibility(true);
         } else {
             this.elements.authUserText.textContent = this.t('v2.auth.signedOut', {}, 'Sign in to sync profile across devices.');
             if (this.elements.btnAuthLogout) this.elements.btnAuthLogout.style.display = 'none';
+            this.setAuthVisibility(false);
         }
+    }
+
+    setAuthVisibility(isSignedIn) {
+        if (this.elements.signinGateCard) this.elements.signinGateCard.style.display = isSignedIn ? 'none' : 'block';
+        if (this.elements.signatureCard) this.elements.signatureCard.style.display = isSignedIn ? 'block' : 'none';
+        if (this.elements.badgeCard) this.elements.badgeCard.style.display = isSignedIn ? 'block' : 'none';
     }
 
     async signInWithProvider(providerType) {

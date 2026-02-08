@@ -262,6 +262,13 @@ body {
     transition: margin-right var(--duration-slow) var(--ease-out);
 }
 
+@media (min-width: 1201px) {
+    .gallery-panel {
+        padding-right: 24rem;
+        max-width: 1500px;
+    }
+}
+
 body.editor-open .gallery-panel {
     margin-right: var(--editor-width);
 }
@@ -1676,6 +1683,13 @@ body.editor-open .gallery-panel {
 /* ===========================
    Growth Panels
    =========================== */
+.header-growth {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+}
+
 .growth-panels {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
@@ -1808,6 +1822,22 @@ body.editor-open .gallery-panel {
     color: var(--color-text-secondary);
 }
 
+.challenge-dock {
+    position: fixed;
+    right: 1rem;
+    top: 92px;
+    width: min(360px, 34vw);
+    z-index: 120;
+}
+
+.challenge-dock .growth-card {
+    box-shadow: var(--shadow-lg);
+}
+
+body.editor-open .challenge-dock {
+    right: calc(var(--editor-width) + 1rem);
+}
+
 /* ===========================
    Workspace
    =========================== */
@@ -1883,8 +1913,22 @@ body.editor-open .gallery-panel {
         grid-template-columns: 1fr;
     }
 
+    .header-growth {
+        grid-template-columns: 1fr;
+    }
+
     .signature-form {
         grid-template-columns: 1fr;
+    }
+
+    .challenge-dock {
+        position: static;
+        width: auto;
+        margin: 0 1rem 1rem;
+    }
+
+    body.editor-open .challenge-dock {
+        right: auto;
     }
 }
 
