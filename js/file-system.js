@@ -10,6 +10,8 @@
 
 const SUPPORTED_BROWSERS = ['Chrome', 'Edge'];
 const LOCK_CHIME_FILENAME = 'LockChime.wav';
+const TESLA_USB_DIRECTORY = 'TESLAUSB';
+const TESLA_BOOMBOX_DIRECTORY = 'Boombox';
 
 class FileSystemHandler {
     constructor() {
@@ -175,19 +177,26 @@ class FileSystemHandler {
         }
 
         try {
-            const directoryHandle = await window.showDirectoryPicker({
+            const rootDirectoryHandle = await window.showDirectoryPicker({
                 mode: 'readwrite',
                 startIn: 'desktop'
             });
 
+            const teslaUsbDirectoryHandle = await rootDirectoryHandle.getDirectoryHandle(TESLA_USB_DIRECTORY, {
+                create: true
+            });
+            const boomboxDirectoryHandle = await teslaUsbDirectoryHandle.getDirectoryHandle(TESLA_BOOMBOX_DIRECTORY, {
+                create: true
+            });
+
             let existingFile = null;
             try {
-                existingFile = await directoryHandle.getFileHandle(fileName);
+                existingFile = await boomboxDirectoryHandle.getFileHandle(fileName);
             } catch (e) {
                 // File doesn't exist, which is fine
             }
 
-            const fileHandle = await directoryHandle.getFileHandle(fileName, {
+            const fileHandle = await boomboxDirectoryHandle.getFileHandle(fileName, {
                 create: true
             });
 
@@ -198,11 +207,12 @@ class FileSystemHandler {
             return {
                 success: true,
                 fileName: fileName,
-                directoryName: directoryHandle.name,
+                directoryName: rootDirectoryHandle.name,
+                targetPath: `${TESLA_USB_DIRECTORY}/${TESLA_BOOMBOX_DIRECTORY}/${fileName}`,
                 overwritten: existingFile !== null,
                 message: existingFile
-                    ? `${fileName} has been updated in ${directoryHandle.name}`
-                    : `${fileName} has been saved to ${directoryHandle.name}`
+                    ? `${fileName} has been updated in ${TESLA_USB_DIRECTORY}/${TESLA_BOOMBOX_DIRECTORY}`
+                    : `${fileName} has been saved to ${TESLA_USB_DIRECTORY}/${TESLA_BOOMBOX_DIRECTORY}`
             };
         } catch (error) {
             if (error.name === 'AbortError') {

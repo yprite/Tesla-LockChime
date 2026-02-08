@@ -1349,7 +1349,7 @@ class TeslaLockSoundAppV2 {
 
             this.showLoading(this.t('status.saving', {}, 'Saving to USB...'));
 
-            const result = await this.fileSystem.saveFile(wavBlob, 'LockChime.wav');
+            const result = await this.fileSystem.saveToDirectory(wavBlob, 'LockChime.wav');
 
             if (result.success) {
                 this.hideLoading();

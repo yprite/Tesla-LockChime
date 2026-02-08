@@ -1618,7 +1618,7 @@ class TeslaLockSoundApp {
 
             this.showLoading('Saving to USB...');
 
-            const result = await this.fileSystem.saveFile(wavBlob, 'LockChime.wav');
+            const result = await this.fileSystem.saveToDirectory(wavBlob, 'LockChime.wav');
 
             if (result.success) {
                 this.goToStep('success');

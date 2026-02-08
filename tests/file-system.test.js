@@ -2,7 +2,9 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {
     FileSystemHandler,
     LOCK_CHIME_FILENAME,
-    SUPPORTED_BROWSERS
+    SUPPORTED_BROWSERS,
+    TESLA_USB_DIRECTORY,
+    TESLA_BOOMBOX_DIRECTORY
 } from '../src/file-system.js';
 
 describe('Constants', () => {
@@ -13,6 +15,11 @@ describe('Constants', () => {
     it('should list Chrome and Edge as supported browsers', () => {
         expect(SUPPORTED_BROWSERS).toContain('Chrome');
         expect(SUPPORTED_BROWSERS).toContain('Edge');
+    });
+
+    it('should use Tesla folder structure constants', () => {
+        expect(TESLA_USB_DIRECTORY).toBe('TESLAUSB');
+        expect(TESLA_BOOMBOX_DIRECTORY).toBe('Boombox');
     });
 });
 
@@ -274,11 +281,19 @@ describe('FileSystemHandler - Save Operations', () => {
                 createWritable: vi.fn().mockResolvedValue(mockWritable)
             };
 
-            const mockDirectoryHandle = {
-                name: 'USB_DRIVE',
+            const mockBoomboxDirectoryHandle = {
                 getFileHandle: vi.fn()
                     .mockResolvedValueOnce({}) // File exists check
                     .mockResolvedValueOnce(mockFileHandle) // Create/get for writing
+            };
+
+            const mockTeslaUsbDirectoryHandle = {
+                getDirectoryHandle: vi.fn().mockResolvedValue(mockBoomboxDirectoryHandle)
+            };
+
+            const mockDirectoryHandle = {
+                name: 'USB_DRIVE',
+                getDirectoryHandle: vi.fn().mockResolvedValue(mockTeslaUsbDirectoryHandle)
             };
 
             window.showDirectoryPicker.mockResolvedValue(mockDirectoryHandle);
@@ -288,6 +303,9 @@ describe('FileSystemHandler - Save Operations', () => {
 
             expect(result.success).toBe(true);
             expect(result.overwritten).toBe(true);
+            expect(result.targetPath).toBe('TESLAUSB/Boombox/LockChime.wav');
+            expect(mockDirectoryHandle.getDirectoryHandle).toHaveBeenCalledWith('TESLAUSB', { create: true });
+            expect(mockTeslaUsbDirectoryHandle.getDirectoryHandle).toHaveBeenCalledWith('Boombox', { create: true });
         });
     });
 });
