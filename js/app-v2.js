@@ -613,12 +613,25 @@ class TeslaLockSoundAppV2 {
         const configured = (typeof window !== 'undefined' && typeof window.CHAT_WS_ENDPOINT === 'string')
             ? window.CHAT_WS_ENDPOINT.trim()
             : '';
-        const storedUrl = localStorage.getItem('chat_ws_url') || configured || '';
-        this.elements.chatUrlInput.value = storedUrl;
+        let storedUrl = localStorage.getItem('chat_ws_url') || '';
+        storedUrl = this.normalizeChatUrl(storedUrl);
+        const currentHost = window.location.hostname;
+        const isLocalPage = currentHost === 'localhost' || currentHost === '127.0.0.1';
+        const isStoredLocalSocketUrl = /^wss?:\/\/(localhost|127\.0\.0\.1)(:\d+)?(\/|$)/i.test(storedUrl);
+        const shouldIgnoreStoredUrl = !storedUrl
+            || !/^wss?:\/\//i.test(storedUrl)
+            || (!isLocalPage && isStoredLocalSocketUrl);
+
+        const initialUrl = shouldIgnoreStoredUrl ? configured : storedUrl;
+        if (shouldIgnoreStoredUrl && configured) {
+            localStorage.setItem('chat_ws_url', configured);
+        }
+
+        this.elements.chatUrlInput.value = initialUrl;
         this.setChatStatus(this.t('v2.chat.disconnected', {}, 'Disconnected'));
         this.setChatConnectedUi(false);
         this.appendChatMessage(this.t('v2.chat.welcome', {}, 'Welcome. Connect to start chatting.'), { type: 'system' });
-        if (storedUrl) {
+        if (initialUrl) {
             this.connectChat({ silent: true, auto: true });
         }
     }
