@@ -786,7 +786,6 @@ class TeslaLockSoundAppV2 {
 
         try {
             this.chatSocket.send(JSON.stringify(payload));
-            this.appendChatMessage(text, { sender: payload.user });
             this.trackEvent('chat_message_sent', {
                 chars: text.length
             });
