@@ -1,0 +1,40 @@
+name: Deploy Cloudflare Chat Worker
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - 'cloudflare/**'
+      - 'wrangler.toml'
+      - '.github/workflows/deploy-cloudflare-chat.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cloudflare-chat-worker
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Deploy Chat Worker
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Deploy with Wrangler
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: deploy
+
+      - name: Deployment summary
+        run: |
+          echo "## Cloudflare Chat Worker deployed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Required secrets:" >> $GITHUB_STEP_SUMMARY
+          echo "- CLOUDFLARE_API_TOKEN" >> $GITHUB_STEP_SUMMARY
+          echo "- CLOUDFLARE_ACCOUNT_ID" >> $GITHUB_STEP_SUMMARY
