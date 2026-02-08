@@ -113,6 +113,81 @@
                     </div>
                 </section>
 
+                <!-- Analytics Filters -->
+                <section class="analytics-controls-section">
+                    <div class="analytics-controls">
+                        <label>
+                            <span data-i18n="admin.analyticsRange">Range</span>
+                            <select id="analytics-range">
+                                <option value="7" data-i18n="admin.range7d">Last 7 days</option>
+                                <option value="14" data-i18n="admin.range14d">Last 14 days</option>
+                                <option value="30" selected data-i18n="admin.range30d">Last 30 days</option>
+                                <option value="60" data-i18n="admin.range60d">Last 60 days</option>
+                            </select>
+                        </label>
+                        <label>
+                            <span data-i18n="admin.analyticsLanguage">Language</span>
+                            <select id="analytics-language">
+                                <option value="all" data-i18n="cat.all">All</option>
+                                <option value="en">EN</option>
+                                <option value="ko">KO</option>
+                                <option value="ja">JA</option>
+                                <option value="zh">ZH</option>
+                            </select>
+                        </label>
+                        <label>
+                            <span data-i18n="admin.analyticsEntryChannel">Entry Channel</span>
+                            <select id="analytics-entry-channel">
+                                <option value="all" data-i18n="cat.all">All</option>
+                            </select>
+                        </label>
+                        <label>
+                            <span data-i18n="admin.analyticsDevice">Device</span>
+                            <select id="analytics-device">
+                                <option value="all" data-i18n="cat.all">All</option>
+                                <option value="desktop" data-i18n="admin.deviceDesktop">Desktop</option>
+                                <option value="mobile" data-i18n="admin.deviceMobile">Mobile</option>
+                                <option value="tablet" data-i18n="admin.deviceTablet">Tablet</option>
+                            </select>
+                        </label>
+                        <button class="btn btn-secondary btn-small" id="btn-analytics-refresh" data-i18n="admin.analyticsRefresh">Refresh</button>
+                    </div>
+                </section>
+
+                <!-- Growth KPI -->
+                <section class="stats-section">
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-card-icon">👥</div>
+                            <div class="stat-card-content">
+                                <span class="stat-card-value" id="stat-mau">0</span>
+                                <span class="stat-card-label" data-i18n="admin.kpiMau">MAU (30d)</span>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-card-icon">📆</div>
+                            <div class="stat-card-content">
+                                <span class="stat-card-value" id="stat-dau">0</span>
+                                <span class="stat-card-label" data-i18n="admin.kpiDau">DAU (24h)</span>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-card-icon">⚡</div>
+                            <div class="stat-card-content">
+                                <span class="stat-card-value" id="stat-activation-rate">0%</span>
+                                <span class="stat-card-label" data-i18n="admin.kpiActivationRate">Activation Rate</span>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-card-icon">🔁</div>
+                            <div class="stat-card-content">
+                                <span class="stat-card-value" id="stat-d7-retention">0%</span>
+                                <span class="stat-card-label" data-i18n="admin.kpiD7Retention">D7 Retention</span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
                 <!-- Charts Section -->
                 <section class="charts-section">
                     <div class="charts-grid">
@@ -126,6 +201,18 @@
                             <h3 data-i18n="admin.uploadTrend">Upload Trend (30 Days)</h3>
                             <div class="chart-container">
                                 <canvas id="trend-chart"></canvas>
+                            </div>
+                        </div>
+                        <div class="chart-card">
+                            <h3 data-i18n="admin.funnelConversion">Funnel Conversion</h3>
+                            <div class="chart-container">
+                                <canvas id="funnel-chart"></canvas>
+                            </div>
+                        </div>
+                        <div class="chart-card">
+                            <h3 data-i18n="admin.retentionTrend">D7 Retention Trend (14 Cohorts)</h3>
+                            <div class="chart-container">
+                                <canvas id="retention-chart"></canvas>
                             </div>
                         </div>
                     </div>

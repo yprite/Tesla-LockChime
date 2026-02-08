@@ -132,6 +132,13 @@ class AdminSounds {
         }
     }
 
+    t(key, fallback, params = {}) {
+        if (typeof i18n !== 'undefined' && i18n && typeof i18n.t === 'function') {
+            return i18n.t(key, params);
+        }
+        return fallback;
+    }
+
     async loadSounds() {
         this.showLoading();
 
@@ -299,7 +306,7 @@ class AdminSounds {
         }
 
         if (this.elements.selectedCount) {
-            this.elements.selectedCount.textContent = `${count} selected`;
+            this.elements.selectedCount.textContent = this.t('admin.selectedCount', `${count} selected`, { count });
         }
 
         if (this.elements.selectAll) {
@@ -315,7 +322,10 @@ class AdminSounds {
         const totalPages = Math.ceil(this.filteredSounds.length / SOUNDS_PER_PAGE) || 1;
 
         if (this.elements.pageInfo) {
-            this.elements.pageInfo.textContent = `Page ${this.currentPage} of ${totalPages}`;
+            this.elements.pageInfo.textContent = this.t('admin.pageOf', `Page ${this.currentPage} of ${totalPages}`, {
+                page: this.currentPage,
+                total: totalPages
+            });
         }
 
         if (this.elements.prevBtn) {
