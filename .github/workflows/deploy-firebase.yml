@@ -2,7 +2,7 @@ name: Deploy to Firebase Hosting
 
 on:
   push:
-    branches: [main, master]
+    branches: [release]
   workflow_dispatch:  # Manual trigger only
     inputs:
       environment:
@@ -42,6 +42,7 @@ jobs:
   deploy:
     name: Deploy to Firebase
     needs: test
+    if: ${{ github.ref == 'refs/heads/release' }}
     runs-on: ubuntu-latest
 
     steps:
