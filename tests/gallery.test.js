@@ -608,6 +608,89 @@ describe('GalleryHandler - Mocked Firebase Operations', () => {
         });
     });
 
+    describe('downloadSound()', () => {
+        afterEach(() => {
+            delete global.fetch;
+        });
+
+        it('should resolve legacy storage URL via Firebase storage and persist upgraded URL', async () => {
+            const legacyUrl = 'https://storage.googleapis.com/tesla-lock-sounds.firebasestorage.app/sounds/legacy.wav';
+            const upgradedUrl = 'https://firebasestorage.googleapis.com/v0/b/tesla-lock-sounds.firebasestorage.app/o/sounds%2Flegacy.wav?alt=media&token=abc';
+            const mockBlob = new Blob(['wav'], { type: 'audio/wav' });
+            const mockUpdate = vi.fn().mockResolvedValue();
+            const mockGet = vi.fn().mockResolvedValue({
+                exists: true,
+                id: 'sound_legacy',
+                data: () => ({
+                    name: 'Legacy Sound',
+                    downloadUrl: legacyUrl,
+                    fileName: 'legacy.wav'
+                })
+            });
+
+            mockDb.collection.mockReturnValue({
+                doc: vi.fn().mockReturnValue({
+                    get: mockGet,
+                    update: mockUpdate
+                })
+            });
+
+            mockStorage.ref.mockReturnValue({
+                getDownloadURL: vi.fn().mockResolvedValue(upgradedUrl)
+            });
+
+            global.fetch = vi.fn().mockResolvedValue({
+                ok: true,
+                blob: vi.fn().mockResolvedValue(mockBlob)
+            });
+
+            const result = await handler.downloadSound('sound_legacy');
+
+            expect(mockStorage.ref).toHaveBeenCalledWith('sounds/legacy.wav');
+            expect(global.fetch).toHaveBeenCalledWith(upgradedUrl, { mode: 'cors' });
+            expect(mockUpdate).toHaveBeenCalledWith({ downloads: 'increment_1' });
+            expect(mockUpdate).toHaveBeenCalledWith({ downloadUrl: upgradedUrl });
+            expect(result.blob).toBe(mockBlob);
+            expect(result.sound.id).toBe('sound_legacy');
+        });
+
+        it('should use existing non-legacy URL without forcing storage URL refresh', async () => {
+            const modernUrl = 'https://firebasestorage.googleapis.com/v0/b/project/o/sounds%2Fmodern.wav?alt=media&token=xyz';
+            const mockBlob = new Blob(['wav'], { type: 'audio/wav' });
+            const mockUpdate = vi.fn().mockResolvedValue();
+            const mockGet = vi.fn().mockResolvedValue({
+                exists: true,
+                id: 'sound_modern',
+                data: () => ({
+                    name: 'Modern Sound',
+                    downloadUrl: modernUrl,
+                    fileName: 'modern.wav'
+                })
+            });
+
+            mockDb.collection.mockReturnValue({
+                doc: vi.fn().mockReturnValue({
+                    get: mockGet,
+                    update: mockUpdate
+                })
+            });
+
+            global.fetch = vi.fn().mockResolvedValue({
+                ok: true,
+                blob: vi.fn().mockResolvedValue(mockBlob)
+            });
+
+            const result = await handler.downloadSound('sound_modern');
+
+            expect(mockStorage.ref).not.toHaveBeenCalled();
+            expect(global.fetch).toHaveBeenCalledWith(modernUrl, { mode: 'cors' });
+            expect(mockUpdate).toHaveBeenCalledTimes(1);
+            expect(mockUpdate).toHaveBeenCalledWith({ downloads: 'increment_1' });
+            expect(result.blob).toBe(mockBlob);
+            expect(result.sound.id).toBe('sound_modern');
+        });
+    });
+
     describe('getStats()', () => {
         it('should calculate total sounds and downloads', async () => {
             const mockDocs = [
