@@ -1,0 +1,11 @@
+name = "tesla-lock-chat"
+main = "cloudflare/chat-worker.mjs"
+compatibility_date = "2026-02-08"
+
+[[durable_objects.bindings]]
+name = "CHAT_ROOM"
+class_name = "ChatRoom"
+
+[[migrations]]
+tag = "v1"
+new_classes = ["ChatRoom"]

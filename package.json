@@ -8,6 +8,8 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "dev": "npx serve -p 3000",
+    "chat:dev": "npx wrangler dev",
+    "chat:deploy": "npx wrangler deploy",
     "lint": "find js -name '*.js' -print0 | xargs -0 -n1 node --check",
     "build": "echo 'Static site - no build required'",
     "generate-sounds": "node scripts/generate-sounds.js",
