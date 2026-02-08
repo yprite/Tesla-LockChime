@@ -570,7 +570,6 @@ class TeslaLockSoundAppV2 {
 
         try {
             await firebase.auth().signInWithPopup(provider);
-            this.setAuthVisibility(false, false);
             this.showToast(this.t('v2.auth.loginSuccess', {}, 'Signed in successfully.'), 'success');
             this.trackEvent('oauth_login_success', { provider: providerType });
         } catch (error) {
