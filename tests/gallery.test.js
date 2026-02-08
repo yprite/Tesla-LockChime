@@ -611,6 +611,7 @@ describe('GalleryHandler - Mocked Firebase Operations', () => {
     describe('downloadSound()', () => {
         afterEach(() => {
             delete global.fetch;
+            delete window.CHAT_WS_ENDPOINT;
         });
 
         it('should resolve legacy storage URL via Firebase storage and persist upgraded URL', async () => {
@@ -688,6 +689,45 @@ describe('GalleryHandler - Mocked Firebase Operations', () => {
             expect(mockUpdate).toHaveBeenCalledWith({ downloads: 'increment_1' });
             expect(result.blob).toBe(mockBlob);
             expect(result.sound.id).toBe('sound_modern');
+        });
+
+        it('should retry via cloudflare media proxy when direct fetch fails', async () => {
+            const modernUrl = 'https://firebasestorage.googleapis.com/v0/b/project/o/sounds%2Fmodern.wav?alt=media&token=xyz';
+            const mockBlob = new Blob(['wav'], { type: 'audio/wav' });
+            const mockUpdate = vi.fn().mockResolvedValue();
+            const mockGet = vi.fn().mockResolvedValue({
+                exists: true,
+                id: 'sound_modern',
+                data: () => ({
+                    name: 'Modern Sound',
+                    downloadUrl: modernUrl,
+                    fileName: 'modern.wav'
+                })
+            });
+
+            mockDb.collection.mockReturnValue({
+                doc: vi.fn().mockReturnValue({
+                    get: mockGet,
+                    update: mockUpdate
+                })
+            });
+
+            window.CHAT_WS_ENDPOINT = 'wss://tesla-lock-chat.yprite.workers.dev/chat/global';
+
+            const proxyUrl = `https://tesla-lock-chat.yprite.workers.dev/proxy-media?url=${encodeURIComponent(modernUrl)}`;
+            global.fetch = vi
+                .fn()
+                .mockRejectedValueOnce(new TypeError('Failed to fetch'))
+                .mockResolvedValueOnce({
+                    ok: true,
+                    blob: vi.fn().mockResolvedValue(mockBlob)
+                });
+
+            const result = await handler.downloadSound('sound_modern');
+
+            expect(global.fetch).toHaveBeenNthCalledWith(1, modernUrl, { mode: 'cors' });
+            expect(global.fetch).toHaveBeenNthCalledWith(2, proxyUrl, { mode: 'cors' });
+            expect(result.blob).toBe(mockBlob);
         });
     });
 

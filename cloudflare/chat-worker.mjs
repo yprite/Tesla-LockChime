@@ -7,8 +7,23 @@ function jsonResponse(payload, status = 200) {
     headers: {
       "content-type": "application/json; charset=utf-8",
       "cache-control": "no-store",
+      "access-control-allow-origin": "*",
     },
   });
+}
+
+function corsHeaders(extra = {}) {
+  return {
+    "access-control-allow-origin": "*",
+    "access-control-allow-methods": "GET,OPTIONS",
+    "access-control-allow-headers": "content-type",
+    ...extra,
+  };
+}
+
+function isAllowedMediaHost(hostname) {
+  const host = String(hostname || "").toLowerCase();
+  return host === "firebasestorage.googleapis.com" || host === "storage.googleapis.com";
 }
 
 function sanitizeName(value, fallback = "guest") {
@@ -27,8 +42,39 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
+    if (request.method === "OPTIONS") {
+      return new Response(null, { status: 204, headers: corsHeaders() });
+    }
+
     if (url.pathname === "/health") {
       return jsonResponse({ ok: true, service: "tesla-lock-chat" });
+    }
+
+    if (url.pathname === "/proxy-media") {
+      const target = url.searchParams.get("url");
+      if (!target) {
+        return jsonResponse({ ok: false, error: "Missing url param" }, 400);
+      }
+
+      let targetUrl;
+      try {
+        targetUrl = new URL(target);
+      } catch (_error) {
+        return jsonResponse({ ok: false, error: "Invalid target url" }, 400);
+      }
+
+      if (!isAllowedMediaHost(targetUrl.hostname)) {
+        return jsonResponse({ ok: false, error: "Target host not allowed" }, 403);
+      }
+
+      const upstream = await fetch(targetUrl.toString(), { method: "GET" });
+      const headers = new Headers(corsHeaders());
+      headers.set("cache-control", "public, max-age=300");
+      headers.set("content-type", upstream.headers.get("content-type") || "application/octet-stream");
+      return new Response(upstream.body, {
+        status: upstream.status,
+        headers,
+      });
     }
 
     if (url.pathname === "/") {
