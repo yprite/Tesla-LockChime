@@ -157,6 +157,7 @@ const TRANSLATIONS = {
 
     // Upload Modal
     'uploadModal.title': 'Upload to Gallery',
+    'uploadModal.legalNotice': 'By uploading, you confirm you own the rights to the audio or have permission to use it. Copyright-infringing content may be removed.',
 
     // Footer
     'footer.privacy': 'Privacy Policy',
@@ -276,6 +277,15 @@ const TRANSLATIONS = {
     'v2.signature.profileSaved': 'Profile saved.',
     'v2.signature.packTitle': '{owner} Signature Sound Pack',
     'v2.signature.apply': 'Use',
+    'v2.auth.google': 'Continue with Google',
+    'v2.auth.logout': 'Log out',
+    'v2.auth.signedOut': 'Sign in to sync profile across devices.',
+    'v2.auth.signedInAs': 'Signed in as {name}',
+    'v2.auth.unavailable': 'Auth unavailable in this environment.',
+    'v2.auth.loginSuccess': 'Signed in successfully.',
+    'v2.auth.loginFailed': 'Could not sign in. Check OAuth provider setup.',
+    'v2.auth.loggedOut': 'Logged out.',
+    'v2.auth.logoutFailed': 'Could not log out.',
     'v2.badges.title': 'Garage Badge Shelf',
     'v2.badges.subtitle': 'Unlock badges by creating, saving, and sharing your signature sound.',
     'v2.badges.summary': '{unlocked}/{total} badges unlocked',
@@ -474,6 +484,7 @@ const TRANSLATIONS = {
 
     // Upload Modal
     'uploadModal.title': '갤러리에 업로드',
+    'uploadModal.legalNotice': '업로드 시 해당 음원의 권리를 보유했거나 사용 허가를 받았음을 확인한 것으로 간주됩니다. 저작권 침해 콘텐츠는 삭제될 수 있습니다.',
 
     // Footer
     'footer.privacy': '개인정보처리방침',
@@ -593,6 +604,15 @@ const TRANSLATIONS = {
     'v2.signature.profileSaved': '프로필이 저장되었습니다.',
     'v2.signature.packTitle': '{owner} 시그니처 사운드 팩',
     'v2.signature.apply': '사용',
+    'v2.auth.google': 'Google로 계속하기',
+    'v2.auth.logout': '로그아웃',
+    'v2.auth.signedOut': '기기 간 프로필 동기화를 위해 로그인하세요.',
+    'v2.auth.signedInAs': '{name} 계정으로 로그인됨',
+    'v2.auth.unavailable': '현재 환경에서는 인증을 사용할 수 없습니다.',
+    'v2.auth.loginSuccess': '로그인되었습니다.',
+    'v2.auth.loginFailed': '로그인에 실패했습니다. OAuth 제공자 설정을 확인하세요.',
+    'v2.auth.loggedOut': '로그아웃되었습니다.',
+    'v2.auth.logoutFailed': '로그아웃에 실패했습니다.',
     'v2.badges.title': 'Garage 배지 진열장',
     'v2.badges.subtitle': '시그니처 사운드를 만들고 저장하고 공유해 배지를 잠금 해제하세요.',
     'v2.badges.summary': '배지 해금 {unlocked}/{total}',
@@ -791,6 +811,7 @@ const TRANSLATIONS = {
 
     // Upload Modal
     'uploadModal.title': 'ギャラリーにアップロード',
+    'uploadModal.legalNotice': 'アップロードすることで、音源の権利を保有している、または利用許諾を得ていることを確認したものとみなされます。著作権を侵害するコンテンツは削除される場合があります。',
 
     // Footer
     'footer.privacy': 'プライバシーポリシー',
@@ -1028,6 +1049,7 @@ const TRANSLATIONS = {
 
     // Upload Modal
     'uploadModal.title': '上传到画廊',
+    'uploadModal.legalNotice': '上传即表示您确认拥有该音频的权利或已获得使用许可。涉嫌侵犯版权的内容可能会被删除。',
 
     // Footer
     'footer.privacy': '隐私政策',

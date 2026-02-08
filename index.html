@@ -106,6 +106,15 @@
                 <section class="growth-card">
                     <h2 class="growth-card-title" data-i18n="v2.signature.title">My Tesla Signature Pack</h2>
                     <p class="growth-card-subtitle" data-i18n="v2.signature.subtitle">Set your Tesla profile and get a personalized 3-sound pack.</p>
+                    <div class="oauth-section">
+                        <div id="auth-user-text" class="growth-status" data-i18n="v2.auth.signedOut">Sign in to sync profile across devices.</div>
+                        <div class="oauth-buttons">
+                            <button class="btn-secondary" id="btn-auth-google" data-i18n="v2.auth.google">Continue with Google</button>
+                            <button class="btn-secondary" id="btn-auth-kakao">Continue with Kakao</button>
+                            <button class="btn-secondary" id="btn-auth-naver">Continue with Naver</button>
+                            <button class="btn-secondary" id="btn-auth-logout" data-i18n="v2.auth.logout">Log out</button>
+                        </div>
+                    </div>
                     <div class="signature-form">
                         <input type="text" id="owner-nickname-input" data-i18n-placeholder="v2.signature.nicknamePlaceholder" placeholder="Nickname (optional)">
                         <select id="owner-model-select">
@@ -316,6 +325,7 @@
                 </svg>
             </button>
             <h2 class="modal-title" data-i18n="v2.uploadModal.title">Upload Your Sound</h2>
+            <p class="upload-legal-note" data-i18n="uploadModal.legalNotice">By uploading, you confirm you own the rights to the audio or have permission to use it. Copyright-infringing content may be removed.</p>
 
             <div class="upload-dropzone" id="upload-dropzone">
                 <div class="dropzone-icon">
@@ -461,6 +471,7 @@
 
     <!-- Scripts -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
     <script src="js/audio-data.js"></script>

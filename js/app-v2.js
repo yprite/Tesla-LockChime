@@ -41,7 +41,8 @@ class TeslaLockSoundAppV2 {
             ownerProfile: this.getDefaultOwnerProfile(),
             challengeModel: 'modely',
             signaturePack: [],
-            badgeState: this.loadBadgeState()
+            badgeState: this.loadBadgeState(),
+            authUser: null
         };
 
         this.waveformCanvas = null;
@@ -128,6 +129,11 @@ class TeslaLockSoundAppV2 {
             ownerTrimSelect: document.getElementById('owner-trim-select'),
             btnSaveProfile: document.getElementById('btn-save-profile'),
             btnGeneratePack: document.getElementById('btn-generate-pack'),
+            authUserText: document.getElementById('auth-user-text'),
+            btnAuthGoogle: document.getElementById('btn-auth-google'),
+            btnAuthKakao: document.getElementById('btn-auth-kakao'),
+            btnAuthNaver: document.getElementById('btn-auth-naver'),
+            btnAuthLogout: document.getElementById('btn-auth-logout'),
             signaturePackTitle: document.getElementById('signature-pack-title'),
             signaturePackList: document.getElementById('signature-pack-list'),
             challengeModelSelect: document.getElementById('challenge-model-select'),
@@ -148,6 +154,7 @@ class TeslaLockSoundAppV2 {
         this.initLanguageSettings();
 
         await this.initGallery();
+        this.initAuth();
         this.initGrowthFeatures();
         this.setupEventListeners();
         this.populatePresets();
@@ -501,6 +508,10 @@ class TeslaLockSoundAppV2 {
         this.elements.btnSaveDraft?.addEventListener('click', () => this.saveWorkspaceDraft());
         this.elements.btnSaveProfile?.addEventListener('click', () => this.handleOwnerProfileSave());
         this.elements.btnGeneratePack?.addEventListener('click', () => this.handleGeneratePack());
+        this.elements.btnAuthGoogle?.addEventListener('click', () => this.signInWithProvider('google'));
+        this.elements.btnAuthKakao?.addEventListener('click', () => this.signInWithProvider('kakao'));
+        this.elements.btnAuthNaver?.addEventListener('click', () => this.signInWithProvider('naver'));
+        this.elements.btnAuthLogout?.addEventListener('click', () => this.signOutAuth());
         this.elements.challengeModelSelect?.addEventListener('change', () => this.handleChallengeModelChanged());
         this.elements.ownerModelSelect?.addEventListener('change', () => {
             const nextModel = this.normalizeModel(this.elements.ownerModelSelect.value);
@@ -510,6 +521,83 @@ class TeslaLockSoundAppV2 {
             this.renderChallengeProgress();
             this.loadWeeklyRanking();
         });
+    }
+
+    initAuth() {
+        if (typeof firebase === 'undefined' || !firebase.auth) {
+            if (this.elements.authUserText) {
+                this.elements.authUserText.textContent = this.t('v2.auth.unavailable', {}, 'Auth unavailable in this environment.');
+            }
+            return;
+        }
+
+        firebase.auth().onAuthStateChanged((user) => {
+            this.state.authUser = user || null;
+            this.renderAuthStatus();
+            if (user?.displayName && !this.state.ownerProfile.nickname) {
+                this.state.ownerProfile.nickname = user.displayName;
+                if (this.elements.ownerNicknameInput) {
+                    this.elements.ownerNicknameInput.value = user.displayName;
+                }
+                this.setStorageJson('owner_profile_v1', this.state.ownerProfile);
+            }
+        });
+    }
+
+    renderAuthStatus() {
+        if (!this.elements.authUserText) return;
+
+        if (this.state.authUser) {
+            const name = this.state.authUser.displayName || this.state.authUser.email || this.state.authUser.uid;
+            this.elements.authUserText.textContent = this.t(
+                'v2.auth.signedInAs',
+                { name },
+                `Signed in as ${name}`
+            );
+            if (this.elements.btnAuthLogout) this.elements.btnAuthLogout.style.display = 'inline-flex';
+        } else {
+            this.elements.authUserText.textContent = this.t('v2.auth.signedOut', {}, 'Sign in to sync profile across devices.');
+            if (this.elements.btnAuthLogout) this.elements.btnAuthLogout.style.display = 'none';
+        }
+    }
+
+    async signInWithProvider(providerType) {
+        if (typeof firebase === 'undefined' || !firebase.auth) {
+            this.showToast(this.t('v2.auth.unavailable', {}, 'Auth unavailable in this environment.'), 'error');
+            return;
+        }
+
+        let provider = null;
+        if (providerType === 'google') {
+            provider = new firebase.auth.GoogleAuthProvider();
+        } else if (providerType === 'kakao') {
+            provider = new firebase.auth.OAuthProvider('oidc.kakao');
+        } else if (providerType === 'naver') {
+            provider = new firebase.auth.OAuthProvider('oidc.naver');
+        }
+
+        if (!provider) return;
+
+        try {
+            await firebase.auth().signInWithPopup(provider);
+            this.showToast(this.t('v2.auth.loginSuccess', {}, 'Signed in successfully.'), 'success');
+            this.trackEvent('oauth_login_success', { provider: providerType });
+        } catch (error) {
+            console.error('OAuth login failed:', error);
+            this.showToast(this.t('v2.auth.loginFailed', {}, 'Could not sign in. Check OAuth provider setup.'), 'error');
+            this.trackEvent('oauth_login_failed', { provider: providerType, error: error.code || 'unknown' });
+        }
+    }
+
+    async signOutAuth() {
+        if (typeof firebase === 'undefined' || !firebase.auth) return;
+        try {
+            await firebase.auth().signOut();
+            this.showToast(this.t('v2.auth.loggedOut', {}, 'Logged out.'), 'success');
+            this.trackEvent('oauth_logout', {});
+        } catch (error) {
+            this.showToast(this.t('v2.auth.logoutFailed', {}, 'Could not log out.'), 'error');
+        }
     }
 
     setupTrimHandles() {
@@ -1117,7 +1205,9 @@ class TeslaLockSoundAppV2 {
                 duration: this.state.trimEnd - this.state.trimStart,
                 vehicleModel: this.normalizeModel(this.state.challengeModel),
                 ownerNickname: this.state.ownerProfile.nickname || '',
-                signaturePackId: this.state.signaturePack?.[0]?.packId || ''
+                signaturePackId: this.state.signaturePack?.[0]?.packId || '',
+                creatorAuthUid: this.state.authUser?.uid || '',
+                creatorAuthProvider: this.state.authUser?.providerData?.[0]?.providerId || ''
             });
 
             this.hideLoading();
@@ -1490,7 +1580,9 @@ class TeslaLockSoundAppV2 {
                 duration: this.state.trimEnd - this.state.trimStart,
                 vehicleModel: model,
                 ownerNickname: this.state.ownerProfile.nickname || '',
-                signaturePackId: this.state.signaturePack?.[0]?.packId || ''
+                signaturePackId: this.state.signaturePack?.[0]?.packId || '',
+                creatorAuthUid: this.state.authUser?.uid || '',
+                creatorAuthProvider: this.state.authUser?.providerData?.[0]?.providerId || ''
             });
 
             this.hideLoading();

@@ -1171,6 +1171,17 @@ body.editor-open .gallery-panel {
     margin-bottom: 1.5rem;
 }
 
+.upload-legal-note {
+    margin: 0 0 1rem;
+    padding: 0.75rem 0.875rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface-elevated);
+    color: var(--color-text-muted);
+    font-size: 0.8rem;
+    line-height: 1.45;
+}
+
 /* ===========================
    Upload Modal
    =========================== */
@@ -1726,6 +1737,17 @@ body.editor-open .gallery-panel {
     gap: 0.5rem;
 }
 
+.oauth-section {
+    margin-bottom: 0.6rem;
+}
+
+.oauth-buttons {
+    margin-top: 0.4rem;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.45rem;
+}
+
 .growth-status {
     margin-top: 0.6rem;
     font-size: 0.8rem;
@@ -1894,6 +1916,10 @@ body.editor-open .gallery-panel {
     }
 
     .growth-actions {
+        grid-template-columns: 1fr;
+    }
+
+    .oauth-buttons {
         grid-template-columns: 1fr;
     }
 
