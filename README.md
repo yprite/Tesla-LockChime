@@ -176,6 +176,17 @@ To enable the community gallery feature:
 
 See [Setup Guide](./doc/SETUP_GUIDE.md) for detailed instructions.
 
+### Live Chat (Cloudflare Durable Objects)
+
+For realtime owner chat over WebSocket, deploy the bundled Cloudflare Worker:
+
+1. `npm run chat:deploy`
+2. Copy your worker URL and build a room endpoint:
+   - `wss://<your-worker>.workers.dev/chat/global`
+3. Set `window.CHAT_WS_ENDPOINT` in `js/chat-config.js`
+
+Detailed guide: [Cloudflare Chat Setup](./doc/CLOUDFLARE_CHAT_SETUP.md)
+
 **Requirements:**
 - HTTPS (required for File System Access API)
 - Firebase project (for gallery features)

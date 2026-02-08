@@ -177,6 +177,17 @@ npm run dev       # 로컬 서버 시작 (포트 3000)
 
 자세한 내용은 [설정 가이드](./doc/SETUP_GUIDE.md) 참조.
 
+### 실시간 채팅 (Cloudflare Durable Objects)
+
+WebSocket 기반 오너 채팅은 포함된 Cloudflare Worker를 배포해서 사용합니다.
+
+1. `npm run chat:deploy`
+2. 배포된 Worker URL로 채팅 엔드포인트 구성:
+   - `wss://<your-worker>.workers.dev/chat/global`
+3. `js/chat-config.js`의 `window.CHAT_WS_ENDPOINT` 설정
+
+자세한 가이드는 [Cloudflare Chat Setup](./doc/CLOUDFLARE_CHAT_SETUP.md) 문서를 참고하세요.
+
 **요구사항:**
 - HTTPS (File System Access API에 필요)
 - Firebase 프로젝트 (갤러리 기능용)
