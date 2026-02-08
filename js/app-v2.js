@@ -123,26 +123,17 @@ class TeslaLockSoundAppV2 {
             statDownloads: document.getElementById('stat-downloads'),
 
             languageSelect: document.getElementById('language-select'),
-            ownerNicknameInput: document.getElementById('owner-nickname-input'),
-            ownerModelSelect: document.getElementById('owner-model-select'),
-            ownerColorSelect: document.getElementById('owner-color-select'),
-            ownerTrimSelect: document.getElementById('owner-trim-select'),
-            btnSaveProfile: document.getElementById('btn-save-profile'),
-            btnGeneratePack: document.getElementById('btn-generate-pack'),
-            signinGateCard: document.getElementById('signin-gate-card'),
-            signatureCard: document.getElementById('signature-card'),
             badgeCard: document.getElementById('badge-card'),
-            authUserText: document.getElementById('auth-user-text'),
+            headerProfileText: document.getElementById('header-profile-text'),
             btnAuthGoogle: document.getElementById('btn-auth-google'),
             btnAuthKakao: document.getElementById('btn-auth-kakao'),
             btnAuthNaver: document.getElementById('btn-auth-naver'),
             btnAuthLogout: document.getElementById('btn-auth-logout'),
-            signaturePackTitle: document.getElementById('signature-pack-title'),
-            signaturePackList: document.getElementById('signature-pack-list'),
             challengeModelSelect: document.getElementById('challenge-model-select'),
             challengeTargetText: document.getElementById('challenge-target-text'),
             challengeProgress: document.getElementById('challenge-progress'),
             weeklyRankingList: document.getElementById('weekly-ranking-list'),
+            badgeAuthHint: document.getElementById('badge-auth-hint'),
             badgeSummary: document.getElementById('badge-summary'),
             badgeGrid: document.getElementById('badge-grid'),
             workspaceDraftName: document.getElementById('workspace-draft-name'),
@@ -445,7 +436,6 @@ class TeslaLockSoundAppV2 {
         });
         this.validateDuration();
         this.updateTrimUI();
-        this.renderSignaturePack();
         this.renderBadges();
         this.renderWorkspaceDrafts();
         this.loadWeeklyRanking();
@@ -471,10 +461,6 @@ class TeslaLockSoundAppV2 {
     }
 
     initGrowthFeatures() {
-        this.loadOwnerProfile();
-        this.hydrateGrowthInputs();
-        this.generateSignaturePack(false);
-        this.renderSignaturePack();
         this.renderChallengeProgress();
         this.renderBadges();
         this.renderWorkspaceDrafts();
@@ -482,7 +468,6 @@ class TeslaLockSoundAppV2 {
     }
 
     setupEventListeners() {
-        this.elements.btnCreateNew?.addEventListener('click', () => this.openCreateModal());
         this.elements.btnUploadSound?.addEventListener('click', () => this.openUploadModal());
         this.elements.btnCloseEditor?.addEventListener('click', () => this.closeEditor());
 
@@ -509,27 +494,17 @@ class TeslaLockSoundAppV2 {
 
         this.elements.btnLoadMore?.addEventListener('click', () => this.loadGallerySounds(true));
         this.elements.btnSaveDraft?.addEventListener('click', () => this.saveWorkspaceDraft());
-        this.elements.btnSaveProfile?.addEventListener('click', () => this.handleOwnerProfileSave());
-        this.elements.btnGeneratePack?.addEventListener('click', () => this.handleGeneratePack());
         this.elements.btnAuthGoogle?.addEventListener('click', () => this.signInWithProvider('google'));
         this.elements.btnAuthKakao?.addEventListener('click', () => this.signInWithProvider('kakao'));
         this.elements.btnAuthNaver?.addEventListener('click', () => this.signInWithProvider('naver'));
         this.elements.btnAuthLogout?.addEventListener('click', () => this.signOutAuth());
         this.elements.challengeModelSelect?.addEventListener('change', () => this.handleChallengeModelChanged());
-        this.elements.ownerModelSelect?.addEventListener('change', () => {
-            const nextModel = this.normalizeModel(this.elements.ownerModelSelect.value);
-            this.state.challengeModel = nextModel;
-            if (this.elements.challengeModelSelect) this.elements.challengeModelSelect.value = nextModel;
-            if (this.elements.uploadModel) this.elements.uploadModel.value = nextModel;
-            this.renderChallengeProgress();
-            this.loadWeeklyRanking();
-        });
     }
 
     initAuth() {
         if (typeof firebase === 'undefined' || !firebase.auth) {
-            if (this.elements.authUserText) {
-                this.elements.authUserText.textContent = this.t('v2.auth.unavailable', {}, 'Auth unavailable in this environment.');
+            if (this.elements.headerProfileText) {
+                this.elements.headerProfileText.textContent = this.t('v2.auth.unavailable', {}, 'Auth unavailable in this environment.');
             }
             this.setAuthVisibility(false);
             return;
@@ -538,39 +513,35 @@ class TeslaLockSoundAppV2 {
         firebase.auth().onAuthStateChanged((user) => {
             this.state.authUser = user || null;
             this.renderAuthStatus();
-            if (user?.displayName && !this.state.ownerProfile.nickname) {
-                this.state.ownerProfile.nickname = user.displayName;
-                if (this.elements.ownerNicknameInput) {
-                    this.elements.ownerNicknameInput.value = user.displayName;
-                }
-                this.setStorageJson('owner_profile_v1', this.state.ownerProfile);
-            }
         });
     }
 
     renderAuthStatus() {
-        if (!this.elements.authUserText) return;
+        if (!this.elements.headerProfileText) return;
 
         if (this.state.authUser) {
             const name = this.state.authUser.displayName || this.state.authUser.email || this.state.authUser.uid;
-            this.elements.authUserText.textContent = this.t(
+            this.elements.headerProfileText.textContent = this.t(
                 'v2.auth.signedInAs',
                 { name },
                 `Signed in as ${name}`
             );
-            if (this.elements.btnAuthLogout) this.elements.btnAuthLogout.style.display = 'inline-flex';
             this.setAuthVisibility(true);
         } else {
-            this.elements.authUserText.textContent = this.t('v2.auth.signedOut', {}, 'Sign in to sync profile across devices.');
-            if (this.elements.btnAuthLogout) this.elements.btnAuthLogout.style.display = 'none';
+            this.elements.headerProfileText.textContent = this.t('v2.auth.signedOut', {}, 'Sign in to sync profile across devices.');
             this.setAuthVisibility(false);
         }
     }
 
     setAuthVisibility(isSignedIn) {
-        if (this.elements.signinGateCard) this.elements.signinGateCard.style.display = isSignedIn ? 'none' : 'block';
-        if (this.elements.signatureCard) this.elements.signatureCard.style.display = isSignedIn ? 'block' : 'none';
-        if (this.elements.badgeCard) this.elements.badgeCard.style.display = isSignedIn ? 'block' : 'none';
+        if (this.elements.btnAuthGoogle) this.elements.btnAuthGoogle.style.display = isSignedIn ? 'none' : 'inline-flex';
+        if (this.elements.btnAuthKakao) this.elements.btnAuthKakao.style.display = isSignedIn ? 'none' : 'inline-flex';
+        if (this.elements.btnAuthNaver) this.elements.btnAuthNaver.style.display = isSignedIn ? 'none' : 'inline-flex';
+        if (this.elements.btnAuthLogout) this.elements.btnAuthLogout.style.display = isSignedIn ? 'inline-flex' : 'none';
+
+        if (this.elements.badgeAuthHint) this.elements.badgeAuthHint.style.display = isSignedIn ? 'none' : 'block';
+        if (this.elements.badgeSummary) this.elements.badgeSummary.style.display = isSignedIn ? 'block' : 'none';
+        if (this.elements.badgeGrid) this.elements.badgeGrid.style.display = isSignedIn ? 'grid' : 'none';
     }
 
     async signInWithProvider(providerType) {
@@ -1216,8 +1187,7 @@ class TeslaLockSoundAppV2 {
                 category: 'custom',
                 duration: this.state.trimEnd - this.state.trimStart,
                 vehicleModel: this.normalizeModel(this.state.challengeModel),
-                ownerNickname: this.state.ownerProfile.nickname || '',
-                signaturePackId: this.state.signaturePack?.[0]?.packId || '',
+                ownerNickname: this.state.authUser?.displayName || '',
                 creatorAuthUid: this.state.authUser?.uid || '',
                 creatorAuthProvider: this.state.authUser?.providerData?.[0]?.providerId || ''
             });
@@ -1335,26 +1305,23 @@ class TeslaLockSoundAppV2 {
             return {
                 unlocked: Array.isArray(saved.unlocked) ? saved.unlocked : [],
                 actions: saved.actions || { save: 0, upload: 0, share: 0 },
-                packsGenerated: saved.packsGenerated || 0,
                 completedChallenges: Array.isArray(saved.completedChallenges) ? saved.completedChallenges : []
             };
         }
         return {
             unlocked: [],
             actions: { save: 0, upload: 0, share: 0 },
-            packsGenerated: 0,
             completedChallenges: []
         };
     }
 
     getBadgeCatalog() {
         return [
-            { id: 'signature_stylist', icon: '🎨', title: this.t('v2.badges.signatureStylist', {}, 'Signature Stylist'), desc: this.t('v2.badges.signatureStylistDesc', {}, 'Generated your first signature pack') },
             { id: 'first_lock', icon: '🔒', title: this.t('v2.badges.firstLock', {}, 'First Lock Save'), desc: this.t('v2.badges.firstLockDesc', {}, 'Saved your first lock sound to USB') },
             { id: 'gallery_rookie', icon: '📡', title: this.t('v2.badges.galleryRookie', {}, 'Gallery Rookie'), desc: this.t('v2.badges.galleryRookieDesc', {}, 'Uploaded your first community sound') },
             { id: 'model_champion', icon: '🏁', title: this.t('v2.badges.modelChampion', {}, 'Model Champion'), desc: this.t('v2.badges.modelChampionDesc', {}, 'Completed a model challenge') },
             { id: 'community_crafter', icon: '🛠️', title: this.t('v2.badges.communityCrafter', {}, 'Community Crafter'), desc: this.t('v2.badges.communityCrafterDesc', {}, 'Shared 5 sounds with the community') },
-            { id: 'garage_legend', icon: '👑', title: this.t('v2.badges.garageLegend', {}, 'Garage Legend'), desc: this.t('v2.badges.garageLegendDesc', {}, 'Unlocked 5 badges') }
+            { id: 'garage_legend', icon: '👑', title: this.t('v2.badges.garageLegend', {}, 'Garage Legend'), desc: this.t('v2.badges.garageLegendDesc', {}, 'Unlocked 4 badges') }
         ];
     }
 
@@ -1367,16 +1334,16 @@ class TeslaLockSoundAppV2 {
 
     evaluateBadges() {
         const actions = this.state.badgeState.actions || { save: 0, upload: 0, share: 0 };
-        if ((this.state.badgeState.packsGenerated || 0) >= 1) this.unlockBadge('signature_stylist');
         if ((actions.save || 0) >= 1) this.unlockBadge('first_lock');
         if ((actions.upload || 0) >= 1) this.unlockBadge('gallery_rookie');
         if ((actions.upload || 0) + (actions.share || 0) >= 5) this.unlockBadge('community_crafter');
         if ((this.state.badgeState.completedChallenges || []).length >= 1) this.unlockBadge('model_champion');
-        if ((this.state.badgeState.unlocked || []).length >= 5) this.unlockBadge('garage_legend');
+        if ((this.state.badgeState.unlocked || []).length >= 4) this.unlockBadge('garage_legend');
     }
 
     renderBadges() {
         if (!this.elements.badgeGrid || !this.elements.badgeSummary) return;
+        if (!this.state.authUser) return;
         this.evaluateBadges();
         this.setStorageJson('owner_badges_v1', this.state.badgeState);
 
@@ -1571,7 +1538,6 @@ class TeslaLockSoundAppV2 {
         const model = this.normalizeModel(this.elements.uploadModel?.value || this.state.challengeModel);
         this.state.challengeModel = model;
         if (this.elements.challengeModelSelect) this.elements.challengeModelSelect.value = model;
-        if (this.elements.ownerModelSelect) this.elements.ownerModelSelect.value = model;
 
         if (!name) {
             this.showToast(this.t('v2.nameRequired', {}, 'Please enter a name'), 'error');
@@ -1591,8 +1557,7 @@ class TeslaLockSoundAppV2 {
                 category,
                 duration: this.state.trimEnd - this.state.trimStart,
                 vehicleModel: model,
-                ownerNickname: this.state.ownerProfile.nickname || '',
-                signaturePackId: this.state.signaturePack?.[0]?.packId || '',
+                ownerNickname: this.state.authUser?.displayName || '',
                 creatorAuthUid: this.state.authUser?.uid || '',
                 creatorAuthProvider: this.state.authUser?.providerData?.[0]?.providerId || ''
             });

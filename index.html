@@ -38,11 +38,15 @@
                 <span class="logo-text">Tesla Lock Sound</span>
             </div>
             <div class="header-actions">
-                <button class="btn-icon-ghost" id="btn-create-new" title="Create from scratch" data-i18n-title="v2.createFromScratch">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M12 5v14M5 12h14"/>
-                    </svg>
-                </button>
+                <div class="header-auth">
+                    <span id="header-profile-text" class="header-profile-text" data-i18n="v2.auth.signedOut">Sign in to sync profile across devices.</span>
+                    <div class="header-auth-buttons">
+                        <button class="btn-secondary" id="btn-auth-google" data-i18n="v2.auth.google">Continue with Google</button>
+                        <button class="btn-secondary" id="btn-auth-kakao">Continue with Kakao</button>
+                        <button class="btn-secondary" id="btn-auth-naver">Continue with Naver</button>
+                        <button class="btn-secondary" id="btn-auth-logout" data-i18n="v2.auth.logout">Log out</button>
+                    </div>
+                </div>
                 <select id="language-select" class="lang-select">
                     <option value="en">EN</option>
                     <option value="ko">KO</option>
@@ -73,69 +77,6 @@
                         <span class="stat-label" data-i18n="gallery.downloads">Downloads</span>
                     </div>
                 </div>
-            </div>
-
-            <!-- Header Growth Cards -->
-            <div class="header-growth">
-                <section class="growth-card signin-gate-card" id="signin-gate-card">
-                    <h2 class="growth-card-title" data-i18n="v2.auth.gateTitle">Make Your Tesla More Special</h2>
-                    <p class="growth-card-subtitle" data-i18n="v2.auth.gateSubtitle">Sign in to unlock My Tesla Signature Pack and Garage Badge Shelf.</p>
-                    <div class="oauth-buttons oauth-gate-buttons">
-                        <button class="btn-secondary" id="btn-auth-google" data-i18n="v2.auth.google">Continue with Google</button>
-                        <button class="btn-secondary" id="btn-auth-kakao">Continue with Kakao</button>
-                        <button class="btn-secondary" id="btn-auth-naver">Continue with Naver</button>
-                    </div>
-                </section>
-
-                <section class="growth-card" id="signature-card">
-                    <h2 class="growth-card-title" data-i18n="v2.signature.title">My Tesla Signature Pack</h2>
-                    <p class="growth-card-subtitle" data-i18n="v2.signature.subtitle">Set your Tesla profile and get a personalized 3-sound pack.</p>
-                    <div class="oauth-section">
-                        <div id="auth-user-text" class="growth-status" data-i18n="v2.auth.signedOut">Sign in to sync profile across devices.</div>
-                        <div class="oauth-buttons oauth-session-buttons">
-                            <button class="btn-secondary" id="btn-auth-logout" data-i18n="v2.auth.logout">Log out</button>
-                        </div>
-                    </div>
-                    <div class="signature-form">
-                        <input type="text" id="owner-nickname-input" data-i18n-placeholder="v2.signature.nicknamePlaceholder" placeholder="Nickname (optional)">
-                        <select id="owner-model-select">
-                            <option value="model3">Model 3</option>
-                            <option value="modely" selected>Model Y</option>
-                            <option value="models">Model S</option>
-                            <option value="modelx">Model X</option>
-                            <option value="cybertruck">Cybertruck</option>
-                            <option value="roadster">Roadster</option>
-                        </select>
-                        <select id="owner-color-select">
-                            <option value="white">Pearl White</option>
-                            <option value="black">Solid Black</option>
-                            <option value="blue">Deep Blue</option>
-                            <option value="red">Ultra Red</option>
-                            <option value="silver">Quicksilver</option>
-                            <option value="gray">Stealth Gray</option>
-                        </select>
-                        <select id="owner-trim-select">
-                            <option value="standard">Standard</option>
-                            <option value="long_range">Long Range</option>
-                            <option value="performance">Performance</option>
-                            <option value="plaid">Plaid</option>
-                            <option value="foundation">Foundation Series</option>
-                        </select>
-                    </div>
-                    <div class="growth-actions">
-                        <button class="btn-secondary" id="btn-save-profile" data-i18n="v2.signature.saveProfile">Save Profile</button>
-                        <button class="btn-primary" id="btn-generate-pack" data-i18n="v2.signature.generate">Generate Pack</button>
-                    </div>
-                    <div id="signature-pack-title" class="growth-status"></div>
-                    <ul id="signature-pack-list" class="recommendation-list"></ul>
-                </section>
-
-                <section class="growth-card" id="badge-card">
-                    <h2 class="growth-card-title" data-i18n="v2.badges.title">Garage Badge Shelf</h2>
-                    <p class="growth-card-subtitle" data-i18n="v2.badges.subtitle">Unlock badges by creating, saving, and sharing your signature sound.</p>
-                    <div id="badge-summary" class="growth-status"></div>
-                    <div id="badge-grid" class="badge-grid"></div>
-                </section>
             </div>
 
             <!-- Quick Actions Bar -->
@@ -321,6 +262,13 @@
             <div id="challenge-target-text" class="growth-status"></div>
             <div id="challenge-progress" class="challenge-progress"></div>
             <ol id="weekly-ranking-list" class="ranking-list"></ol>
+        </section>
+        <section class="growth-card" id="badge-card">
+            <h2 class="growth-card-title" data-i18n="v2.badges.title">Garage Badge Shelf</h2>
+            <p class="growth-card-subtitle" data-i18n="v2.badges.subtitle">Unlock badges by creating, saving, and sharing your signature sound.</p>
+            <div id="badge-auth-hint" class="growth-status" data-i18n="v2.auth.gateSubtitle">Sign in to unlock My Tesla Signature Pack and Garage Badge Shelf.</div>
+            <div id="badge-summary" class="growth-status"></div>
+            <div id="badge-grid" class="badge-grid"></div>
         </section>
     </aside>
 
