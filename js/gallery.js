@@ -102,6 +102,9 @@ class GalleryHandler {
                 description: metadata.description || '',
                 category: metadata.category || 'custom',
                 duration: metadata.duration || 0,
+                vehicleModel: metadata.vehicleModel || '',
+                ownerNickname: metadata.ownerNickname || '',
+                signaturePackId: metadata.signaturePackId || '',
                 fileSize: wavBlob.size,
                 downloadUrl: downloadUrl,
                 fileName: fileName,
@@ -448,18 +451,25 @@ class GalleryHandler {
     /**
      * Get weekly popular sounds (last 7 days)
      */
-    async getWeeklyPopular(limit = 5) {
+    async getWeeklyPopular(limit = 5, options = {}) {
         if (!this.isInitialized) {
             throw new Error('Gallery not initialized');
         }
 
         try {
+            const modelFilter = options?.model || null;
             // Get sounds from last 7 days, sorted by likes
             const weekAgo = new Date();
             weekAgo.setDate(weekAgo.getDate() - 7);
 
-            const snapshot = await this.db.collection(GALLERY_COLLECTION)
-                .where('createdAt', '>=', weekAgo)
+            let query = this.db.collection(GALLERY_COLLECTION)
+                .where('createdAt', '>=', weekAgo);
+
+            if (modelFilter) {
+                query = query.where('vehicleModel', '==', modelFilter);
+            }
+
+            const snapshot = await query
                 .orderBy('createdAt', 'desc')
                 .limit(50)
                 .get();
@@ -478,11 +488,20 @@ class GalleryHandler {
 
             return {
                 sounds: sounds.slice(0, limit),
-                period: 'weekly'
+                period: 'weekly',
+                model: modelFilter || null
             };
         } catch (error) {
             // Fallback to all-time popular if date query fails
             console.warn('Weekly query failed, falling back to all-time:', error);
+            if (options?.model) {
+                const allTime = await this.getPopularSounds(50);
+                return {
+                    sounds: (allTime?.sounds || []).filter(sound => sound.vehicleModel === options.model).slice(0, limit),
+                    period: 'all-time',
+                    model: options.model
+                };
+            }
             return this.getPopularSounds(limit);
         }
     }

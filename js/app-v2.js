@@ -12,11 +12,6 @@ class TeslaLockSoundAppV2 {
         this.audioProcessor = new AudioProcessor();
         this.fileSystem = new FileSystemHandler();
         this.gallery = new GalleryHandler();
-        this.featureUtils = (typeof window !== 'undefined' && window.TeslaFeatureUtils) ? window.TeslaFeatureUtils : {
-            addWeeklyAction: () => ({}),
-            getWeeklyActionStats: () => ({ saves: 0, uploads: 0, shares: 0 }),
-            getChallengeProgress: () => ({ saveProgress: 0, uploadProgress: 0, shareProgress: 0, completed: false })
-        };
         this.workspaceStore = (typeof WorkspaceStore !== 'undefined') ? new WorkspaceStore() : {
             listDrafts: () => [],
             saveDraftVersion: () => { throw new Error('Workspace unavailable'); },
@@ -42,7 +37,11 @@ class TeslaLockSoundAppV2 {
             volume: 100,
             isEditorOpen: false,
             currentCategory: 'all',
-            searchQuery: ''
+            searchQuery: '',
+            ownerProfile: this.getDefaultOwnerProfile(),
+            challengeModel: 'modely',
+            signaturePack: [],
+            badgeState: this.loadBadgeState()
         };
 
         this.waveformCanvas = null;
@@ -100,6 +99,7 @@ class TeslaLockSoundAppV2 {
             uploadForm: document.getElementById('upload-form'),
             uploadName: document.getElementById('upload-name-v2'),
             uploadCategory: document.getElementById('upload-category-v2'),
+            uploadModel: document.getElementById('upload-model-v2'),
             btnUploadCancel: document.getElementById('btn-upload-cancel'),
 
             createModal: document.getElementById('create-modal'),
@@ -122,8 +122,20 @@ class TeslaLockSoundAppV2 {
             statDownloads: document.getElementById('stat-downloads'),
 
             languageSelect: document.getElementById('language-select'),
+            ownerNicknameInput: document.getElementById('owner-nickname-input'),
+            ownerModelSelect: document.getElementById('owner-model-select'),
+            ownerColorSelect: document.getElementById('owner-color-select'),
+            ownerTrimSelect: document.getElementById('owner-trim-select'),
+            btnSaveProfile: document.getElementById('btn-save-profile'),
+            btnGeneratePack: document.getElementById('btn-generate-pack'),
+            signaturePackTitle: document.getElementById('signature-pack-title'),
+            signaturePackList: document.getElementById('signature-pack-list'),
+            challengeModelSelect: document.getElementById('challenge-model-select'),
+            challengeTargetText: document.getElementById('challenge-target-text'),
             challengeProgress: document.getElementById('challenge-progress'),
             weeklyRankingList: document.getElementById('weekly-ranking-list'),
+            badgeSummary: document.getElementById('badge-summary'),
+            badgeGrid: document.getElementById('badge-grid'),
             workspaceDraftName: document.getElementById('workspace-draft-name'),
             btnSaveDraft: document.getElementById('btn-save-draft'),
             workspaceDraftsList: document.getElementById('workspace-drafts-list')
@@ -153,6 +165,235 @@ class TeslaLockSoundAppV2 {
             return i18nApi.t(key, params);
         }
         return fallback;
+    }
+
+    getDefaultOwnerProfile() {
+        return {
+            nickname: '',
+            model: 'modely',
+            color: 'white',
+            trim: 'long_range'
+        };
+    }
+
+    getStorageJson(key, fallback) {
+        try {
+            const raw = localStorage.getItem(key);
+            return raw ? JSON.parse(raw) : fallback;
+        } catch (error) {
+            return fallback;
+        }
+    }
+
+    setStorageJson(key, value) {
+        localStorage.setItem(key, JSON.stringify(value));
+    }
+
+    normalizeModel(modelCode) {
+        const allowed = ['model3', 'modely', 'models', 'modelx', 'cybertruck', 'roadster'];
+        return allowed.includes(modelCode) ? modelCode : 'modely';
+    }
+
+    getModelLabel(modelCode) {
+        const labels = {
+            model3: 'Model 3',
+            modely: 'Model Y',
+            models: 'Model S',
+            modelx: 'Model X',
+            cybertruck: 'Cybertruck',
+            roadster: 'Roadster'
+        };
+        return labels[this.normalizeModel(modelCode)] || 'Model Y';
+    }
+
+    getCurrentWeekKey() {
+        const now = new Date();
+        const utcDate = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+        const dayNum = utcDate.getUTCDay() || 7;
+        utcDate.setUTCDate(utcDate.getUTCDate() + 4 - dayNum);
+        const yearStart = new Date(Date.UTC(utcDate.getUTCFullYear(), 0, 1));
+        const weekNo = Math.ceil((((utcDate - yearStart) / 86400000) + 1) / 7);
+        return `${utcDate.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
+    }
+
+    getChallengeTargets(modelCode) {
+        const model = this.normalizeModel(modelCode);
+        const mapping = {
+            model3: { saves: 2, uploads: 1, shares: 1 },
+            modely: { saves: 2, uploads: 1, shares: 1 },
+            models: { saves: 1, uploads: 1, shares: 1 },
+            modelx: { saves: 1, uploads: 2, shares: 1 },
+            cybertruck: { saves: 2, uploads: 1, shares: 2 },
+            roadster: { saves: 1, uploads: 1, shares: 1 }
+        };
+        return mapping[model] || mapping.modely;
+    }
+
+    getChallengeProgress(stats, targets) {
+        const safeStats = stats || { saves: 0, uploads: 0, shares: 0 };
+        const safeTargets = targets || this.getChallengeTargets(this.state.challengeModel);
+        const saveProgress = Math.min(100, Math.round(((safeStats.saves || 0) / safeTargets.saves) * 100));
+        const uploadProgress = Math.min(100, Math.round(((safeStats.uploads || 0) / safeTargets.uploads) * 100));
+        const shareProgress = Math.min(100, Math.round(((safeStats.shares || 0) / safeTargets.shares) * 100));
+        return {
+            saveProgress,
+            uploadProgress,
+            shareProgress,
+            completed: saveProgress >= 100 && uploadProgress >= 100 && shareProgress >= 100
+        };
+    }
+
+    loadOwnerProfile() {
+        const saved = this.getStorageJson('owner_profile_v1', this.getDefaultOwnerProfile());
+        const profile = {
+            nickname: String(saved.nickname || '').slice(0, 30),
+            model: this.normalizeModel(saved.model),
+            color: String(saved.color || 'white'),
+            trim: String(saved.trim || 'long_range')
+        };
+        this.state.ownerProfile = profile;
+        this.state.challengeModel = profile.model;
+    }
+
+    persistOwnerProfile(profile) {
+        this.state.ownerProfile = {
+            nickname: String(profile.nickname || '').slice(0, 30),
+            model: this.normalizeModel(profile.model),
+            color: profile.color || 'white',
+            trim: profile.trim || 'long_range'
+        };
+        this.state.challengeModel = this.state.ownerProfile.model;
+        this.setStorageJson('owner_profile_v1', this.state.ownerProfile);
+    }
+
+    hydrateGrowthInputs() {
+        if (this.elements.ownerNicknameInput) this.elements.ownerNicknameInput.value = this.state.ownerProfile.nickname;
+        if (this.elements.ownerModelSelect) this.elements.ownerModelSelect.value = this.state.ownerProfile.model;
+        if (this.elements.ownerColorSelect) this.elements.ownerColorSelect.value = this.state.ownerProfile.color;
+        if (this.elements.ownerTrimSelect) this.elements.ownerTrimSelect.value = this.state.ownerProfile.trim;
+        if (this.elements.challengeModelSelect) this.elements.challengeModelSelect.value = this.state.challengeModel;
+        if (this.elements.uploadModel) this.elements.uploadModel.value = this.state.challengeModel;
+    }
+
+    readOwnerProfileFromInputs() {
+        return {
+            nickname: this.elements.ownerNicknameInput?.value?.trim() || '',
+            model: this.elements.ownerModelSelect?.value || this.state.ownerProfile.model,
+            color: this.elements.ownerColorSelect?.value || this.state.ownerProfile.color,
+            trim: this.elements.ownerTrimSelect?.value || this.state.ownerProfile.trim
+        };
+    }
+
+    handleOwnerProfileSave() {
+        this.persistOwnerProfile(this.readOwnerProfileFromInputs());
+        this.hydrateGrowthInputs();
+        this.generateSignaturePack(false);
+        this.renderSignaturePack();
+        this.renderChallengeProgress();
+        this.loadWeeklyRanking();
+        this.showToast(this.t('v2.signature.profileSaved', {}, 'Profile saved.'), 'success');
+    }
+
+    handleChallengeModelChanged() {
+        const nextModel = this.normalizeModel(this.elements.challengeModelSelect?.value || this.state.challengeModel);
+        this.state.challengeModel = nextModel;
+        this.state.ownerProfile.model = nextModel;
+        if (this.elements.ownerModelSelect) this.elements.ownerModelSelect.value = nextModel;
+        if (this.elements.uploadModel) this.elements.uploadModel.value = nextModel;
+        this.setStorageJson('owner_profile_v1', this.state.ownerProfile);
+        this.renderChallengeProgress();
+        this.loadWeeklyRanking();
+    }
+
+    handleGeneratePack() {
+        this.persistOwnerProfile(this.readOwnerProfileFromInputs());
+        this.generateSignaturePack(true);
+        this.renderSignaturePack();
+        this.renderBadges();
+    }
+
+    generateSignaturePack(trackUnlock = false) {
+        const profile = this.state.ownerProfile;
+        const allSounds = (typeof AUDIO_SAMPLES !== 'undefined' && Array.isArray(AUDIO_SAMPLES)) ? AUDIO_SAMPLES : [];
+        const preferred = new Set();
+
+        const colorBias = {
+            red: ['futuristic', 'modern'],
+            black: ['classic', 'modern'],
+            white: ['classic', 'futuristic'],
+            blue: ['futuristic', 'classic'],
+            silver: ['modern', 'classic'],
+            gray: ['modern', 'classic']
+        };
+
+        const trimBias = {
+            performance: ['futuristic', 'modern'],
+            plaid: ['futuristic', 'modern'],
+            long_range: ['modern', 'classic'],
+            foundation: ['futuristic', 'classic'],
+            standard: ['classic', 'modern']
+        };
+
+        (colorBias[profile.color] || ['modern', 'classic']).forEach(value => preferred.add(value));
+        (trimBias[profile.trim] || ['classic']).forEach(value => preferred.add(value));
+
+        const scored = allSounds.map(sound => {
+            let score = 0;
+            if (preferred.has(sound.category)) score += 4;
+            if (profile.trim === 'performance' || profile.trim === 'plaid') {
+                if (sound.id.includes('tesla') || sound.id.includes('cyber') || sound.id.includes('futur')) score += 2;
+            }
+            if (profile.color === 'white' && sound.id.includes('gentle')) score += 1;
+            if (profile.color === 'red' && sound.id.includes('electric')) score += 1;
+            if (profile.model === 'cybertruck' && sound.id.includes('cyber')) score += 2;
+            if (profile.model === 'roadster' && sound.category === 'modern') score += 1;
+            return { ...sound, score };
+        });
+
+        scored.sort((a, b) => b.score - a.score);
+        this.state.signaturePack = scored.slice(0, 3).map((sound, index) => ({
+            ...sound,
+            rank: index + 1,
+            packId: `sig-${profile.model}-${profile.color}-${profile.trim}`
+        }));
+
+        if (trackUnlock) {
+            this.state.badgeState.packsGenerated = (this.state.badgeState.packsGenerated || 0) + 1;
+            this.unlockBadge('signature_stylist');
+            this.evaluateBadges();
+            this.setStorageJson('owner_badges_v1', this.state.badgeState);
+            this.trackEvent('signature_pack_generated', {
+                model: profile.model,
+                color: profile.color,
+                trim: profile.trim
+            });
+        }
+    }
+
+    renderSignaturePack() {
+        if (!this.elements.signaturePackList || !this.elements.signaturePackTitle) return;
+
+        const ownerName = this.state.ownerProfile.nickname || this.getModelLabel(this.state.ownerProfile.model);
+        this.elements.signaturePackTitle.textContent = this.t(
+            'v2.signature.packTitle',
+            { owner: ownerName },
+            `${ownerName} Signature Sound Pack`
+        );
+
+        this.elements.signaturePackList.innerHTML = '';
+        this.state.signaturePack.forEach(sound => {
+            const li = document.createElement('li');
+            const applyLabel = this.t('v2.signature.apply', {}, 'Use');
+            li.innerHTML = `
+                <strong>${this.escapeHtml(sound.icon)} ${this.escapeHtml(sound.name)}</strong>
+                <button class="btn-secondary" type="button" data-sound-id="${this.escapeHtml(sound.id)}">${this.escapeHtml(applyLabel)}</button>
+            `;
+            li.querySelector('button')?.addEventListener('click', () => {
+                this.selectPreset(sound.id);
+                this.trackEvent('signature_pack_applied', { sound_id: sound.id });
+            });
+            this.elements.signaturePackList.appendChild(li);
+        });
     }
 
     initLanguageSettings() {
@@ -194,8 +435,11 @@ class TeslaLockSoundAppV2 {
         });
         this.validateDuration();
         this.updateTrimUI();
+        this.renderSignaturePack();
+        this.renderBadges();
         this.renderWorkspaceDrafts();
         this.loadWeeklyRanking();
+        this.renderChallengeProgress();
         this.loadGallerySounds();
     }
 
@@ -217,7 +461,12 @@ class TeslaLockSoundAppV2 {
     }
 
     initGrowthFeatures() {
+        this.loadOwnerProfile();
+        this.hydrateGrowthInputs();
+        this.generateSignaturePack(false);
+        this.renderSignaturePack();
         this.renderChallengeProgress();
+        this.renderBadges();
         this.renderWorkspaceDrafts();
         this.loadWeeklyRanking();
     }
@@ -250,6 +499,17 @@ class TeslaLockSoundAppV2 {
 
         this.elements.btnLoadMore?.addEventListener('click', () => this.loadGallerySounds(true));
         this.elements.btnSaveDraft?.addEventListener('click', () => this.saveWorkspaceDraft());
+        this.elements.btnSaveProfile?.addEventListener('click', () => this.handleOwnerProfileSave());
+        this.elements.btnGeneratePack?.addEventListener('click', () => this.handleGeneratePack());
+        this.elements.challengeModelSelect?.addEventListener('change', () => this.handleChallengeModelChanged());
+        this.elements.ownerModelSelect?.addEventListener('change', () => {
+            const nextModel = this.normalizeModel(this.elements.ownerModelSelect.value);
+            this.state.challengeModel = nextModel;
+            if (this.elements.challengeModelSelect) this.elements.challengeModelSelect.value = nextModel;
+            if (this.elements.uploadModel) this.elements.uploadModel.value = nextModel;
+            this.renderChallengeProgress();
+            this.loadWeeklyRanking();
+        });
     }
 
     setupTrimHandles() {
@@ -854,7 +1114,10 @@ class TeslaLockSoundAppV2 {
             await this.gallery.uploadSound(wavBlob, {
                 name: name.trim(),
                 category: 'custom',
-                duration: this.state.trimEnd - this.state.trimStart
+                duration: this.state.trimEnd - this.state.trimStart,
+                vehicleModel: this.normalizeModel(this.state.challengeModel),
+                ownerNickname: this.state.ownerProfile.nickname || '',
+                signaturePackId: this.state.signaturePack?.[0]?.packId || ''
             });
 
             this.hideLoading();
@@ -873,20 +1136,68 @@ class TeslaLockSoundAppV2 {
     }
 
     incrementWeeklyAction(type) {
-        this.featureUtils.addWeeklyAction(type);
+        const model = this.normalizeModel(this.state.challengeModel);
+        const weekKey = this.getCurrentWeekKey();
+        const weeklyActions = this.getStorageJson('owner_weekly_actions_v1', {});
+        const emptyStats = { saves: 0, uploads: 0, shares: 0 };
+
+        if (!weeklyActions[weekKey]) weeklyActions[weekKey] = {};
+        if (!weeklyActions[weekKey][model]) weeklyActions[weekKey][model] = { ...emptyStats };
+
+        if (type === 'save') weeklyActions[weekKey][model].saves += 1;
+        if (type === 'upload') weeklyActions[weekKey][model].uploads += 1;
+        if (type === 'share') weeklyActions[weekKey][model].shares += 1;
+
+        this.setStorageJson('owner_weekly_actions_v1', weeklyActions);
+
+        this.state.badgeState.actions = this.state.badgeState.actions || { save: 0, upload: 0, share: 0 };
+        if (type === 'save') this.state.badgeState.actions.save += 1;
+        if (type === 'upload') this.state.badgeState.actions.upload += 1;
+        if (type === 'share') this.state.badgeState.actions.share += 1;
+
+        const stats = weeklyActions[weekKey][model];
+        const progress = this.getChallengeProgress(stats, this.getChallengeTargets(model));
+        if (progress.completed) {
+            const completionKey = `${weekKey}:${model}`;
+            this.state.badgeState.completedChallenges = this.state.badgeState.completedChallenges || [];
+            if (!this.state.badgeState.completedChallenges.includes(completionKey)) {
+                this.state.badgeState.completedChallenges.push(completionKey);
+            }
+            this.unlockBadge('model_champion');
+        }
+
+        this.evaluateBadges();
+        this.setStorageJson('owner_badges_v1', this.state.badgeState);
         this.renderChallengeProgress();
+        this.renderBadges();
     }
 
     renderChallengeProgress() {
         if (!this.elements.challengeProgress) return;
+        const model = this.normalizeModel(this.state.challengeModel);
+        const targets = this.getChallengeTargets(model);
+        const weeklyActions = this.getStorageJson('owner_weekly_actions_v1', {});
+        const weekKey = this.getCurrentWeekKey();
+        const stats = weeklyActions?.[weekKey]?.[model] || { saves: 0, uploads: 0, shares: 0 };
+        const progress = this.getChallengeProgress(stats, targets);
 
-        const stats = this.featureUtils.getWeeklyActionStats() || { saves: 0, uploads: 0, shares: 0 };
-        const progress = this.featureUtils.getChallengeProgress(stats);
+        if (this.elements.challengeTargetText) {
+            this.elements.challengeTargetText.textContent = this.t(
+                'v2.challenge.modelTarget',
+                {
+                    model: this.getModelLabel(model),
+                    saves: targets.saves,
+                    uploads: targets.uploads,
+                    shares: targets.shares
+                },
+                `${this.getModelLabel(model)} target: Save ${targets.saves}, Upload ${targets.uploads}, Share ${targets.shares}`
+            );
+        }
 
         this.elements.challengeProgress.innerHTML = [
-            this.t('v2.challenge.saveProgress', { current: stats.saves || 0, target: 2, percent: progress.saveProgress }, `Save to USB: ${stats.saves || 0}/2 (${progress.saveProgress}%)`),
-            this.t('v2.challenge.uploadProgress', { current: stats.uploads || 0, target: 1, percent: progress.uploadProgress }, `Upload to Gallery: ${stats.uploads || 0}/1 (${progress.uploadProgress}%)`),
-            this.t('v2.challenge.shareProgress', { current: stats.shares || 0, target: 1, percent: progress.shareProgress }, `Share to Gallery: ${stats.shares || 0}/1 (${progress.shareProgress}%)`),
+            this.t('v2.challenge.saveProgress', { current: stats.saves || 0, target: targets.saves, percent: progress.saveProgress }, `Save to USB: ${stats.saves || 0}/${targets.saves} (${progress.saveProgress}%)`),
+            this.t('v2.challenge.uploadProgress', { current: stats.uploads || 0, target: targets.uploads, percent: progress.uploadProgress }, `Upload to Gallery: ${stats.uploads || 0}/${targets.uploads} (${progress.uploadProgress}%)`),
+            this.t('v2.challenge.shareProgress', { current: stats.shares || 0, target: targets.shares, percent: progress.shareProgress }, `Share to Gallery: ${stats.shares || 0}/${targets.shares} (${progress.shareProgress}%)`),
             progress.completed
                 ? this.t('v2.challenge.completed', {}, 'Challenge complete. Weekly creator badge unlocked.')
                 : this.t('v2.challenge.incomplete', {}, 'Complete all 3 to finish this week.')
@@ -897,7 +1208,8 @@ class TeslaLockSoundAppV2 {
         if (!this.elements.weeklyRankingList || !this.gallery.isAvailable()) return;
 
         try {
-            const result = await this.gallery.getWeeklyPopular(5);
+            const model = this.normalizeModel(this.state.challengeModel);
+            const result = await this.gallery.getWeeklyPopular(5, { model });
             const sounds = result?.sounds || [];
 
             if (sounds.length === 0) {
@@ -913,6 +1225,81 @@ class TeslaLockSoundAppV2 {
         } catch (error) {
             this.elements.weeklyRankingList.innerHTML = `<li>${this.escapeHtml(this.t('v2.ranking.unavailable', {}, 'Ranking unavailable right now.'))}</li>`;
         }
+    }
+
+    loadBadgeState() {
+        const saved = this.getStorageJson('owner_badges_v1', null);
+        if (saved && typeof saved === 'object') {
+            return {
+                unlocked: Array.isArray(saved.unlocked) ? saved.unlocked : [],
+                actions: saved.actions || { save: 0, upload: 0, share: 0 },
+                packsGenerated: saved.packsGenerated || 0,
+                completedChallenges: Array.isArray(saved.completedChallenges) ? saved.completedChallenges : []
+            };
+        }
+        return {
+            unlocked: [],
+            actions: { save: 0, upload: 0, share: 0 },
+            packsGenerated: 0,
+            completedChallenges: []
+        };
+    }
+
+    getBadgeCatalog() {
+        return [
+            { id: 'signature_stylist', icon: '🎨', title: this.t('v2.badges.signatureStylist', {}, 'Signature Stylist'), desc: this.t('v2.badges.signatureStylistDesc', {}, 'Generated your first signature pack') },
+            { id: 'first_lock', icon: '🔒', title: this.t('v2.badges.firstLock', {}, 'First Lock Save'), desc: this.t('v2.badges.firstLockDesc', {}, 'Saved your first lock sound to USB') },
+            { id: 'gallery_rookie', icon: '📡', title: this.t('v2.badges.galleryRookie', {}, 'Gallery Rookie'), desc: this.t('v2.badges.galleryRookieDesc', {}, 'Uploaded your first community sound') },
+            { id: 'model_champion', icon: '🏁', title: this.t('v2.badges.modelChampion', {}, 'Model Champion'), desc: this.t('v2.badges.modelChampionDesc', {}, 'Completed a model challenge') },
+            { id: 'community_crafter', icon: '🛠️', title: this.t('v2.badges.communityCrafter', {}, 'Community Crafter'), desc: this.t('v2.badges.communityCrafterDesc', {}, 'Shared 5 sounds with the community') },
+            { id: 'garage_legend', icon: '👑', title: this.t('v2.badges.garageLegend', {}, 'Garage Legend'), desc: this.t('v2.badges.garageLegendDesc', {}, 'Unlocked 5 badges') }
+        ];
+    }
+
+    unlockBadge(badgeId) {
+        if (!this.state.badgeState.unlocked.includes(badgeId)) {
+            this.state.badgeState.unlocked.push(badgeId);
+            this.showToast(this.t('v2.badges.unlocked', { badge: badgeId }, `Badge unlocked: ${badgeId}`), 'success');
+        }
+    }
+
+    evaluateBadges() {
+        const actions = this.state.badgeState.actions || { save: 0, upload: 0, share: 0 };
+        if ((this.state.badgeState.packsGenerated || 0) >= 1) this.unlockBadge('signature_stylist');
+        if ((actions.save || 0) >= 1) this.unlockBadge('first_lock');
+        if ((actions.upload || 0) >= 1) this.unlockBadge('gallery_rookie');
+        if ((actions.upload || 0) + (actions.share || 0) >= 5) this.unlockBadge('community_crafter');
+        if ((this.state.badgeState.completedChallenges || []).length >= 1) this.unlockBadge('model_champion');
+        if ((this.state.badgeState.unlocked || []).length >= 5) this.unlockBadge('garage_legend');
+    }
+
+    renderBadges() {
+        if (!this.elements.badgeGrid || !this.elements.badgeSummary) return;
+        this.evaluateBadges();
+        this.setStorageJson('owner_badges_v1', this.state.badgeState);
+
+        const catalog = this.getBadgeCatalog();
+        const unlocked = new Set(this.state.badgeState.unlocked || []);
+        const unlockedCount = catalog.filter(badge => unlocked.has(badge.id)).length;
+
+        this.elements.badgeSummary.textContent = this.t(
+            'v2.badges.summary',
+            { unlocked: unlockedCount, total: catalog.length },
+            `${unlockedCount}/${catalog.length} badges unlocked`
+        );
+
+        this.elements.badgeGrid.innerHTML = '';
+        catalog.forEach(badge => {
+            const isUnlocked = unlocked.has(badge.id);
+            const item = document.createElement('div');
+            item.className = `badge-item ${isUnlocked ? 'unlocked' : 'locked'}`;
+            item.innerHTML = `
+                <div class="badge-item-title">${this.escapeHtml(badge.icon)} ${this.escapeHtml(badge.title)}</div>
+                <div class="badge-item-meta">${this.escapeHtml(isUnlocked ? this.t('v2.badges.unlockedState', {}, 'Unlocked') : this.t('v2.badges.lockedState', {}, 'Locked'))}</div>
+                <div class="badge-item-meta">${this.escapeHtml(badge.desc)}</div>
+            `;
+            this.elements.badgeGrid.appendChild(item);
+        });
     }
 
     saveWorkspaceDraft() {
@@ -1023,6 +1410,9 @@ class TeslaLockSoundAppV2 {
     openUploadModal() {
         this.elements.uploadModal?.classList.add('open');
         this.elements.uploadForm.style.display = 'none';
+        if (this.elements.uploadModel) {
+            this.elements.uploadModel.value = this.normalizeModel(this.state.challengeModel);
+        }
     }
 
     closeUploadModal() {
@@ -1076,6 +1466,10 @@ class TeslaLockSoundAppV2 {
     async submitUpload() {
         const name = this.elements.uploadName?.value?.trim();
         const category = this.elements.uploadCategory?.value || 'custom';
+        const model = this.normalizeModel(this.elements.uploadModel?.value || this.state.challengeModel);
+        this.state.challengeModel = model;
+        if (this.elements.challengeModelSelect) this.elements.challengeModelSelect.value = model;
+        if (this.elements.ownerModelSelect) this.elements.ownerModelSelect.value = model;
 
         if (!name) {
             this.showToast(this.t('v2.nameRequired', {}, 'Please enter a name'), 'error');
@@ -1093,7 +1487,10 @@ class TeslaLockSoundAppV2 {
             await this.gallery.uploadSound(wavBlob, {
                 name,
                 category,
-                duration: this.state.trimEnd - this.state.trimStart
+                duration: this.state.trimEnd - this.state.trimStart,
+                vehicleModel: model,
+                ownerNickname: this.state.ownerProfile.nickname || '',
+                signaturePackId: this.state.signaturePack?.[0]?.packId || ''
             });
 
             this.hideLoading();

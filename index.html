@@ -101,13 +101,66 @@
                 </button>
             </div>
 
-            <!-- Fleet & Growth Panels -->
+            <!-- Growth Panels -->
             <div class="growth-panels">
+                <section class="growth-card">
+                    <h2 class="growth-card-title" data-i18n="v2.signature.title">My Tesla Signature Pack</h2>
+                    <p class="growth-card-subtitle" data-i18n="v2.signature.subtitle">Set your Tesla profile and get a personalized 3-sound pack.</p>
+                    <div class="signature-form">
+                        <input type="text" id="owner-nickname-input" data-i18n-placeholder="v2.signature.nicknamePlaceholder" placeholder="Nickname (optional)">
+                        <select id="owner-model-select">
+                            <option value="model3">Model 3</option>
+                            <option value="modely" selected>Model Y</option>
+                            <option value="models">Model S</option>
+                            <option value="modelx">Model X</option>
+                            <option value="cybertruck">Cybertruck</option>
+                            <option value="roadster">Roadster</option>
+                        </select>
+                        <select id="owner-color-select">
+                            <option value="white">Pearl White</option>
+                            <option value="black">Solid Black</option>
+                            <option value="blue">Deep Blue</option>
+                            <option value="red">Ultra Red</option>
+                            <option value="silver">Quicksilver</option>
+                            <option value="gray">Stealth Gray</option>
+                        </select>
+                        <select id="owner-trim-select">
+                            <option value="standard">Standard</option>
+                            <option value="long_range">Long Range</option>
+                            <option value="performance">Performance</option>
+                            <option value="plaid">Plaid</option>
+                            <option value="foundation">Foundation Series</option>
+                        </select>
+                    </div>
+                    <div class="growth-actions">
+                        <button class="btn-secondary" id="btn-save-profile" data-i18n="v2.signature.saveProfile">Save Profile</button>
+                        <button class="btn-primary" id="btn-generate-pack" data-i18n="v2.signature.generate">Generate Pack</button>
+                    </div>
+                    <div id="signature-pack-title" class="growth-status"></div>
+                    <ul id="signature-pack-list" class="recommendation-list"></ul>
+                </section>
+
                 <section class="growth-card">
                     <h2 class="growth-card-title" data-i18n="v2.challenge.title">Weekly Challenge & Ranking</h2>
                     <p class="growth-card-subtitle" data-i18n="v2.challenge.subtitle">Save, upload, and share to complete this week&apos;s challenge.</p>
+                    <select id="challenge-model-select" class="challenge-model-select">
+                        <option value="model3">Model 3</option>
+                        <option value="modely" selected>Model Y</option>
+                        <option value="models">Model S</option>
+                        <option value="modelx">Model X</option>
+                        <option value="cybertruck">Cybertruck</option>
+                        <option value="roadster">Roadster</option>
+                    </select>
+                    <div id="challenge-target-text" class="growth-status"></div>
                     <div id="challenge-progress" class="challenge-progress"></div>
                     <ol id="weekly-ranking-list" class="ranking-list"></ol>
+                </section>
+
+                <section class="growth-card">
+                    <h2 class="growth-card-title" data-i18n="v2.badges.title">Garage Badge Shelf</h2>
+                    <p class="growth-card-subtitle" data-i18n="v2.badges.subtitle">Unlock badges by creating, saving, and sharing your signature sound.</p>
+                    <div id="badge-summary" class="growth-status"></div>
+                    <div id="badge-grid" class="badge-grid"></div>
                 </section>
             </div>
 
@@ -291,6 +344,17 @@
                         <option value="futuristic" data-i18n="cat.futuristic">Futuristic</option>
                         <option value="funny" data-i18n="cat.funny">Funny</option>
                         <option value="musical" data-i18n="cat.musical">Musical</option>
+                    </select>
+                </div>
+                <div class="form-field">
+                    <label for="upload-model-v2" data-i18n="v2.challenge.modelLabel">Model Challenge</label>
+                    <select id="upload-model-v2">
+                        <option value="model3">Model 3</option>
+                        <option value="modely" selected>Model Y</option>
+                        <option value="models">Model S</option>
+                        <option value="modelx">Model X</option>
+                        <option value="cybertruck">Cybertruck</option>
+                        <option value="roadster">Roadster</option>
                     </select>
                 </div>
                 <div class="form-actions">
