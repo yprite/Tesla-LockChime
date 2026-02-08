@@ -125,6 +125,8 @@ class TeslaLockSoundAppV2 {
             languageSelect: document.getElementById('language-select'),
             badgeCard: document.getElementById('badge-card'),
             headerProfileText: document.getElementById('header-profile-text'),
+            btnAuthLogin: document.getElementById('btn-auth-login'),
+            authProviderOptions: document.getElementById('auth-provider-options'),
             btnAuthGoogle: document.getElementById('btn-auth-google'),
             btnAuthKakao: document.getElementById('btn-auth-kakao'),
             btnAuthNaver: document.getElementById('btn-auth-naver'),
@@ -494,6 +496,7 @@ class TeslaLockSoundAppV2 {
 
         this.elements.btnLoadMore?.addEventListener('click', () => this.loadGallerySounds(true));
         this.elements.btnSaveDraft?.addEventListener('click', () => this.saveWorkspaceDraft());
+        this.elements.btnAuthLogin?.addEventListener('click', () => this.showProviderOptions());
         this.elements.btnAuthGoogle?.addEventListener('click', () => this.signInWithProvider('google'));
         this.elements.btnAuthKakao?.addEventListener('click', () => this.signInWithProvider('kakao'));
         this.elements.btnAuthNaver?.addEventListener('click', () => this.signInWithProvider('naver'));
@@ -533,10 +536,14 @@ class TeslaLockSoundAppV2 {
         }
     }
 
-    setAuthVisibility(isSignedIn) {
-        if (this.elements.btnAuthGoogle) this.elements.btnAuthGoogle.style.display = isSignedIn ? 'none' : 'inline-flex';
-        if (this.elements.btnAuthKakao) this.elements.btnAuthKakao.style.display = isSignedIn ? 'none' : 'inline-flex';
-        if (this.elements.btnAuthNaver) this.elements.btnAuthNaver.style.display = isSignedIn ? 'none' : 'inline-flex';
+    showProviderOptions() {
+        if (this.state.authUser) return;
+        this.setAuthVisibility(false, true);
+    }
+
+    setAuthVisibility(isSignedIn, showProviders = false) {
+        if (this.elements.btnAuthLogin) this.elements.btnAuthLogin.style.display = (!isSignedIn && !showProviders) ? 'inline-flex' : 'none';
+        if (this.elements.authProviderOptions) this.elements.authProviderOptions.style.display = (!isSignedIn && showProviders) ? 'flex' : 'none';
         if (this.elements.btnAuthLogout) this.elements.btnAuthLogout.style.display = isSignedIn ? 'inline-flex' : 'none';
 
         if (this.elements.badgeAuthHint) this.elements.badgeAuthHint.style.display = isSignedIn ? 'none' : 'block';
@@ -563,6 +570,7 @@ class TeslaLockSoundAppV2 {
 
         try {
             await firebase.auth().signInWithPopup(provider);
+            this.setAuthVisibility(false, false);
             this.showToast(this.t('v2.auth.loginSuccess', {}, 'Signed in successfully.'), 'success');
             this.trackEvent('oauth_login_success', { provider: providerType });
         } catch (error) {

@@ -210,11 +210,19 @@ body {
     display: flex;
     align-items: center;
     gap: 0.4rem;
+    flex-wrap: wrap;
 }
 
 .header-auth-buttons .btn-secondary {
     padding: 0.4rem 0.6rem;
     font-size: 0.72rem;
+}
+
+.auth-provider-options {
+    display: none;
+    align-items: center;
+    gap: 0.4rem;
+    flex-wrap: wrap;
 }
 
 #btn-auth-logout {
