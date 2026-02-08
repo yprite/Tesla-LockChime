@@ -36,7 +36,15 @@ const WIDGET_LIBRARY = [
   { id: "navigation", label: "Next Route", category: "navigation", style: "neon", skin: "indigo", defaultOn: false, layout: { x: 0, y: 6, w: 3, h: 2 } },
   { id: "notes", label: "Driver Notes", category: "utility", style: "card", skin: "paper", defaultOn: false, layout: { x: 3, y: 6, w: 2, h: 2 } },
   { id: "shortcut", label: "One-Tap Actions", category: "control", style: "minimal", skin: "charcoal", defaultOn: false, layout: { x: 5, y: 6, w: 3, h: 2 } },
-  { id: "quote", label: "Daily Quote", category: "social", style: "neon", skin: "violet", defaultOn: false, layout: { x: 8, y: 6, w: 2, h: 2 } }
+  { id: "quote", label: "Daily Quote", category: "social", style: "neon", skin: "violet", defaultOn: false, layout: { x: 8, y: 6, w: 2, h: 2 } },
+  { id: "streamDeck", label: "Stream Deck", category: "media", style: "data", skin: "noir", defaultOn: false, layout: { x: 0, y: 0, w: 4, h: 2 } },
+  { id: "lifeTracker", label: "Life Tracker", category: "goal", style: "card", skin: "paper", defaultOn: false, layout: { x: 4, y: 0, w: 3, h: 2 } },
+  { id: "weatherTiles", label: "Weather Tiles", category: "utility", style: "tile", skin: "lime", defaultOn: false, layout: { x: 7, y: 0, w: 3, h: 2 } },
+  { id: "clockGrid", label: "Clock Grid", category: "utility", style: "tile", skin: "coral", defaultOn: false, layout: { x: 0, y: 2, w: 3, h: 2 } },
+  { id: "sleepSuite", label: "Sleep Suite", category: "health", style: "minimal", skin: "charcoal", defaultOn: false, layout: { x: 3, y: 2, w: 4, h: 2 } },
+  { id: "raceLap", label: "Race Lap", category: "performance", style: "neon", skin: "coral", defaultOn: false, layout: { x: 7, y: 2, w: 3, h: 2 } },
+  { id: "wavePulse", label: "Wave Pulse", category: "health", style: "neon", skin: "noir", defaultOn: false, layout: { x: 0, y: 4, w: 3, h: 2 } },
+  { id: "phoneStack", label: "Phone Stack", category: "social", style: "minimal", skin: "violet", defaultOn: false, layout: { x: 3, y: 4, w: 3, h: 2 } }
 ];
 
 function createDefaultWidgetState() {
@@ -595,7 +603,15 @@ class DashboardBuilder {
       navigation: { title: "Next Route", badge: "Trip", main: "TOKYO", subLines: ["15:30"], mainMono: true, subMono: true, pills: ["12 Jan"] },
       notes: { title: "Notes", badge: "Memo", main: "2 coffees", subLines: ["left to gift"] },
       shortcut: { title: "Actions", badge: "Quick", main: "Preheat Trunk", subLines: ["Sentry Find Car"], pills: ["Run"] },
-      quote: { title: "Quote", badge: "Daily", main: hour < 12 ? "No rain in 2 hours." : "In the middle lies opportunity.", subLines: ["Tesla owner mood"] }
+      quote: { title: "Quote", badge: "Daily", main: hour < 12 ? "No rain in 2 hours." : "In the middle lies opportunity.", subLines: ["Tesla owner mood"] },
+      streamDeck: { title: "Stream", badge: "Live", main: "6500 Kbps", subLines: ["Viewers 11784 · Loss 0"], bars: [14, 23, 31, 28, 35, 42, 39, 50, 43], pills: ["Twitch", "Climbing Today 1587 LP"] },
+      lifeTracker: { title: "Progress", badge: "Life", main: "71.23%", subLines: ["Work from home · 239 days"], meter: 71, pills: ["Olivia 29d", "Will 0.46y"] },
+      weatherTiles: { title: "Weather Set", badge: "Tile", main: "28 C", subLines: ["NYC · clear sky"], pills: ["LA 24 C", "HK 23 C", "Bogota 16 C"] },
+      clockGrid: { title: "City Clock", badge: "Pack", main: "22:06", subLines: ["Mon 26 · 18 C"], mainMono: true, subMono: true, pills: ["AMS", "NYC", "UTC"] },
+      sleepSuite: { title: "Sleep", badge: "Health", main: "6h 20m", subLines: ["Sleep quality 80/100"], meter: 80, pills: ["Bed 00:20-09:00", "Heart 55 bpm"] },
+      raceLap: { title: "Race", badge: "Lap 5", main: "1:16:36", subLines: ["Sector 2 · Track mode"], bars: [12, 18, 25, 35, 39, 44, 36, 30, 22], pills: ["Best line"] },
+      wavePulse: { title: "Pulse", badge: "82 bpm", main: "24:15", subLines: ["Wave monitor · 1.8 mi"], bars: [14, 22, 29, 26, 31, 36, 28, 34, 39, 32, 27, 22], pills: ["Live"] },
+      phoneStack: { title: "Phone", badge: "Stack", main: "12:46", subLines: ["Calls, reminders, media"], pills: ["Homekit", "Meteo", "Batteries"] }
     };
 
     return map[widgetId] || { title: "Widget", main: "Ready", subLines: ["Configure from left panel"] };
