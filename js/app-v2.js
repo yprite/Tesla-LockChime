@@ -450,6 +450,7 @@ class TeslaLockSoundAppV2 {
         this.loadWeeklyRanking();
         this.renderChallengeProgress();
         this.loadGallerySounds();
+        this.setChatConnectedUi(Boolean(this.chatSocket && this.chatSocket.readyState === 1));
     }
 
     async initGallery() {
@@ -615,7 +616,11 @@ class TeslaLockSoundAppV2 {
         const storedUrl = localStorage.getItem('chat_ws_url') || configured || '';
         this.elements.chatUrlInput.value = storedUrl;
         this.setChatStatus(this.t('v2.chat.disconnected', {}, 'Disconnected'));
+        this.setChatConnectedUi(false);
         this.appendChatMessage(this.t('v2.chat.welcome', {}, 'Welcome. Connect to start chatting.'), { type: 'system' });
+        if (storedUrl) {
+            this.connectChat({ silent: true, auto: true });
+        }
     }
 
     normalizeChatUrl(rawUrl) {
@@ -642,6 +647,20 @@ class TeslaLockSoundAppV2 {
         }
     }
 
+    setChatConnectedUi(isConnected) {
+        if (this.elements.chatInput) {
+            this.elements.chatInput.disabled = !isConnected;
+        }
+        if (this.elements.btnChatSend) {
+            this.elements.btnChatSend.disabled = !isConnected;
+        }
+        if (this.elements.btnChatConnect) {
+            this.elements.btnChatConnect.textContent = isConnected
+                ? this.t('v2.chat.reconnect', {}, 'Reconnect')
+                : this.t('v2.chat.connect', {}, 'Connect');
+        }
+    }
+
     appendChatMessage(text, options = {}) {
         if (!this.elements.chatMessages) return;
         const row = document.createElement('div');
@@ -654,27 +673,28 @@ class TeslaLockSoundAppV2 {
         this.elements.chatMessages.scrollTop = this.elements.chatMessages.scrollHeight;
     }
 
-    connectChat() {
+    connectChat(options = {}) {
+        const silent = Boolean(options.silent);
         if (!this.elements.chatUrlInput) return;
         const url = this.normalizeChatUrl(this.elements.chatUrlInput.value);
         this.elements.chatUrlInput.value = url;
         if (!url) {
-            this.showToast(this.t('v2.chat.urlRequired', {}, 'Enter a WebSocket URL first.'), 'error');
+            if (!silent) this.showToast(this.t('v2.chat.urlRequired', {}, 'Enter a WebSocket URL first.'), 'error');
             return;
         }
         if (!/^wss?:\/\//i.test(url)) {
-            this.showToast(this.t('v2.chat.urlInvalid', {}, 'Use a valid WebSocket URL starting with ws:// or wss://.'), 'error');
+            if (!silent) this.showToast(this.t('v2.chat.urlInvalid', {}, 'Use a valid WebSocket URL starting with ws:// or wss://.'), 'error');
             return;
         }
         if (typeof WebSocket === 'undefined') {
-            this.showToast(this.t('v2.chat.notSupported', {}, 'WebSocket is not supported in this browser.'), 'error');
+            if (!silent) this.showToast(this.t('v2.chat.notSupported', {}, 'WebSocket is not supported in this browser.'), 'error');
             return;
         }
         const currentHost = window.location.hostname;
         const isLocalPage = currentHost === 'localhost' || currentHost === '127.0.0.1';
         const isLocalSocketUrl = /^wss?:\/\/(localhost|127\.0\.0\.1)(:\d+)?(\/|$)/i.test(url);
         if (!isLocalPage && isLocalSocketUrl) {
-            this.showToast(this.t('v2.chat.localhostBlocked', {}, 'localhost chat server is available only in local development.'), 'error');
+            if (!silent) this.showToast(this.t('v2.chat.localhostBlocked', {}, 'localhost chat server is available only in local development.'), 'error');
             return;
         }
 
@@ -689,6 +709,7 @@ class TeslaLockSoundAppV2 {
         }
 
         this.setChatStatus(this.t('v2.chat.connecting', {}, 'Connecting...'));
+        this.setChatConnectedUi(false);
 
         try {
             const socket = new WebSocket(url);
@@ -696,16 +717,19 @@ class TeslaLockSoundAppV2 {
 
             socket.onopen = () => {
                 this.setChatStatus(this.t('v2.chat.connected', {}, 'Connected'));
+                this.setChatConnectedUi(true);
                 this.appendChatMessage(this.t('v2.chat.connectedNotice', {}, 'Connected to chat server.'), { type: 'system' });
             };
 
             socket.onclose = () => {
                 this.setChatStatus(this.t('v2.chat.disconnected', {}, 'Disconnected'));
+                this.setChatConnectedUi(false);
                 this.appendChatMessage(this.t('v2.chat.disconnectedNotice', {}, 'Connection closed.'), { type: 'system' });
             };
 
             socket.onerror = () => {
                 this.setChatStatus(this.t('v2.chat.error', {}, 'Connection error'));
+                this.setChatConnectedUi(false);
                 this.appendChatMessage(this.t('v2.chat.connectFail', {}, 'Failed to connect.'), { type: 'system' });
             };
 
@@ -725,7 +749,8 @@ class TeslaLockSoundAppV2 {
             };
         } catch (error) {
             this.setChatStatus(this.t('v2.chat.error', {}, 'Connection error'));
-            this.showToast(this.t('v2.chat.connectFail', {}, 'Failed to connect.'), 'error');
+            this.setChatConnectedUi(false);
+            if (!silent) this.showToast(this.t('v2.chat.connectFail', {}, 'Failed to connect.'), 'error');
         }
     }
 
