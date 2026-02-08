@@ -301,6 +301,88 @@ class AdminStats {
         };
     }
 
+    calculateBehaviorMetrics() {
+        const sessions = new Map();
+        const bucketUsers = new Map();
+        const chatByUser = new Map();
+
+        this.filteredEvents.forEach(event => {
+            const ts = Number(event.occurredAtMs || 0);
+            const userId = event.userId || '';
+            const sessionId = event.sessionId || '';
+            if (!ts) return;
+
+            if (sessionId) {
+                if (!sessions.has(sessionId)) {
+                    sessions.set(sessionId, {
+                        userId,
+                        firstTs: ts,
+                        lastTs: ts,
+                        eventCount: 1
+                    });
+                } else {
+                    const session = sessions.get(sessionId);
+                    session.firstTs = Math.min(session.firstTs, ts);
+                    session.lastTs = Math.max(session.lastTs, ts);
+                    session.eventCount += 1;
+                    if (!session.userId && userId) session.userId = userId;
+                }
+            }
+
+            const bucket = Math.floor(ts / (5 * 60 * 1000));
+            if (!bucketUsers.has(bucket)) {
+                bucketUsers.set(bucket, new Set());
+            }
+            bucketUsers.get(bucket).add(userId || sessionId || `anon-${bucket}`);
+
+            if (event.eventName === 'chat_message_sent' && userId) {
+                chatByUser.set(userId, (chatByUser.get(userId) || 0) + 1);
+            }
+        });
+
+        let totalSessionMinutes = 0;
+        let sessionCountForAvg = 0;
+        const minutesByUser = new Map();
+
+        sessions.forEach(session => {
+            const durationMinutes = Math.max(0, (session.lastTs - session.firstTs) / 60000);
+            totalSessionMinutes += durationMinutes;
+            sessionCountForAvg += 1;
+
+            if (session.userId) {
+                minutesByUser.set(session.userId, (minutesByUser.get(session.userId) || 0) + durationMinutes);
+            }
+        });
+
+        const averageSessionMinutes = sessionCountForAvg > 0
+            ? (totalSessionMinutes / sessionCountForAvg)
+            : 0;
+
+        let peakConcurrentUsers = 0;
+        bucketUsers.forEach(users => {
+            if (users.size > peakConcurrentUsers) {
+                peakConcurrentUsers = users.size;
+            }
+        });
+
+        let chatRateSum = 0;
+        let chatRateUsers = 0;
+        chatByUser.forEach((messageCount, userId) => {
+            const activeMinutes = Math.max(1, Number(minutesByUser.get(userId) || 0));
+            chatRateSum += messageCount / activeMinutes;
+            chatRateUsers += 1;
+        });
+
+        const messagesPerMinPerUser = chatRateUsers > 0 ? (chatRateSum / chatRateUsers) : 0;
+
+        return {
+            averageSessionMinutes,
+            peakConcurrentUsers,
+            messagesPerMinPerUser,
+            trackedSessions: sessions.size
+        };
+    }
+
     calculateFunnelData() {
         const funnelSteps = [
             { key: 'landing_view', label: this.t('admin.funnelLanding', 'Landing') },
@@ -643,6 +725,21 @@ class AdminStats {
         });
     }
 
+    updateBehaviorKpiDisplay() {
+        const behavior = this.calculateBehaviorMetrics();
+        const items = {
+            'stat-avg-session-duration': `${behavior.averageSessionMinutes.toFixed(1)}m`,
+            'stat-peak-concurrent-users': this.formatNumber(behavior.peakConcurrentUsers),
+            'stat-chat-msg-per-min': behavior.messagesPerMinPerUser.toFixed(2),
+            'stat-tracked-sessions': this.formatNumber(behavior.trackedSessions)
+        };
+
+        Object.entries(items).forEach(([id, value]) => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = value;
+        });
+    }
+
     renderTopSoundsTable(tableId) {
         const tbody = document.getElementById(tableId);
         if (!tbody) return;
@@ -666,6 +763,7 @@ class AdminStats {
 
     renderEventMetrics() {
         this.updateGrowthKpiDisplay();
+        this.updateBehaviorKpiDisplay();
         this.renderFunnelChart('funnel-chart');
         this.renderRetentionChart('retention-chart');
     }
