@@ -302,8 +302,9 @@ body {
 
 @media (min-width: 1201px) {
     .gallery-panel {
+        padding-left: 22rem;
         padding-right: 24rem;
-        max-width: 1500px;
+        max-width: 1700px;
     }
 }
 
@@ -1866,6 +1867,8 @@ body.editor-open .gallery-panel {
     top: 92px;
     width: min(360px, 34vw);
     z-index: 120;
+    display: grid;
+    gap: 1.1rem;
 }
 
 .challenge-dock .growth-card {
@@ -1874,6 +1877,63 @@ body.editor-open .gallery-panel {
 
 body.editor-open .challenge-dock {
     right: calc(var(--editor-width) + 1rem);
+}
+
+.chat-dock {
+    position: fixed;
+    left: 1rem;
+    top: 92px;
+    width: min(320px, 30vw);
+    z-index: 120;
+}
+
+.chat-dock .growth-card {
+    box-shadow: var(--shadow-lg);
+}
+
+.chat-conn-row,
+.chat-send-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0.45rem;
+}
+
+.chat-conn-row input,
+.chat-send-row input {
+    width: 100%;
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+    color: var(--color-text);
+    border-radius: var(--radius-sm);
+    padding: 0.5rem 0.6rem;
+    font-size: 0.8rem;
+}
+
+.chat-messages {
+    margin: 0.55rem 0;
+    border: 1px solid var(--color-border);
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: var(--radius-sm);
+    min-height: 180px;
+    max-height: 280px;
+    overflow-y: auto;
+    padding: 0.5rem;
+    display: grid;
+    gap: 0.35rem;
+}
+
+.chat-msg {
+    font-size: 0.76rem;
+    line-height: 1.35;
+    color: var(--color-text-secondary);
+}
+
+.chat-msg strong {
+    color: var(--color-text);
+}
+
+.chat-msg.system {
+    color: var(--color-accent);
 }
 
 /* ===========================
@@ -1964,6 +2024,12 @@ body.editor-open .challenge-dock {
     }
 
     .challenge-dock {
+        position: static;
+        width: auto;
+        margin: 0 1rem 1rem;
+    }
+
+    .chat-dock {
         position: static;
         width: auto;
         margin: 0 1rem 1rem;

@@ -250,6 +250,23 @@
         </aside>
     </main>
 
+    <aside class="chat-dock" id="chat-dock">
+        <section class="growth-card chat-card">
+            <h2 class="growth-card-title" data-i18n="v2.chat.title">Owners Chat</h2>
+            <p class="growth-card-subtitle" data-i18n="v2.chat.subtitle">Talk with other Tesla owners in real time.</p>
+            <div class="chat-conn-row">
+                <input type="text" id="chat-url-input" data-i18n-placeholder="v2.chat.urlPlaceholder" placeholder="ws://localhost:8080">
+                <button class="btn-secondary" id="btn-chat-connect" data-i18n="v2.chat.connect">Connect</button>
+            </div>
+            <div id="chat-status" class="growth-status" data-i18n="v2.chat.disconnected">Disconnected</div>
+            <div id="chat-messages" class="chat-messages" aria-live="polite"></div>
+            <div class="chat-send-row">
+                <input type="text" id="chat-input" data-i18n-placeholder="v2.chat.inputPlaceholder" placeholder="Type a message...">
+                <button class="btn-primary" id="btn-chat-send" data-i18n="v2.chat.send">Send</button>
+            </div>
+        </section>
+    </aside>
+
     <aside class="challenge-dock">
         <section class="growth-card">
             <h2 class="growth-card-title" data-i18n="v2.challenge.title">Weekly Challenge & Ranking</h2>

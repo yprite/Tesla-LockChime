@@ -138,6 +138,12 @@ class TeslaLockSoundAppV2 {
             badgeAuthHint: document.getElementById('badge-auth-hint'),
             badgeSummary: document.getElementById('badge-summary'),
             badgeGrid: document.getElementById('badge-grid'),
+            chatUrlInput: document.getElementById('chat-url-input'),
+            btnChatConnect: document.getElementById('btn-chat-connect'),
+            chatStatus: document.getElementById('chat-status'),
+            chatMessages: document.getElementById('chat-messages'),
+            chatInput: document.getElementById('chat-input'),
+            btnChatSend: document.getElementById('btn-chat-send'),
             workspaceDraftName: document.getElementById('workspace-draft-name'),
             btnSaveDraft: document.getElementById('btn-save-draft'),
             workspaceDraftsList: document.getElementById('workspace-drafts-list')
@@ -151,6 +157,7 @@ class TeslaLockSoundAppV2 {
 
         await this.initGallery();
         this.initAuth();
+        this.initChat();
         this.initGrowthFeatures();
         this.setupEventListeners();
         this.populatePresets();
@@ -502,6 +509,14 @@ class TeslaLockSoundAppV2 {
         this.elements.btnAuthNaver?.addEventListener('click', () => this.signInWithProvider('naver'));
         this.elements.btnAuthLogout?.addEventListener('click', () => this.signOutAuth());
         this.elements.challengeModelSelect?.addEventListener('change', () => this.handleChallengeModelChanged());
+        this.elements.btnChatConnect?.addEventListener('click', () => this.connectChat());
+        this.elements.btnChatSend?.addEventListener('click', () => this.sendChatMessage());
+        this.elements.chatInput?.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                this.sendChatMessage();
+            }
+        });
     }
 
     initAuth() {
@@ -587,6 +602,129 @@ class TeslaLockSoundAppV2 {
             this.trackEvent('oauth_logout', {});
         } catch (error) {
             this.showToast(this.t('v2.auth.logoutFailed', {}, 'Could not log out.'), 'error');
+        }
+    }
+
+    initChat() {
+        this.chatSocket = null;
+        if (!this.elements.chatUrlInput || !this.elements.chatStatus || !this.elements.chatMessages) return;
+
+        const storedUrl = localStorage.getItem('chat_ws_url') || 'ws://localhost:8080';
+        this.elements.chatUrlInput.value = storedUrl;
+        this.setChatStatus(this.t('v2.chat.disconnected', {}, 'Disconnected'));
+        this.appendChatMessage(this.t('v2.chat.welcome', {}, 'Welcome. Connect to start chatting.'), { type: 'system' });
+    }
+
+    getChatDisplayName() {
+        if (this.state.authUser?.displayName) return this.state.authUser.displayName;
+        if (this.state.authUser?.email) return this.state.authUser.email.split('@')[0];
+        return `guest-${Math.floor(Math.random() * 1000)}`;
+    }
+
+    setChatStatus(text) {
+        if (this.elements.chatStatus) {
+            this.elements.chatStatus.textContent = text;
+        }
+    }
+
+    appendChatMessage(text, options = {}) {
+        if (!this.elements.chatMessages) return;
+        const row = document.createElement('div');
+        const sender = options.sender ? `${options.sender}: ` : '';
+        row.className = `chat-msg ${options.type || ''}`.trim();
+        row.innerHTML = sender
+            ? `<strong>${this.escapeHtml(sender)}</strong>${this.escapeHtml(text)}`
+            : this.escapeHtml(text);
+        this.elements.chatMessages.appendChild(row);
+        this.elements.chatMessages.scrollTop = this.elements.chatMessages.scrollHeight;
+    }
+
+    connectChat() {
+        if (!this.elements.chatUrlInput) return;
+        const url = this.elements.chatUrlInput.value.trim();
+        if (!url) {
+            this.showToast(this.t('v2.chat.urlRequired', {}, 'Enter a WebSocket URL first.'), 'error');
+            return;
+        }
+        if (typeof WebSocket === 'undefined') {
+            this.showToast(this.t('v2.chat.notSupported', {}, 'WebSocket is not supported in this browser.'), 'error');
+            return;
+        }
+
+        localStorage.setItem('chat_ws_url', url);
+
+        if (this.chatSocket) {
+            try {
+                this.chatSocket.close();
+            } catch (error) {
+            }
+            this.chatSocket = null;
+        }
+
+        this.setChatStatus(this.t('v2.chat.connecting', {}, 'Connecting...'));
+
+        try {
+            const socket = new WebSocket(url);
+            this.chatSocket = socket;
+
+            socket.onopen = () => {
+                this.setChatStatus(this.t('v2.chat.connected', {}, 'Connected'));
+                this.appendChatMessage(this.t('v2.chat.connectedNotice', {}, 'Connected to chat server.'), { type: 'system' });
+            };
+
+            socket.onclose = () => {
+                this.setChatStatus(this.t('v2.chat.disconnected', {}, 'Disconnected'));
+                this.appendChatMessage(this.t('v2.chat.disconnectedNotice', {}, 'Connection closed.'), { type: 'system' });
+            };
+
+            socket.onerror = () => {
+                this.setChatStatus(this.t('v2.chat.error', {}, 'Connection error'));
+                this.appendChatMessage(this.t('v2.chat.connectFail', {}, 'Failed to connect.'), { type: 'system' });
+            };
+
+            socket.onmessage = (event) => {
+                let sender = 'user';
+                let message = '';
+                try {
+                    const parsed = JSON.parse(event.data);
+                    sender = parsed.user || parsed.sender || 'user';
+                    message = parsed.text || parsed.message || '';
+                } catch (error) {
+                    message = String(event.data || '');
+                }
+                if (message) {
+                    this.appendChatMessage(message, { sender });
+                }
+            };
+        } catch (error) {
+            this.setChatStatus(this.t('v2.chat.error', {}, 'Connection error'));
+            this.showToast(this.t('v2.chat.connectFail', {}, 'Failed to connect.'), 'error');
+        }
+    }
+
+    sendChatMessage() {
+        if (!this.elements.chatInput) return;
+        const text = this.elements.chatInput.value.trim();
+        if (!text) return;
+
+        if (!this.chatSocket || this.chatSocket.readyState !== 1) {
+            this.showToast(this.t('v2.chat.sendWhileOffline', {}, 'Connect chat first.'), 'error');
+            return;
+        }
+
+        const payload = {
+            type: 'chat',
+            user: this.getChatDisplayName(),
+            text,
+            sentAt: new Date().toISOString()
+        };
+
+        try {
+            this.chatSocket.send(JSON.stringify(payload));
+            this.appendChatMessage(text, { sender: payload.user });
+            this.elements.chatInput.value = '';
+        } catch (error) {
+            this.showToast(this.t('v2.chat.sendFail', {}, 'Failed to send message.'), 'error');
         }
     }
 
