@@ -44,7 +44,13 @@ const WIDGET_LIBRARY = [
   { id: "sleepSuite", label: "Sleep Suite", category: "health", style: "minimal", skin: "charcoal", defaultOn: false, layout: { x: 3, y: 2, w: 4, h: 2 } },
   { id: "raceLap", label: "Race Lap", category: "performance", style: "neon", skin: "coral", defaultOn: false, layout: { x: 7, y: 2, w: 3, h: 2 } },
   { id: "wavePulse", label: "Wave Pulse", category: "health", style: "neon", skin: "noir", defaultOn: false, layout: { x: 0, y: 4, w: 3, h: 2 } },
-  { id: "phoneStack", label: "Phone Stack", category: "social", style: "minimal", skin: "violet", defaultOn: false, layout: { x: 3, y: 4, w: 3, h: 2 } }
+  { id: "phoneStack", label: "Phone Stack", category: "social", style: "minimal", skin: "violet", defaultOn: false, layout: { x: 3, y: 4, w: 3, h: 2 } },
+  { id: "flightBoard", label: "Flight Board", category: "travel", style: "data", skin: "paper", defaultOn: false, layout: { x: 6, y: 4, w: 4, h: 2 } },
+  { id: "cityHop", label: "City Hop", category: "travel", style: "vivid", skin: "noir", defaultOn: false, layout: { x: 0, y: 6, w: 3, h: 2 } },
+  { id: "chargeCard", label: "Charge Card", category: "vehicle", style: "vivid", skin: "forest", defaultOn: false, layout: { x: 3, y: 6, w: 3, h: 2 } },
+  { id: "eventCard", label: "Event Card", category: "social", style: "card", skin: "paper", defaultOn: false, layout: { x: 6, y: 6, w: 2, h: 2 } },
+  { id: "pricePicker", label: "Price Picker", category: "finance", style: "card", skin: "paper", defaultOn: false, layout: { x: 8, y: 6, w: 2, h: 2 } },
+  { id: "callPanel", label: "Call Panel", category: "social", style: "minimal", skin: "charcoal", defaultOn: false, layout: { x: 10, y: 0, w: 2, h: 2 } }
 ];
 
 function createDefaultWidgetState() {
@@ -82,6 +88,7 @@ class DashboardBuilder {
     this.clockMainEl = null;
     this.dragState = null;
     this.els = this.cacheElements();
+    this.initLanguageSettings();
     this.populateFilterOptions();
     this.renderWidgetControls();
     this.bindEvents();
@@ -135,6 +142,7 @@ class DashboardBuilder {
       btnLoginKakao: document.getElementById("btn-login-kakao"),
       btnLoginNaver: document.getElementById("btn-login-naver"),
       btnLogout: document.getElementById("btn-logout"),
+      languageSelect: document.getElementById("language-select"),
       vehicleModel: document.getElementById("vehicle-model"),
       modelSize: document.getElementById("model-size"),
       bgTheme: document.getElementById("bg-theme"),
@@ -156,23 +164,100 @@ class DashboardBuilder {
     };
   }
 
+  t(key, params = {}, fallback = key) {
+    const i18nApi = window.i18n;
+    if (i18nApi && typeof i18nApi.t === "function") {
+      return i18nApi.t(key, params);
+    }
+    return fallback;
+  }
+
+  initLanguageSettings() {
+    const i18nApi = window.i18n;
+    const languageSelect = this.els.languageSelect;
+    if (!i18nApi || !languageSelect) return;
+
+    if (typeof i18nApi.getLanguage === "function") {
+      const currentLang = i18nApi.getLanguage();
+      languageSelect.value = currentLang;
+      document.documentElement.lang = currentLang;
+    }
+
+    if (typeof i18nApi.updatePage === "function") {
+      i18nApi.updatePage();
+    }
+
+    languageSelect.addEventListener("change", (event) => {
+      if (typeof i18nApi.setLanguage === "function") {
+        i18nApi.setLanguage(event.target.value);
+      }
+    });
+
+    window.addEventListener("languageChanged", (event) => {
+      const changedLanguage = event?.detail?.language;
+      if (changedLanguage && languageSelect.value !== changedLanguage) {
+        languageSelect.value = changedLanguage;
+      }
+      this.handleLanguageChanged();
+    });
+  }
+
+  handleLanguageChanged() {
+    this.populateFilterOptions();
+    this.renderWidgetControls();
+    this.updateModelBadge();
+    this.renderPreview();
+    this.updateAuthUi();
+  }
+
+  getWidgetLabel(widget) {
+    return this.t(`dash.widget.${widget.id}`, {}, widget.label);
+  }
+
+  getWidgetCategoryLabel(category) {
+    return this.t(`dash.category.${category}`, {}, this.toTitle(category));
+  }
+
+  getWidgetStyleLabel(style) {
+    return this.t(`dash.style.${style}`, {}, this.toTitle(style));
+  }
+
   populateFilterOptions() {
+    if (!this.els.widgetFilterCategory || !this.els.widgetFilterStyle) return;
+    const prevCategory = this.els.widgetFilterCategory.value || "all";
+    const prevStyle = this.els.widgetFilterStyle.value || "all";
+    this.els.widgetFilterCategory.innerHTML = "";
+    this.els.widgetFilterStyle.innerHTML = "";
+
+    const allCategoryOption = document.createElement("option");
+    allCategoryOption.value = "all";
+    allCategoryOption.textContent = this.t("dash.filter.allCategories", {}, "All categories");
+    this.els.widgetFilterCategory.appendChild(allCategoryOption);
+
+    const allStyleOption = document.createElement("option");
+    allStyleOption.value = "all";
+    allStyleOption.textContent = this.t("dash.filter.allStyles", {}, "All styles");
+    this.els.widgetFilterStyle.appendChild(allStyleOption);
+
     const categories = [...new Set(WIDGET_LIBRARY.map((widget) => widget.category))];
     const styles = [...new Set(WIDGET_LIBRARY.map((widget) => widget.style))];
 
     categories.forEach((category) => {
       const option = document.createElement("option");
       option.value = category;
-      option.textContent = this.toTitle(category);
+      option.textContent = this.getWidgetCategoryLabel(category);
       this.els.widgetFilterCategory.appendChild(option);
     });
 
     styles.forEach((style) => {
       const option = document.createElement("option");
       option.value = style;
-      option.textContent = this.toTitle(style);
+      option.textContent = this.getWidgetStyleLabel(style);
       this.els.widgetFilterStyle.appendChild(option);
     });
+
+    this.els.widgetFilterCategory.value = prevCategory;
+    this.els.widgetFilterStyle.value = prevStyle;
   }
 
   toTitle(value) {
@@ -191,7 +276,7 @@ class DashboardBuilder {
       if (category !== "all" && widget.category !== category) return false;
       if (style !== "all" && widget.style !== style) return false;
       if (!query) return true;
-      return (`${widget.label} ${widget.category} ${widget.style}`).toLowerCase().includes(query);
+      return (`${this.getWidgetLabel(widget)} ${this.getWidgetCategoryLabel(widget.category)} ${this.getWidgetStyleLabel(widget.style)}`).toLowerCase().includes(query);
     });
   }
 
@@ -203,7 +288,7 @@ class DashboardBuilder {
     if (!widgets.length) {
       const empty = document.createElement("div");
       empty.className = "dash-subtext";
-      empty.textContent = "No widgets match this filter.";
+      empty.textContent = this.t("dash.widgets.noMatch", {}, "No widgets match this filter.");
       this.els.widgetControls.appendChild(empty);
       return;
     }
@@ -220,10 +305,10 @@ class DashboardBuilder {
       textWrap.className = "widget-item-text";
       const title = document.createElement("span");
       title.className = "widget-item-title";
-      title.textContent = widget.label;
+      title.textContent = this.getWidgetLabel(widget);
       const meta = document.createElement("span");
       meta.className = "widget-item-meta";
-      meta.textContent = `${widget.category} · ${widget.style}`;
+      meta.textContent = `${this.getWidgetCategoryLabel(widget.category)} · ${this.getWidgetStyleLabel(widget.style)}`;
 
       textWrap.appendChild(title);
       textWrap.appendChild(meta);
@@ -400,7 +485,7 @@ class DashboardBuilder {
     this.els.providerMenu.style.display = "none";
     this.els.btnLogout.style.display = signedIn ? "inline-flex" : "none";
     this.els.btnSave.disabled = !signedIn;
-    this.els.user.textContent = this.user ? (this.user.email || this.user.uid) : "Not signed in";
+    this.els.user.textContent = this.user ? (this.user.email || this.user.uid) : this.t("dash.auth.signedOut", {}, "Not signed in");
     this.updateSaveCopyVisibility();
   }
 
@@ -419,7 +504,7 @@ class DashboardBuilder {
     try {
       await this.auth.signInWithPopup(provider);
     } catch (error) {
-      alert("Login failed. Check OAuth provider setup.");
+      alert(this.t("dash.toast.loginFailed", {}, "Login failed. Check OAuth provider setup."));
     }
   }
 
@@ -527,7 +612,7 @@ class DashboardBuilder {
     this.clockMainEl = null;
     this.els.widgetGrid.innerHTML = "";
 
-    const ownerName = this.user?.displayName || this.user?.email?.split("@")[0] || "Tesla owner";
+    const ownerName = this.user?.displayName || this.user?.email?.split("@")[0] || this.t("dash.ownerFallback", {}, "Tesla owner");
 
     WIDGET_LIBRARY.forEach((widget) => {
       if (!this.state.widgets[widget.id]) return;
@@ -549,7 +634,14 @@ class DashboardBuilder {
       empty.style.setProperty("--h", "2");
       empty.style.setProperty("--grid-cols", String(GRID_SPEC.cols));
       empty.style.setProperty("--grid-rows", String(GRID_SPEC.rows));
-      empty.innerHTML = '<div class="widget-top"><p class="widget-title">Empty</p><span class="widget-badge">Info</span></div><div class="widget-main">No widgets selected</div><div class="widget-sub">Enable widgets from the left panel.</div>';
+      empty.innerHTML = `
+        <div class="widget-top">
+          <p class="widget-title">${this.escapeHtml(this.t("dash.widgets.emptyTitle", {}, "Empty"))}</p>
+          <span class="widget-badge">${this.escapeHtml(this.t("dash.widgets.emptyBadge", {}, "Info"))}</span>
+        </div>
+        <div class="widget-main">${this.escapeHtml(this.t("dash.widgets.emptyMain", {}, "No widgets selected"))}</div>
+        <div class="widget-sub">${this.escapeHtml(this.t("dash.widgets.emptySub", {}, "Enable widgets from the left panel."))}</div>
+      `;
       this.els.widgetGrid.appendChild(empty);
     }
 
@@ -562,7 +654,7 @@ class DashboardBuilder {
     card.setAttribute("data-widget-id", widget.id);
 
     const content = this.getWidgetContent(widget.id, ownerName);
-    const topHtml = `<div class="widget-top"><p class="widget-title">${this.escapeHtml(content.title)}</p><span class="widget-badge">${this.escapeHtml(content.badge || "Live")}</span></div>`;
+    const topHtml = `<div class="widget-top"><p class="widget-title">${this.escapeHtml(content.title)}</p><span class="widget-badge">${this.escapeHtml(content.badge || this.t("dash.widget.badgeLive", {}, "Live"))}</span></div>`;
     const mainClass = content.mainMono ? "widget-main widget-mono" : "widget-main";
     const subClass = content.subMono ? "widget-sub widget-mono" : "widget-sub";
     const subLines = Array.isArray(content.subLines) ? content.subLines : [content.sub || ""];
@@ -571,7 +663,7 @@ class DashboardBuilder {
     const barsHtml = Array.isArray(content.bars) ? this.buildBarsHtml(content.bars) : "";
     const pillsHtml = Array.isArray(content.pills) ? this.buildPillsHtml(content.pills) : "";
 
-    card.innerHTML = `${topHtml}<div class="${mainClass}">${this.escapeHtml(content.main)}</div><div>${subHtml}${meterHtml}${barsHtml}${pillsHtml}</div><span class="widget-resize" title="Resize"></span>`;
+    card.innerHTML = `${topHtml}<div class="${mainClass}">${this.escapeHtml(content.main)}</div><div>${subHtml}${meterHtml}${barsHtml}${pillsHtml}</div><span class="widget-resize" title="${this.escapeHtml(this.t("dash.widget.resize", {}, "Resize"))}"></span>`;
 
     if (widget.id === "clock") {
       this.clockMainEl = card.querySelector(".widget-main");
@@ -611,10 +703,27 @@ class DashboardBuilder {
       sleepSuite: { title: "Sleep", badge: "Health", main: "6h 20m", subLines: ["Sleep quality 80/100"], meter: 80, pills: ["Bed 00:20-09:00", "Heart 55 bpm"] },
       raceLap: { title: "Race", badge: "Lap 5", main: "1:16:36", subLines: ["Sector 2 · Track mode"], bars: [12, 18, 25, 35, 39, 44, 36, 30, 22], pills: ["Best line"] },
       wavePulse: { title: "Pulse", badge: "82 bpm", main: "24:15", subLines: ["Wave monitor · 1.8 mi"], bars: [14, 22, 29, 26, 31, 36, 28, 34, 39, 32, 27, 22], pills: ["Live"] },
-      phoneStack: { title: "Phone", badge: "Stack", main: "12:46", subLines: ["Calls, reminders, media"], pills: ["Homekit", "Meteo", "Batteries"] }
+      phoneStack: { title: "Phone", badge: "Stack", main: "12:46", subLines: ["Calls, reminders, media"], pills: ["Homekit", "Meteo", "Batteries"] },
+      flightBoard: { title: "Flight", badge: "FL 288", main: "Land in 1h 15m", subLines: ["SIN 11:30 PM · LHR 05:55 AM"], bars: [14, 22, 34, 27, 39, 31, 24], pills: ["On Time", "A350F"] },
+      cityHop: { title: "City Hop", badge: "Trip", main: "300M", subLines: ["Elizabeth Street · ETA 10:21"], mainMono: true, subMono: true, pills: ["Speed 18.4", "Distance 12.4"] },
+      chargeCard: { title: "Mercedes", badge: "Charge", main: "68%", subLines: ["15m left · Supercharging 250kW"], meter: 68, pills: ["365 km"] },
+      eventCard: { title: "Miami", badge: "Event", main: "Art Deco Walk", subLines: ["in 30m · Miami, FL"], pills: ["Upcoming"] },
+      pricePicker: { title: "Price", badge: "Select", main: "$56.00", subLines: ["Set fare quickly"], pills: ["-", "+"] },
+      callPanel: { title: "Call", badge: "Live", main: "Michael Fox", subLines: ["Work contact · 8:06"], pills: ["Accept", "Decline"] }
     };
 
-    return map[widgetId] || { title: "Widget", main: "Ready", subLines: ["Configure from left panel"] };
+    if (!map[widgetId]) {
+      return {
+        title: this.t("dash.widget.defaultTitle", {}, "Widget"),
+        main: this.t("dash.widget.defaultMain", {}, "Ready"),
+        subLines: [this.t("dash.widget.defaultSub", {}, "Configure from left panel")]
+      };
+    }
+
+    return {
+      ...map[widgetId],
+      title: this.t(`dash.widget.${widgetId}`, {}, map[widgetId].title)
+    };
   }
 
   buildBarsHtml(values) {
@@ -639,7 +748,12 @@ class DashboardBuilder {
   updateModelBadge() {
     const preset = MODEL_PRESETS[this.els.vehicleModel.value] || MODEL_PRESETS.modely;
     if (this.els.modelSize) {
-      this.els.modelSize.textContent = `Display: ${preset.width} x ${preset.height} (${preset.label})`;
+      const modelName = this.t(`dash.model.${this.els.vehicleModel.value}`, {}, preset.label);
+      this.els.modelSize.textContent = this.t(
+        "dash.display.format",
+        { width: preset.width, height: preset.height, model: modelName },
+        `Display: ${preset.width} x ${preset.height} (${modelName})`
+      );
     }
   }
 
@@ -670,7 +784,7 @@ class DashboardBuilder {
 
   async saveDashboard(options = {}) {
     if (!this.user) {
-      alert("Login required to save dashboard.");
+      alert(this.t("dash.toast.loginRequired", {}, "Login required to save dashboard."));
       return;
     }
 
@@ -718,18 +832,22 @@ class DashboardBuilder {
     localStorage.setItem("dashboard_public_id", this.publicId);
     this.els.publicId.value = this.publicId;
     this.updateSaveCopyVisibility();
-    alert(asCopy ? "Copied and saved to your account." : "Dashboard saved.");
+    alert(
+      asCopy
+        ? this.t("dash.toast.savedCopy", {}, "Copied and saved to your account.")
+        : this.t("dash.toast.saved", {}, "Dashboard saved.")
+    );
   }
 
   copyShareLink() {
     const owner = this.publicId || "";
     if (!owner) {
-      alert("Save once to generate public ID.");
+      alert(this.t("dash.toast.saveFirst", {}, "Save once to generate public ID."));
       return;
     }
     const link = `${location.origin}/dashboard.html?owner=${encodeURIComponent(owner)}`;
     navigator.clipboard.writeText(link).then(
-      () => alert("Share link copied."),
+      () => alert(this.t("dash.toast.shareCopied", {}, "Share link copied.")),
       () => alert(link)
     );
   }
