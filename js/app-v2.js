@@ -512,8 +512,17 @@ class TeslaLockSoundAppV2 {
         this.elements.challengeModelSelect?.addEventListener('change', () => this.handleChallengeModelChanged());
         this.elements.btnChatConnect?.addEventListener('click', () => this.connectChat());
         this.elements.btnChatSend?.addEventListener('click', () => this.sendChatMessage());
+        this.elements.chatInput?.addEventListener('compositionstart', () => {
+            this.chatInputComposing = true;
+        });
+        this.elements.chatInput?.addEventListener('compositionend', () => {
+            this.chatInputComposing = false;
+        });
         this.elements.chatInput?.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
+                if (e.isComposing || this.chatInputComposing || e.keyCode === 229) {
+                    return;
+                }
                 e.preventDefault();
                 this.sendChatMessage();
             }
@@ -608,6 +617,7 @@ class TeslaLockSoundAppV2 {
 
     initChat() {
         this.chatSocket = null;
+        this.chatInputComposing = false;
         if (!this.elements.chatUrlInput || !this.elements.chatStatus || !this.elements.chatMessages) return;
 
         const configured = (typeof window !== 'undefined' && typeof window.CHAT_WS_ENDPOINT === 'string')
@@ -651,7 +661,12 @@ class TeslaLockSoundAppV2 {
     getChatDisplayName() {
         if (this.state.authUser?.displayName) return this.state.authUser.displayName;
         if (this.state.authUser?.email) return this.state.authUser.email.split('@')[0];
-        return `guest-${Math.floor(Math.random() * 1000)}`;
+        let guestId = localStorage.getItem('chat_guest_id');
+        if (!guestId) {
+            guestId = `guest-${Math.floor(Math.random() * 1000)}`;
+            localStorage.setItem('chat_guest_id', guestId);
+        }
+        return guestId;
     }
 
     setChatStatus(text) {
@@ -749,15 +764,21 @@ class TeslaLockSoundAppV2 {
             socket.onmessage = (event) => {
                 let sender = 'user';
                 let message = '';
+                let messageType = 'chat';
                 try {
                     const parsed = JSON.parse(event.data);
                     sender = parsed.user || parsed.sender || 'user';
                     message = parsed.text || parsed.message || '';
+                    messageType = parsed.type || 'chat';
                 } catch (error) {
                     message = String(event.data || '');
                 }
                 if (message) {
-                    this.appendChatMessage(message, { sender });
+                    if (messageType === 'system') {
+                        this.appendChatMessage(message, { type: 'system' });
+                    } else {
+                        this.appendChatMessage(message, { sender });
+                    }
                 }
             };
         } catch (error) {
@@ -769,6 +790,7 @@ class TeslaLockSoundAppV2 {
 
     sendChatMessage() {
         if (!this.elements.chatInput) return;
+        if (this.chatInputComposing) return;
         const text = this.elements.chatInput.value.trim();
         if (!text) return;
 
