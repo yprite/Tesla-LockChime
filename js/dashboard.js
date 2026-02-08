@@ -15,26 +15,28 @@ const MODEL_PRESETS = {
   cybertruck: { label: "Cybertruck", width: 2560, height: 1600, maxWidth: 1220 }
 };
 
+const GRID_SPEC = { cols: 12, rows: 8 };
+
 const WIDGET_LIBRARY = [
-  { id: "clock", label: "Clock", size: "m", tone: "neutral", defaultOn: true },
-  { id: "greeting", label: "Greeting", size: "m", tone: "cyan", defaultOn: true },
-  { id: "weekly", label: "Weekly Challenge", size: "m", tone: "orange", defaultOn: true },
-  { id: "badges", label: "Badge Shelf", size: "m", tone: "violet", defaultOn: true },
-  { id: "quickchat", label: "Quick Chat", size: "s", tone: "green", defaultOn: true },
-  { id: "battery", label: "Battery", size: "s", tone: "green", defaultOn: true },
-  { id: "range", label: "Range", size: "s", tone: "cyan", defaultOn: true },
-  { id: "media", label: "Media Shortcut", size: "m", tone: "red", defaultOn: true },
-  { id: "weather", label: "Weather", size: "s", tone: "neutral", defaultOn: true },
-  { id: "calendar", label: "Calendar", size: "s", tone: "violet", defaultOn: false },
-  { id: "alerts", label: "Alerts", size: "s", tone: "red", defaultOn: false },
-  { id: "energy", label: "Energy Efficiency", size: "m", tone: "green", defaultOn: false },
-  { id: "cost", label: "Monthly Cost", size: "s", tone: "orange", defaultOn: false },
-  { id: "charging", label: "Charging ETA", size: "m", tone: "cyan", defaultOn: false },
-  { id: "tires", label: "Tire Pressure", size: "m", tone: "neutral", defaultOn: false },
-  { id: "navigation", label: "Next Route", size: "l", tone: "violet", defaultOn: false },
-  { id: "notes", label: "Driver Notes", size: "m", tone: "neutral", defaultOn: false },
-  { id: "shortcut", label: "One-Tap Actions", size: "l", tone: "orange", defaultOn: false },
-  { id: "quote", label: "Daily Quote", size: "s", tone: "cyan", defaultOn: false }
+  { id: "clock", label: "Clock", category: "utility", style: "minimal", skin: "charcoal", defaultOn: true, layout: { x: 0, y: 0, w: 2, h: 2 } },
+  { id: "greeting", label: "Greeting", category: "social", style: "editorial", skin: "noir", defaultOn: true, layout: { x: 2, y: 0, w: 3, h: 2 } },
+  { id: "weekly", label: "Weekly Challenge", category: "goal", style: "vivid", skin: "lime", defaultOn: true, layout: { x: 5, y: 0, w: 2, h: 2 } },
+  { id: "badges", label: "Badge Shelf", category: "goal", style: "neon", skin: "indigo", defaultOn: true, layout: { x: 7, y: 0, w: 2, h: 2 } },
+  { id: "quickchat", label: "Quick Chat", category: "social", style: "card", skin: "paper", defaultOn: true, layout: { x: 9, y: 0, w: 2, h: 2 } },
+  { id: "battery", label: "Battery", category: "vehicle", style: "minimal", skin: "charcoal", defaultOn: true, layout: { x: 0, y: 2, w: 2, h: 2 } },
+  { id: "range", label: "Range", category: "vehicle", style: "graph", skin: "forest", defaultOn: true, layout: { x: 2, y: 2, w: 2, h: 2 } },
+  { id: "media", label: "Media Shortcut", category: "media", style: "vivid", skin: "coral", defaultOn: true, layout: { x: 4, y: 2, w: 3, h: 2 } },
+  { id: "weather", label: "Weather", category: "utility", style: "minimal", skin: "noir", defaultOn: true, layout: { x: 7, y: 2, w: 2, h: 2 } },
+  { id: "calendar", label: "Calendar", category: "utility", style: "card", skin: "paper", defaultOn: false, layout: { x: 9, y: 2, w: 2, h: 2 } },
+  { id: "alerts", label: "Alerts", category: "vehicle", style: "vivid", skin: "coral", defaultOn: false, layout: { x: 0, y: 4, w: 2, h: 2 } },
+  { id: "energy", label: "Energy Efficiency", category: "vehicle", style: "graph", skin: "forest", defaultOn: false, layout: { x: 2, y: 4, w: 2, h: 2 } },
+  { id: "cost", label: "Monthly Cost", category: "finance", style: "vivid", skin: "lime", defaultOn: false, layout: { x: 4, y: 4, w: 2, h: 2 } },
+  { id: "charging", label: "Charging ETA", category: "vehicle", style: "minimal", skin: "slate", defaultOn: false, layout: { x: 6, y: 4, w: 2, h: 2 } },
+  { id: "tires", label: "Tire Pressure", category: "vehicle", style: "graph", skin: "noir", defaultOn: false, layout: { x: 8, y: 4, w: 2, h: 2 } },
+  { id: "navigation", label: "Next Route", category: "navigation", style: "neon", skin: "indigo", defaultOn: false, layout: { x: 0, y: 6, w: 3, h: 2 } },
+  { id: "notes", label: "Driver Notes", category: "utility", style: "card", skin: "paper", defaultOn: false, layout: { x: 3, y: 6, w: 2, h: 2 } },
+  { id: "shortcut", label: "One-Tap Actions", category: "control", style: "minimal", skin: "charcoal", defaultOn: false, layout: { x: 5, y: 6, w: 3, h: 2 } },
+  { id: "quote", label: "Daily Quote", category: "social", style: "neon", skin: "violet", defaultOn: false, layout: { x: 8, y: 6, w: 2, h: 2 } }
 ];
 
 function createDefaultWidgetState() {
@@ -44,11 +46,19 @@ function createDefaultWidgetState() {
   }, {});
 }
 
+function createDefaultLayouts() {
+  return WIDGET_LIBRARY.reduce((acc, widget) => {
+    acc[widget.id] = { ...widget.layout };
+    return acc;
+  }, {});
+}
+
 const DEFAULT_STATE = {
   vehicleModel: "modely",
   backgroundTheme: "tesla-red",
   backgroundImageUrl: "",
-  widgets: createDefaultWidgetState()
+  widgets: createDefaultWidgetState(),
+  layouts: createDefaultLayouts()
 };
 
 class DashboardBuilder {
@@ -61,9 +71,10 @@ class DashboardBuilder {
     this.publicId = localStorage.getItem("dashboard_public_id") || "";
     this.viewedOwnerUid = "";
     this.state = this.createState(DEFAULT_STATE);
-    this.widgetElements = {};
     this.clockMainEl = null;
+    this.dragState = null;
     this.els = this.cacheElements();
+    this.populateFilterOptions();
     this.renderWidgetControls();
     this.bindEvents();
     this.startClock();
@@ -71,14 +82,40 @@ class DashboardBuilder {
   }
 
   createState(base) {
+    const defaultLayouts = createDefaultLayouts();
+    const input = base || {};
+    const mergedLayouts = { ...defaultLayouts, ...((input.layouts && typeof input.layouts === "object") ? input.layouts : {}) };
+
+    Object.keys(mergedLayouts).forEach((key) => {
+      mergedLayouts[key] = this.normalizeLayout(mergedLayouts[key], defaultLayouts[key]);
+    });
+
     return {
       ...DEFAULT_STATE,
-      ...(base || {}),
+      ...input,
       widgets: {
         ...DEFAULT_STATE.widgets,
-        ...((base && base.widgets) || {})
-      }
+        ...((input.widgets && typeof input.widgets === "object") ? input.widgets : {})
+      },
+      layouts: mergedLayouts
     };
+  }
+
+  normalizeLayout(layout, fallback) {
+    const base = fallback || { x: 0, y: 0, w: 2, h: 2 };
+    const raw = layout || base;
+    const normalized = {
+      x: Number.isFinite(raw.x) ? Math.floor(raw.x) : base.x,
+      y: Number.isFinite(raw.y) ? Math.floor(raw.y) : base.y,
+      w: Number.isFinite(raw.w) ? Math.floor(raw.w) : base.w,
+      h: Number.isFinite(raw.h) ? Math.floor(raw.h) : base.h
+    };
+
+    normalized.w = Math.max(1, Math.min(GRID_SPEC.cols, normalized.w));
+    normalized.h = Math.max(1, Math.min(GRID_SPEC.rows, normalized.h));
+    normalized.x = Math.max(0, Math.min(GRID_SPEC.cols - normalized.w, normalized.x));
+    normalized.y = Math.max(0, Math.min(GRID_SPEC.rows - normalized.h, normalized.y));
+    return normalized;
   }
 
   cacheElements() {
@@ -94,6 +131,10 @@ class DashboardBuilder {
       modelSize: document.getElementById("model-size"),
       bgTheme: document.getElementById("bg-theme"),
       bgImageUrl: document.getElementById("bg-image-url"),
+      widgetSearch: document.getElementById("widget-search"),
+      widgetFilterCategory: document.getElementById("widget-filter-category"),
+      widgetFilterStyle: document.getElementById("widget-filter-style"),
+      btnResetLayout: document.getElementById("btn-reset-layout"),
       widgetControls: document.getElementById("widget-controls"),
       widgetGrid: document.getElementById("widget-grid"),
       preview: document.getElementById("dashboard-preview"),
@@ -107,20 +148,81 @@ class DashboardBuilder {
     };
   }
 
+  populateFilterOptions() {
+    const categories = [...new Set(WIDGET_LIBRARY.map((widget) => widget.category))];
+    const styles = [...new Set(WIDGET_LIBRARY.map((widget) => widget.style))];
+
+    categories.forEach((category) => {
+      const option = document.createElement("option");
+      option.value = category;
+      option.textContent = this.toTitle(category);
+      this.els.widgetFilterCategory.appendChild(option);
+    });
+
+    styles.forEach((style) => {
+      const option = document.createElement("option");
+      option.value = style;
+      option.textContent = this.toTitle(style);
+      this.els.widgetFilterStyle.appendChild(option);
+    });
+  }
+
+  toTitle(value) {
+    return String(value || "")
+      .split(/[_\s-]+/)
+      .map((token) => token.charAt(0).toUpperCase() + token.slice(1))
+      .join(" ");
+  }
+
+  getFilteredWidgets() {
+    const query = (this.els.widgetSearch.value || "").trim().toLowerCase();
+    const category = this.els.widgetFilterCategory.value || "all";
+    const style = this.els.widgetFilterStyle.value || "all";
+
+    return WIDGET_LIBRARY.filter((widget) => {
+      if (category !== "all" && widget.category !== category) return false;
+      if (style !== "all" && widget.style !== style) return false;
+      if (!query) return true;
+      return (`${widget.label} ${widget.category} ${widget.style}`).toLowerCase().includes(query);
+    });
+  }
+
   renderWidgetControls() {
     if (!this.els.widgetControls) return;
+    const widgets = this.getFilteredWidgets();
     this.els.widgetControls.innerHTML = "";
 
-    for (const widget of WIDGET_LIBRARY) {
+    if (!widgets.length) {
+      const empty = document.createElement("div");
+      empty.className = "dash-subtext";
+      empty.textContent = "No widgets match this filter.";
+      this.els.widgetControls.appendChild(empty);
+      return;
+    }
+
+    widgets.forEach((widget) => {
       const label = document.createElement("label");
+      label.className = "widget-item";
       const input = document.createElement("input");
       input.type = "checkbox";
       input.dataset.widgetId = widget.id;
       input.checked = Boolean(this.state.widgets[widget.id]);
+
+      const textWrap = document.createElement("span");
+      textWrap.className = "widget-item-text";
+      const title = document.createElement("span");
+      title.className = "widget-item-title";
+      title.textContent = widget.label;
+      const meta = document.createElement("span");
+      meta.className = "widget-item-meta";
+      meta.textContent = `${widget.category} · ${widget.style}`;
+
+      textWrap.appendChild(title);
+      textWrap.appendChild(meta);
       label.appendChild(input);
-      label.appendChild(document.createTextNode(widget.label));
+      label.appendChild(textWrap);
       this.els.widgetControls.appendChild(label);
-    }
+    });
   }
 
   bindEvents() {
@@ -136,10 +238,28 @@ class DashboardBuilder {
     this.els.btnSaveCopy?.addEventListener("click", () => this.saveDashboard({ asCopy: true }));
     this.els.btnCopyLink?.addEventListener("click", () => this.copyShareLink());
     this.els.btnLoadOwner?.addEventListener("click", () => this.openOwnerFromInput());
+    this.els.btnResetLayout?.addEventListener("click", () => this.resetGridLayout());
 
-    this.els.ownerQuery?.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") {
-        e.preventDefault();
+    this.els.widgetSearch?.addEventListener("input", () => this.renderWidgetControls());
+    this.els.widgetFilterCategory?.addEventListener("change", () => this.renderWidgetControls());
+    this.els.widgetFilterStyle?.addEventListener("change", () => this.renderWidgetControls());
+
+    this.els.widgetControls?.addEventListener("change", (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLInputElement)) return;
+      const widgetId = target.dataset.widgetId;
+      if (!widgetId) return;
+      this.state.widgets[widgetId] = target.checked;
+      if (!this.state.layouts[widgetId]) {
+        const libraryEntry = WIDGET_LIBRARY.find((widget) => widget.id === widgetId);
+        this.state.layouts[widgetId] = this.normalizeLayout(libraryEntry?.layout);
+      }
+      this.renderPreview();
+    });
+
+    this.els.ownerQuery?.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
         this.openOwnerFromInput();
       }
     });
@@ -152,12 +272,108 @@ class DashboardBuilder {
     this.els.bgTheme?.addEventListener("change", () => this.applyFromEditor());
     this.els.bgImageUrl?.addEventListener("change", () => this.applyFromEditor());
 
-    this.els.widgetControls?.addEventListener("change", (event) => {
+    this.bindGridInteraction();
+  }
+
+  bindGridInteraction() {
+    const grid = this.els.widgetGrid;
+    if (!grid) return;
+
+    grid.style.touchAction = "none";
+
+    grid.addEventListener("pointerdown", (event) => {
       const target = event.target;
-      if (!(target instanceof HTMLInputElement)) return;
-      if (!target.dataset.widgetId) return;
-      this.applyFromEditor();
+      if (!(target instanceof Element)) return;
+      const resizeHandle = target.closest(".widget-resize");
+      const card = target.closest(".dash-widget");
+      if (!card) return;
+
+      const widgetId = card.getAttribute("data-widget-id");
+      if (!widgetId) return;
+
+      const initial = this.normalizeLayout(this.state.layouts[widgetId], this.getWidgetDefaultLayout(widgetId));
+      this.dragState = {
+        widgetId,
+        card,
+        mode: resizeHandle ? "resize" : "drag",
+        pointerId: event.pointerId,
+        startX: event.clientX,
+        startY: event.clientY,
+        initial
+      };
+
+      card.classList.add(resizeHandle ? "resizing" : "dragging");
+      card.setPointerCapture(event.pointerId);
+      event.preventDefault();
     });
+
+    grid.addEventListener("pointermove", (event) => {
+      if (!this.dragState) return;
+      if (this.dragState.pointerId !== event.pointerId) return;
+
+      const next = this.computeDragLayout(event.clientX, event.clientY);
+      this.applyCardLayout(this.dragState.card, next);
+      this.state.layouts[this.dragState.widgetId] = next;
+    });
+
+    const releaseDrag = (event) => {
+      if (!this.dragState) return;
+      if (event && this.dragState.pointerId !== event.pointerId) return;
+      this.dragState.card.classList.remove("dragging", "resizing");
+      this.dragState = null;
+      this.renderPreview();
+    };
+
+    grid.addEventListener("pointerup", releaseDrag);
+    grid.addEventListener("pointercancel", releaseDrag);
+  }
+
+  computeDragLayout(currentX, currentY) {
+    const drag = this.dragState;
+    const rect = this.els.widgetGrid.getBoundingClientRect();
+    const cellW = rect.width / GRID_SPEC.cols;
+    const cellH = rect.height / GRID_SPEC.rows;
+    const dx = currentX - drag.startX;
+    const dy = currentY - drag.startY;
+
+    const deltaX = Math.round(dx / Math.max(cellW, 1));
+    const deltaY = Math.round(dy / Math.max(cellH, 1));
+
+    let next;
+    if (drag.mode === "resize") {
+      next = {
+        x: drag.initial.x,
+        y: drag.initial.y,
+        w: drag.initial.w + deltaX,
+        h: drag.initial.h + deltaY
+      };
+    } else {
+      next = {
+        x: drag.initial.x + deltaX,
+        y: drag.initial.y + deltaY,
+        w: drag.initial.w,
+        h: drag.initial.h
+      };
+    }
+
+    return this.normalizeLayout(next, drag.initial);
+  }
+
+  applyCardLayout(card, layout) {
+    card.style.setProperty("--x", String(layout.x));
+    card.style.setProperty("--y", String(layout.y));
+    card.style.setProperty("--w", String(layout.w));
+    card.style.setProperty("--h", String(layout.h));
+  }
+
+  getWidgetDefaultLayout(widgetId) {
+    const item = WIDGET_LIBRARY.find((widget) => widget.id === widgetId);
+    return item?.layout || { x: 0, y: 0, w: 2, h: 2 };
+  }
+
+  resetGridLayout() {
+    this.state.layouts = createDefaultLayouts();
+    this.renderPreview();
   }
 
   async init() {
@@ -176,11 +392,7 @@ class DashboardBuilder {
     this.els.providerMenu.style.display = "none";
     this.els.btnLogout.style.display = signedIn ? "inline-flex" : "none";
     this.els.btnSave.disabled = !signedIn;
-    if (this.user) {
-      this.els.user.textContent = this.user.email || this.user.uid;
-    } else {
-      this.els.user.textContent = "Not signed in";
-    }
+    this.els.user.textContent = this.user ? (this.user.email || this.user.uid) : "Not signed in";
     this.updateSaveCopyVisibility();
   }
 
@@ -271,6 +483,7 @@ class DashboardBuilder {
     }
 
     this.syncEditorFromState();
+    this.renderWidgetControls();
     this.renderPreview();
     this.updateSaveCopyVisibility();
   }
@@ -279,16 +492,6 @@ class DashboardBuilder {
     this.state.vehicleModel = this.els.vehicleModel.value;
     this.state.backgroundTheme = this.els.bgTheme.value;
     this.state.backgroundImageUrl = this.els.bgImageUrl.value.trim();
-
-    const nextWidgets = { ...DEFAULT_STATE.widgets };
-    const checks = this.els.widgetControls?.querySelectorAll('input[type="checkbox"][data-widget-id]') || [];
-    checks.forEach((check) => {
-      const id = check.dataset.widgetId;
-      if (!id) return;
-      nextWidgets[id] = check.checked;
-    });
-
-    this.state.widgets = nextWidgets;
     this.renderPreview();
   }
 
@@ -296,13 +499,6 @@ class DashboardBuilder {
     this.els.vehicleModel.value = this.state.vehicleModel || DEFAULT_STATE.vehicleModel;
     this.els.bgTheme.value = this.state.backgroundTheme;
     this.els.bgImageUrl.value = this.state.backgroundImageUrl || "";
-
-    const checks = this.els.widgetControls?.querySelectorAll('input[type="checkbox"][data-widget-id]') || [];
-    checks.forEach((check) => {
-      const id = check.dataset.widgetId;
-      check.checked = Boolean(this.state.widgets[id]);
-    });
-
     this.els.publicId.value = this.publicId || "";
     this.updateModelBadge();
   }
@@ -312,29 +508,40 @@ class DashboardBuilder {
     this.applyModelPreset(this.state.vehicleModel || DEFAULT_STATE.vehicleModel);
 
     if (this.state.backgroundImageUrl) {
-      this.els.preview.style.backgroundImage = `linear-gradient(120deg, rgba(0,0,0,.56), rgba(0,0,0,.36)), url('${this.escapeCssUrl(this.state.backgroundImageUrl)}')`;
+      this.els.preview.style.backgroundImage = `linear-gradient(120deg, rgba(0,0,0,.2), rgba(0,0,0,.1)), url('${this.escapeCssUrl(this.state.backgroundImageUrl)}')`;
     } else {
       this.els.preview.style.backgroundImage = "";
     }
 
-    this.widgetElements = {};
+    this.els.widgetGrid.style.setProperty("--grid-cols", String(GRID_SPEC.cols));
+    this.els.widgetGrid.style.setProperty("--grid-rows", String(GRID_SPEC.rows));
+
     this.clockMainEl = null;
     this.els.widgetGrid.innerHTML = "";
 
     const ownerName = this.user?.displayName || this.user?.email?.split("@")[0] || "Tesla owner";
 
-    for (const widget of WIDGET_LIBRARY) {
-      if (!this.state.widgets[widget.id]) continue;
+    WIDGET_LIBRARY.forEach((widget) => {
+      if (!this.state.widgets[widget.id]) return;
       const card = this.createWidgetCard(widget, ownerName);
-      card.style.setProperty("--index", String(this.els.widgetGrid.children.length));
-      this.widgetElements[widget.id] = card;
+      const layout = this.normalizeLayout(this.state.layouts[widget.id], widget.layout);
+      this.state.layouts[widget.id] = layout;
+      this.applyCardLayout(card, layout);
+      card.style.setProperty("--grid-cols", String(GRID_SPEC.cols));
+      card.style.setProperty("--grid-rows", String(GRID_SPEC.rows));
       this.els.widgetGrid.appendChild(card);
-    }
+    });
 
     if (!this.els.widgetGrid.children.length) {
       const empty = document.createElement("div");
-      empty.className = "dash-widget widget-size-l tone-neutral";
-      empty.innerHTML = '<p class="widget-title">Empty</p><div class="widget-main">No widgets selected</div><div class="widget-sub">Enable widgets from the left panel.</div>';
+      empty.className = "dash-widget skin-paper";
+      empty.style.setProperty("--x", "4");
+      empty.style.setProperty("--y", "3");
+      empty.style.setProperty("--w", "4");
+      empty.style.setProperty("--h", "2");
+      empty.style.setProperty("--grid-cols", String(GRID_SPEC.cols));
+      empty.style.setProperty("--grid-rows", String(GRID_SPEC.rows));
+      empty.innerHTML = '<div class="widget-top"><p class="widget-title">Empty</p><span class="widget-badge">Info</span></div><div class="widget-main">No widgets selected</div><div class="widget-sub">Enable widgets from the left panel.</div>';
       this.els.widgetGrid.appendChild(empty);
     }
 
@@ -343,10 +550,10 @@ class DashboardBuilder {
 
   createWidgetCard(widget, ownerName) {
     const card = document.createElement("article");
-    card.className = `dash-widget widget-size-${widget.size} tone-${widget.tone}`;
+    card.className = `dash-widget skin-${widget.skin}`;
+    card.setAttribute("data-widget-id", widget.id);
 
     const content = this.getWidgetContent(widget.id, ownerName);
-    if (content.accentClass) card.classList.add(content.accentClass);
     const topHtml = `<div class="widget-top"><p class="widget-title">${this.escapeHtml(content.title)}</p><span class="widget-badge">${this.escapeHtml(content.badge || "Live")}</span></div>`;
     const mainClass = content.mainMono ? "widget-main widget-mono" : "widget-main";
     const subClass = content.subMono ? "widget-sub widget-mono" : "widget-sub";
@@ -355,8 +562,8 @@ class DashboardBuilder {
     const meterHtml = Number.isFinite(content.meter) ? `<div class="widget-meter"><i style="--meter:${Math.max(0, Math.min(100, content.meter))}%"></i></div>` : "";
     const barsHtml = Array.isArray(content.bars) ? this.buildBarsHtml(content.bars) : "";
     const pillsHtml = Array.isArray(content.pills) ? this.buildPillsHtml(content.pills) : "";
-    const orbHtml = content.orb ? '<div class="widget-orb"></div><div class="widget-orb widget-orb-small"></div>' : "";
-    card.innerHTML = `${topHtml}<div class="${mainClass}">${this.escapeHtml(content.main)}</div><div>${subHtml}${meterHtml}${barsHtml}${pillsHtml}</div>${orbHtml}`;
+
+    card.innerHTML = `${topHtml}<div class="${mainClass}">${this.escapeHtml(content.main)}</div><div>${subHtml}${meterHtml}${barsHtml}${pillsHtml}</div><span class="widget-resize" title="Resize"></span>`;
 
     if (widget.id === "clock") {
       this.clockMainEl = card.querySelector(".widget-main");
@@ -370,28 +577,28 @@ class DashboardBuilder {
     const dayLabel = new Date().toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
 
     const map = {
-      clock: { title: "Local Time", badge: "Now", main: "--:--", subLines: [dayLabel, "Dashboard sync active"], mainMono: true, subMono: true, accentClass: "widget-accent-cool", orb: true },
-      greeting: { title: "Welcome", badge: "Driver", main: `Hi, ${ownerName}`, subLines: ["Ready for your next drive.", "Set your favorite shortcut cards"], pills: ["Open Trunk", "Preheat"], accentClass: "widget-accent-cool", orb: true },
-      weekly: { title: "Weekly Challenge", badge: "Goal", main: "2 / 3", subLines: ["Finish 1 more eco-drive today."], meter: 66, pills: ["Eco", "Smooth", "No hard brake"], accentClass: "widget-accent-energy" },
-      badges: { title: "Badge Shelf", badge: "Collection", main: "8 unlocked", subLines: ["Road Warrior, Night Owl, Safe Stop"], pills: ["+1 this week", "Streak 4d"] },
-      quickchat: { title: "Quick Chat", badge: "Live", main: "4 msgs", subLines: ["Owners channel is active."], pills: ["Family", "Trip plan"] },
-      battery: { title: "Battery", badge: "Pack", main: "82%", subLines: ["Health 96%", "Pack temp normal"], meter: 82, accentClass: "widget-accent-energy" },
-      range: { title: "Estimated Range", badge: "Prediction", main: "351 km", subLines: ["Based on recent 7-day driving"], bars: [28, 36, 41, 33, 47, 58, 44], accentClass: "widget-accent-cool" },
-      media: { title: "Now Playing", badge: "Audio", main: "Drive Playlist", subLines: ["Tap to open favorite mix"], bars: [8, 19, 32, 24, 38, 26, 17, 29], pills: ["Shuffle", "Repeat"], accentClass: "widget-accent-hot" },
-      weather: { title: "Weather", badge: "Local", main: "11 C", subLines: ["Cloudy", "Rain chance 30%"], orb: true },
-      calendar: { title: "Today", badge: "Agenda", main: dayLabel, subLines: ["Service check at 16:30"], pills: ["Garage", "Downtown"] },
-      alerts: { title: "Vehicle Alerts", badge: "Attention", main: "1 active", subLines: ["Rear-left tire low pressure"], pills: ["Check now"], accentClass: "widget-accent-hot" },
-      energy: { title: "Efficiency", badge: "Trend", main: "138 Wh/km", subLines: ["Better than 73% of peers"], bars: [24, 32, 26, 41, 37, 45, 49, 43], accentClass: "widget-accent-energy" },
-      cost: { title: "Charging Cost", badge: "Monthly", main: "$42.80", subLines: ["-12% vs last month"], bars: [18, 21, 20, 17, 15, 13, 12], accentClass: "widget-accent-hot" },
-      charging: { title: "Charging ETA", badge: "Supercharger", main: "00:28", subLines: ["To 90% at current speed"], mainMono: true, subMono: true, meter: 64, accentClass: "widget-accent-cool" },
-      tires: { title: "Tire PSI", badge: "Pressure", main: "41 40 40 39", subLines: ["Front left trending low"], mainMono: true, subMono: true, bars: [39, 40, 40, 41] },
-      navigation: { title: "Next Route", badge: "Nav", main: "Home to Office", subLines: ["27 min, light traffic"], pills: ["Avoid tolls", "Depart now", "Fast lane"], orb: true },
-      notes: { title: "Driver Notes", badge: "Memo", main: "Wash reminder", subLines: ["Booked tomorrow 09:20"], pills: ["Family trip", "Charge to 90"] },
-      shortcut: { title: "One-Tap Actions", badge: "Actions", main: "Preheat  Trunk  Sentry", subLines: ["Frequently used controls"], pills: ["Front defrost", "Dog mode", "Find car"], mainMono: true, subMono: true, accentClass: "widget-accent-hot" },
-      quote: { title: "Drive Mindset", badge: "Daily", main: hour < 12 ? "Smooth inputs, long range." : "Charge smart, drive calm.", subLines: ["Small habits compound."], orb: true }
+      clock: { title: "Clock", badge: "Now", main: "--:--", subLines: [dayLabel], mainMono: true, subMono: true },
+      greeting: { title: "Owner", badge: "Hello", main: ownerName, subLines: ["Will be rainy and cold."], pills: ["Tokyo", "3 C"] },
+      weekly: { title: "Challenge", badge: "Week", main: "63%", subLines: ["of work-time goals"], meter: 63 },
+      badges: { title: "Badges", badge: "New", main: "8", subLines: ["Road Warrior unlocked"], pills: ["+1 today"] },
+      quickchat: { title: "Quick Chat", badge: "Live", main: "4", subLines: ["new messages"], pills: ["Open"] },
+      battery: { title: "Battery", badge: "Pack", main: "82%", subLines: ["369 km"], meter: 82 },
+      range: { title: "Range", badge: "7D", main: "351 km", subLines: ["best route"], bars: [24, 32, 47, 36, 42, 58, 44] },
+      media: { title: "Now Playing", badge: "Audio", main: "Drive - The Cars", subLines: ["00:54 / 03:34"], bars: [8, 15, 25, 30, 24, 31, 17, 12], pills: ["Play", "Next"] },
+      weather: { title: "Weather", badge: "Local", main: "10 C", subLines: ["too early for storms"] },
+      calendar: { title: "Calendar", badge: "Today", main: dayLabel, subLines: ["Service check 16:30"] },
+      alerts: { title: "Alerts", badge: "1", main: "Tire low", subLines: ["Rear-left pressure"], pills: ["Check"] },
+      energy: { title: "Efficiency", badge: "Trend", main: "138 Wh/km", subLines: ["better than last week"], bars: [22, 31, 28, 39, 36, 41, 46, 43] },
+      cost: { title: "Cost", badge: "Month", main: "$42.8", subLines: ["-12%"], bars: [18, 20, 22, 19, 16, 14, 11] },
+      charging: { title: "Charge ETA", badge: "DC", main: "00:28", subLines: ["to 90%"], mainMono: true, subMono: true, meter: 64 },
+      tires: { title: "Tire PSI", badge: "Live", main: "41 40 40 39", subLines: ["Front left low"], mainMono: true, subMono: true, bars: [39, 40, 40, 41] },
+      navigation: { title: "Next Route", badge: "Trip", main: "TOKYO", subLines: ["15:30"], mainMono: true, subMono: true, pills: ["12 Jan"] },
+      notes: { title: "Notes", badge: "Memo", main: "2 coffees", subLines: ["left to gift"] },
+      shortcut: { title: "Actions", badge: "Quick", main: "Preheat Trunk", subLines: ["Sentry Find Car"], pills: ["Run"] },
+      quote: { title: "Quote", badge: "Daily", main: hour < 12 ? "No rain in 2 hours." : "In the middle lies opportunity.", subLines: ["Tesla owner mood"] }
     };
 
-    return map[widgetId] || { title: "Widget", main: "Ready", sub: "Configure from the left panel" };
+    return map[widgetId] || { title: "Widget", main: "Ready", subLines: ["Configure from left panel"] };
   }
 
   buildBarsHtml(values) {
