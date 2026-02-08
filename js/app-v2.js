@@ -609,10 +609,25 @@ class TeslaLockSoundAppV2 {
         this.chatSocket = null;
         if (!this.elements.chatUrlInput || !this.elements.chatStatus || !this.elements.chatMessages) return;
 
-        const storedUrl = localStorage.getItem('chat_ws_url') || '';
+        const configured = (typeof window !== 'undefined' && typeof window.CHAT_WS_ENDPOINT === 'string')
+            ? window.CHAT_WS_ENDPOINT.trim()
+            : '';
+        const storedUrl = localStorage.getItem('chat_ws_url') || configured || '';
         this.elements.chatUrlInput.value = storedUrl;
         this.setChatStatus(this.t('v2.chat.disconnected', {}, 'Disconnected'));
         this.appendChatMessage(this.t('v2.chat.welcome', {}, 'Welcome. Connect to start chatting.'), { type: 'system' });
+    }
+
+    normalizeChatUrl(rawUrl) {
+        const url = String(rawUrl || '').trim();
+        if (!url) return '';
+        if (/^https:\/\//i.test(url)) {
+            return url.replace(/^https:\/\//i, 'wss://');
+        }
+        if (/^http:\/\//i.test(url)) {
+            return url.replace(/^http:\/\//i, 'ws://');
+        }
+        return url;
     }
 
     getChatDisplayName() {
@@ -641,7 +656,8 @@ class TeslaLockSoundAppV2 {
 
     connectChat() {
         if (!this.elements.chatUrlInput) return;
-        const url = this.elements.chatUrlInput.value.trim();
+        const url = this.normalizeChatUrl(this.elements.chatUrlInput.value);
+        this.elements.chatUrlInput.value = url;
         if (!url) {
             this.showToast(this.t('v2.chat.urlRequired', {}, 'Enter a WebSocket URL first.'), 'error');
             return;
