@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Tesla Dashboard</title>
+  <link rel="stylesheet" href="css/dashboard.css">
+</head>
+<body>
+  <header class="dash-header">
+    <a class="dash-back" href="./index.html">← Back</a>
+    <h1>My Tesla Dashboard</h1>
+    <div class="dash-auth">
+      <span id="dash-user">Not signed in</span>
+      <button id="btn-login">Login</button>
+      <div id="dash-provider-menu" class="dash-provider-menu">
+        <button id="btn-login-google">Google</button>
+        <button id="btn-login-kakao">Kakao</button>
+        <button id="btn-login-naver">Naver</button>
+      </div>
+      <button id="btn-logout">Logout</button>
+    </div>
+  </header>
+
+  <main class="dash-main">
+    <aside class="dash-editor">
+      <h2>Customize</h2>
+      <p class="dash-subtext">Pick a Tesla display size and build your own widget layout.</p>
+
+      <label>Tesla Model / Display</label>
+      <select id="vehicle-model">
+        <option value="model3">Model 3</option>
+        <option value="modely" selected>Model Y</option>
+        <option value="models">Model S</option>
+        <option value="modelx">Model X</option>
+        <option value="cybertruck">Cybertruck</option>
+      </select>
+      <div id="model-size" class="dash-chip">Display: 1920 x 1200</div>
+
+      <label>Background Theme</label>
+      <select id="bg-theme">
+        <option value="tesla-red">Tesla Red</option>
+        <option value="midnight">Midnight Asphalt</option>
+        <option value="sunrise">Sunrise Drive</option>
+        <option value="emerald">Emerald Circuit</option>
+      </select>
+
+      <label>Custom Background URL (optional)</label>
+      <input id="bg-image-url" type="url" placeholder="https://...">
+
+      <h3>Widgets</h3>
+      <label><input type="checkbox" id="widget-clock" checked> Clock</label>
+      <label><input type="checkbox" id="widget-greeting" checked> Greeting</label>
+      <label><input type="checkbox" id="widget-weekly" checked> Weekly Challenge</label>
+      <label><input type="checkbox" id="widget-badges" checked> Badge Shelf</label>
+      <label><input type="checkbox" id="widget-quickchat" checked> Quick Chat</label>
+      <label><input type="checkbox" id="widget-battery" checked> Battery / Range</label>
+      <label><input type="checkbox" id="widget-media"> Media Shortcut</label>
+
+      <div class="dash-actions">
+        <button id="btn-preview">Preview</button>
+        <button id="btn-save">Save Dashboard</button>
+      </div>
+      <button id="btn-save-copy">Save As My Copy</button>
+
+      <div class="dash-share">
+        <label>Public ID</label>
+        <input id="public-id" readonly>
+        <button id="btn-copy-link">Copy Share Link</button>
+      </div>
+
+      <div class="dash-share">
+        <label>Open by Email or ID</label>
+        <input id="owner-query" placeholder="owner email or dash-xxxx">
+        <button id="btn-load-owner">Open Dashboard</button>
+      </div>
+
+      <p class="dash-help">
+        URL access: <code>/dashboard.html?owner=&lt;email or public-id&gt;</code>
+      </p>
+    </aside>
+
+    <section class="dash-preview-wrap">
+      <div class="dashboard-stage">
+        <div id="dashboard-preview" class="dashboard-preview theme-tesla-red">
+          <div id="widget-greeting-view" class="dash-widget">Welcome, Tesla owner.</div>
+          <div id="widget-clock-view" class="dash-widget"></div>
+          <div id="widget-weekly-view" class="dash-widget">Weekly Challenge: 0/3 complete</div>
+          <div id="widget-badges-view" class="dash-widget">Garage Badges: 0 unlocked</div>
+          <div id="widget-quickchat-view" class="dash-widget">Quick Chat: Open owners chat from main page.</div>
+          <div id="widget-battery-view" class="dash-widget">Battery: 82% · Range: 351km</div>
+          <div id="widget-media-view" class="dash-widget">Media: Tap to open your favorite playlist.</div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="js/dashboard.js"></script>
+</body>
+</html>
