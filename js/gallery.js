@@ -198,6 +198,51 @@ class GalleryHandler {
         }
     }
 
+    isLegacyStorageUrl(url) {
+        return /^https?:\/\/storage\.googleapis\.com\//i.test(String(url || ''));
+    }
+
+    extractStoragePathFromLegacyUrl(url) {
+        try {
+            const parsed = new URL(url);
+            if (!/^storage\.googleapis\.com$/i.test(parsed.hostname)) return null;
+            const parts = parsed.pathname.split('/').filter(Boolean);
+            if (parts.length < 2) return null;
+            return parts.slice(1).join('/');
+        } catch (error) {
+            return null;
+        }
+    }
+
+    async resolveDownloadUrl(sound) {
+        const currentUrl = String(sound?.downloadUrl || '').trim();
+        if (currentUrl && !this.isLegacyStorageUrl(currentUrl)) {
+            return currentUrl;
+        }
+
+        let ref = null;
+        if (sound?.fileName) {
+            ref = this.storage.ref(`sounds/${sound.fileName}`);
+        } else if (currentUrl) {
+            try {
+                ref = this.storage.refFromURL(currentUrl);
+            } catch (error) {
+                const path = this.extractStoragePathFromLegacyUrl(currentUrl);
+                if (path) {
+                    ref = this.storage.ref(path);
+                }
+            }
+        }
+
+        if (!ref) return currentUrl;
+
+        try {
+            return await ref.getDownloadURL();
+        } catch (error) {
+            return currentUrl;
+        }
+    }
+
     /**
      * Download a sound (increment counter and return blob)
      */
@@ -214,8 +259,20 @@ class GalleryHandler {
                 downloads: firebase.firestore.FieldValue.increment(1)
             });
 
-            // Fetch the audio file
-            const response = await fetch(sound.downloadUrl);
+            // Resolve legacy URLs to Firebase SDK URLs (avoids CORS issues on storage.googleapis.com)
+            const resolvedDownloadUrl = await this.resolveDownloadUrl(sound);
+
+            // Persist upgraded URL for old records when possible
+            if (resolvedDownloadUrl && resolvedDownloadUrl !== sound.downloadUrl) {
+                this.db.collection(GALLERY_COLLECTION).doc(soundId).update({
+                    downloadUrl: resolvedDownloadUrl
+                }).catch(() => {});
+            }
+
+            const response = await fetch(resolvedDownloadUrl, { mode: 'cors' });
+            if (!response.ok) {
+                throw new Error(`Download request failed: ${response.status}`);
+            }
             const blob = await response.blob();
 
             return {
