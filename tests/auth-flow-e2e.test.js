@@ -10,12 +10,7 @@ function mountAuthUi() {
             <div class="header-auth">
                 <span id="header-profile-text">Sign in to sync profile across devices.</span>
                 <div class="header-auth-buttons">
-                    <button id="btn-auth-login">Log in</button>
-                    <div id="auth-provider-options" style="display:none;">
-                        <button id="btn-auth-google">Continue with Google</button>
-                        <button id="btn-auth-kakao">Continue with Kakao</button>
-                        <button id="btn-auth-naver">Continue with Naver</button>
-                    </div>
+                    <button id="btn-auth-login">Continue with Google</button>
                     <button id="btn-auth-logout" style="display:none;">Log out</button>
                 </div>
             </div>
@@ -53,6 +48,7 @@ function createFirebaseMock() {
             authListener(currentUser);
             return { user: currentUser };
         }),
+        signInWithRedirect: vi.fn(async (provider) => ({ provider })),
         signOut: vi.fn(async () => {
             currentUser = null;
             authListener(currentUser);
@@ -65,12 +61,6 @@ function createFirebaseMock() {
             this.providerId = 'google.com';
         }
     };
-    authFn.OAuthProvider = class OAuthProvider {
-        constructor(providerId) {
-            this.providerId = providerId;
-        }
-    };
-
     return {
         firebase: { auth: authFn },
         authApi
@@ -110,7 +100,7 @@ describe('Auth flow E2E', () => {
         document.body.innerHTML = '';
     });
 
-    it('shows staged auth sequence: login -> providers -> logout', async () => {
+    it('shows auth sequence: login (google) -> logout', async () => {
         vi.resetModules();
         await import('../js/app-v2.js');
         document.dispatchEvent(new Event('DOMContentLoaded'));
@@ -118,30 +108,17 @@ describe('Auth flow E2E', () => {
         await flushUi();
 
         const loginBtn = document.getElementById('btn-auth-login');
-        const providerOptions = document.getElementById('auth-provider-options');
-        const googleBtn = document.getElementById('btn-auth-google');
-        const kakaoBtn = document.getElementById('btn-auth-kakao');
-        const naverBtn = document.getElementById('btn-auth-naver');
         const logoutBtn = document.getElementById('btn-auth-logout');
         const profileText = document.getElementById('header-profile-text');
 
         expect(loginBtn.style.display).toBe('inline-flex');
-        expect(providerOptions.style.display).toBe('none');
         expect(logoutBtn.style.display).toBe('none');
 
         loginBtn.dispatchEvent(new Event('click'));
-        expect(loginBtn.style.display).toBe('none');
-        expect(providerOptions.style.display).toBe('flex');
-        expect(googleBtn).toBeTruthy();
-        expect(kakaoBtn).toBeTruthy();
-        expect(naverBtn).toBeTruthy();
-
-        googleBtn.dispatchEvent(new Event('click'));
         await flushUi();
         await flushUi();
 
         expect(loginBtn.style.display).toBe('none');
-        expect(providerOptions.style.display).toBe('none');
         expect(logoutBtn.style.display).toBe('inline-flex');
         expect(profileText.textContent).toContain('Test Driver');
     });
@@ -154,12 +131,9 @@ describe('Auth flow E2E', () => {
         await flushUi();
 
         const loginBtn = document.getElementById('btn-auth-login');
-        const providerOptions = document.getElementById('auth-provider-options');
-        const googleBtn = document.getElementById('btn-auth-google');
         const logoutBtn = document.getElementById('btn-auth-logout');
 
         loginBtn.dispatchEvent(new Event('click'));
-        googleBtn.dispatchEvent(new Event('click'));
         await flushUi();
         await flushUi();
 
@@ -170,7 +144,33 @@ describe('Auth flow E2E', () => {
         await flushUi();
 
         expect(loginBtn.style.display).toBe('inline-flex');
-        expect(providerOptions.style.display).toBe('none');
         expect(logoutBtn.style.display).toBe('none');
+    });
+
+    it('falls back to redirect when popup login is blocked', async () => {
+        const { authApi } = createFirebaseMock();
+        authApi.signInWithPopup.mockRejectedValueOnce({ code: 'auth/popup-blocked' });
+        global.firebase = { auth: () => authApi };
+        global.firebase.auth.GoogleAuthProvider = class GoogleAuthProvider {
+            constructor() {
+                this.providerId = 'google.com';
+            }
+        };
+
+        vi.resetModules();
+        await import('../js/app-v2.js');
+        document.dispatchEvent(new Event('DOMContentLoaded'));
+        await flushUi();
+        await flushUi();
+
+        const loginBtn = document.getElementById('btn-auth-login');
+        loginBtn.dispatchEvent(new Event('click'));
+        await flushUi();
+        await flushUi();
+
+        expect(authApi.signInWithPopup.mock.calls.length).toBeGreaterThan(0);
+        expect(authApi.signInWithRedirect.mock.calls.length).toBeGreaterThan(0);
+        const redirectProvider = authApi.signInWithRedirect.mock.calls.at(-1)?.[0];
+        expect(redirectProvider?.providerId).toBe('google.com');
     });
 });
