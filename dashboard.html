@@ -4,6 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>My Tesla Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/dashboard.css">
 </head>
 <body>
@@ -49,13 +52,8 @@
       <input id="bg-image-url" type="url" placeholder="https://...">
 
       <h3>Widgets</h3>
-      <label><input type="checkbox" id="widget-clock" checked> Clock</label>
-      <label><input type="checkbox" id="widget-greeting" checked> Greeting</label>
-      <label><input type="checkbox" id="widget-weekly" checked> Weekly Challenge</label>
-      <label><input type="checkbox" id="widget-badges" checked> Badge Shelf</label>
-      <label><input type="checkbox" id="widget-quickchat" checked> Quick Chat</label>
-      <label><input type="checkbox" id="widget-battery" checked> Battery / Range</label>
-      <label><input type="checkbox" id="widget-media"> Media Shortcut</label>
+      <p class="dash-subtext">Mix and match as many widgets as you want for your own layout.</p>
+      <div id="widget-controls" class="widget-controls"></div>
 
       <div class="dash-actions">
         <button id="btn-preview">Preview</button>
@@ -83,13 +81,7 @@
     <section class="dash-preview-wrap">
       <div class="dashboard-stage">
         <div id="dashboard-preview" class="dashboard-preview theme-tesla-red">
-          <div id="widget-greeting-view" class="dash-widget">Welcome, Tesla owner.</div>
-          <div id="widget-clock-view" class="dash-widget"></div>
-          <div id="widget-weekly-view" class="dash-widget">Weekly Challenge: 0/3 complete</div>
-          <div id="widget-badges-view" class="dash-widget">Garage Badges: 0 unlocked</div>
-          <div id="widget-quickchat-view" class="dash-widget">Quick Chat: Open owners chat from main page.</div>
-          <div id="widget-battery-view" class="dash-widget">Battery: 82% · Range: 351km</div>
-          <div id="widget-media-view" class="dash-widget">Media: Tap to open your favorite playlist.</div>
+          <div id="widget-grid" class="dash-widget-grid"></div>
         </div>
       </div>
     </section>
