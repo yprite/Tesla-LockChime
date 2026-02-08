@@ -13,34 +13,23 @@ class TeslaLockSoundAppV2 {
         this.fileSystem = new FileSystemHandler();
         this.gallery = new GalleryHandler();
         this.featureUtils = (typeof window !== 'undefined' && window.TeslaFeatureUtils) ? window.TeslaFeatureUtils : {
-            normalizeVehicle: (vehicle) => ({
-                vin: vehicle?.vin || '',
-                displayName: vehicle?.display_name || 'Tesla',
-                state: vehicle?.state || 'unknown',
-                vehicleConfig: vehicle?.vehicle_config || null,
-                optionCodes: vehicle?.option_codes || ''
-            }),
-            evaluateCompatibility: () => ({ ready: false, reasons: ['Fleet utility unavailable.'] }),
-            detectReleaseUpdate: () => ({ updated: false, previous: null, current: null }),
-            deriveRecommendationsFromRelease: () => [{ category: 'custom', reason: 'Fleet utility unavailable.' }],
             addWeeklyAction: () => ({}),
             getWeeklyActionStats: () => ({ saves: 0, uploads: 0, shares: 0 }),
             getChallengeProgress: () => ({ saveProgress: 0, uploadProgress: 0, shareProgress: 0, completed: false })
-        };
-        this.fleetClient = (typeof TeslaFleetClient !== 'undefined') ? new TeslaFleetClient() : {
-            getToken: () => '',
-            getBaseUrl: () => '',
-            setToken: () => {},
-            setBaseUrl: () => {},
-            getVehicles: async () => [],
-            getFleetStatus: async () => null,
-            getReleaseNotes: async () => null
         };
         this.workspaceStore = (typeof WorkspaceStore !== 'undefined') ? new WorkspaceStore() : {
             listDrafts: () => [],
             saveDraftVersion: () => { throw new Error('Workspace unavailable'); },
             deleteDraft: () => {}
         };
+        this.analytics = (typeof window !== 'undefined' && window.AnalyticsTracker)
+            ? new window.AnalyticsTracker()
+            : {
+                setDatabaseFromGallery: () => {},
+                trackReturnSession7d: () => {},
+                shouldTrackTrimComplete: () => false,
+                track: () => {}
+            };
 
         this.state = {
             selectedSoundId: null,
@@ -53,9 +42,7 @@ class TeslaLockSoundAppV2 {
             volume: 100,
             isEditorOpen: false,
             currentCategory: 'all',
-            searchQuery: '',
-            fleetVehicles: [],
-            currentVehicleVin: null
+            searchQuery: ''
         };
 
         this.waveformCanvas = null;
@@ -135,16 +122,6 @@ class TeslaLockSoundAppV2 {
             statDownloads: document.getElementById('stat-downloads'),
 
             languageSelect: document.getElementById('language-select'),
-
-            fleetTokenInput: document.getElementById('fleet-token-input'),
-            fleetBaseUrlInput: document.getElementById('fleet-base-url-input'),
-            btnFleetConnect: document.getElementById('btn-fleet-connect'),
-            fleetVehicleSelect: document.getElementById('fleet-vehicle-select'),
-            btnFleetCheck: document.getElementById('btn-fleet-check'),
-            fleetStatusMessage: document.getElementById('fleet-status-message'),
-            btnReleaseCheck: document.getElementById('btn-release-check'),
-            releaseUpdateMessage: document.getElementById('release-update-message'),
-            releaseRecommendations: document.getElementById('release-recommendations'),
             challengeProgress: document.getElementById('challenge-progress'),
             weeklyRankingList: document.getElementById('weekly-ranking-list'),
             workspaceDraftName: document.getElementById('workspace-draft-name'),
@@ -163,6 +140,9 @@ class TeslaLockSoundAppV2 {
         this.setupEventListeners();
         this.populatePresets();
         this.resizeWaveformCanvas();
+        this.analytics.setDatabaseFromGallery(this.gallery);
+        this.analytics.trackReturnSession7d();
+        this.trackEvent('landing_view', { page: 'home_v2' });
 
         window.addEventListener('resize', () => this.resizeWaveformCanvas());
     }
@@ -209,6 +189,9 @@ class TeslaLockSoundAppV2 {
     }
 
     handleLanguageChanged() {
+        this.trackEvent('language_changed', {
+            language: (window.i18n && typeof window.i18n.getLanguage === 'function') ? window.i18n.getLanguage() : document.documentElement.lang || 'en'
+        });
         this.validateDuration();
         this.updateTrimUI();
         this.renderWorkspaceDrafts();
@@ -234,14 +217,6 @@ class TeslaLockSoundAppV2 {
     }
 
     initGrowthFeatures() {
-        if (this.elements.fleetTokenInput) {
-            this.elements.fleetTokenInput.value = this.fleetClient.getToken();
-        }
-
-        if (this.elements.fleetBaseUrlInput) {
-            this.elements.fleetBaseUrlInput.value = this.fleetClient.getBaseUrl();
-        }
-
         this.renderChallengeProgress();
         this.renderWorkspaceDrafts();
         this.loadWeeklyRanking();
@@ -274,9 +249,6 @@ class TeslaLockSoundAppV2 {
         this.setupModals();
 
         this.elements.btnLoadMore?.addEventListener('click', () => this.loadGallerySounds(true));
-        this.elements.btnFleetConnect?.addEventListener('click', () => this.connectFleetApi());
-        this.elements.btnFleetCheck?.addEventListener('click', () => this.checkFleetCompatibility());
-        this.elements.btnReleaseCheck?.addEventListener('click', () => this.checkReleaseUpdates());
         this.elements.btnSaveDraft?.addEventListener('click', () => this.saveWorkspaceDraft());
     }
 
@@ -391,6 +363,13 @@ class TeslaLockSoundAppV2 {
             console.warn('Gallery not available');
             this.showEmptyState();
             return;
+        }
+
+        if (!append) {
+            this.trackEvent('gallery_browse', {
+                category: this.state.currentCategory,
+                has_search_query: Boolean(this.state.searchQuery)
+            });
         }
 
         try {
@@ -575,6 +554,7 @@ class TeslaLockSoundAppV2 {
             this.drawWaveform();
             this.updateTrimUI();
             this.validateDuration();
+            this.trackEvent('sound_open', { source: 'gallery', sound_id: sound.id });
 
             this.hideLoading();
         } catch (error) {
@@ -698,6 +678,13 @@ class TeslaLockSoundAppV2 {
             }
         }
 
+        if (this.analytics.shouldTrackTrimComplete(this.state.selectedSoundId, this.state.trimStart, this.state.trimEnd, isValid)) {
+            this.trackEvent('trim_complete', {
+                sound_id: this.state.selectedSoundId || 'unknown',
+                duration: Number(duration.toFixed(2))
+            });
+        }
+
         return isValid;
     }
 
@@ -794,6 +781,10 @@ class TeslaLockSoundAppV2 {
             });
 
             this.fileSystem.downloadFile(wavBlob, 'LockChime.wav');
+            this.trackEvent('sound_downloaded', {
+                sound_id: this.state.selectedSoundId || 'unknown',
+                duration: Number((this.state.trimEnd - this.state.trimStart).toFixed(2))
+            });
             this.showToast(this.t('success.downloaded', {}, 'File downloaded!'), 'success');
         } catch (error) {
             this.showToast(this.t('error.downloadFailed', {}, 'Could not download file.'), 'error');
@@ -820,6 +811,10 @@ class TeslaLockSoundAppV2 {
             if (result.success) {
                 this.hideLoading();
                 this.incrementWeeklyAction('save');
+                this.trackEvent('save_usb_success', {
+                    sound_id: this.state.selectedSoundId || 'unknown',
+                    duration: Number((this.state.trimEnd - this.state.trimStart).toFixed(2))
+                });
                 this.showSuccessModal();
             } else if (!result.cancelled) {
                 throw new Error(result.message);
@@ -863,6 +858,10 @@ class TeslaLockSoundAppV2 {
             });
 
             this.hideLoading();
+            this.trackEvent('share_gallery_success', {
+                sound_id: this.state.selectedSoundId || 'unknown',
+                source: 'editor_share'
+            });
             this.showToast(this.t('success.uploaded', {}, 'Sound uploaded to gallery!'), 'success');
             this.incrementWeeklyAction('share');
             await this.loadGallerySounds();
@@ -871,145 +870,6 @@ class TeslaLockSoundAppV2 {
             this.hideLoading();
             this.showToast(this.t('v2.uploadFailed', {}, 'Upload failed'), 'error');
         }
-    }
-
-    async connectFleetApi() {
-        const token = this.elements.fleetTokenInput?.value?.trim() || '';
-        const baseUrl = this.elements.fleetBaseUrlInput?.value?.trim();
-
-        if (!token) {
-            this.setFleetMessage(this.t('v2.fleet.enterToken', {}, 'Please enter a Tesla Fleet access token.'), true);
-            return;
-        }
-
-        this.fleetClient.setToken(token);
-        if (baseUrl) {
-            this.fleetClient.setBaseUrl(baseUrl);
-        }
-
-        this.setFleetMessage(this.t('v2.fleet.connecting', {}, 'Connecting to Tesla Fleet API...'));
-
-        try {
-            const vehicles = await this.fleetClient.getVehicles();
-            this.state.fleetVehicles = vehicles.map(v => this.featureUtils.normalizeVehicle(v));
-            this.populateVehicleSelect();
-
-            if (this.state.fleetVehicles.length === 0) {
-                this.setFleetMessage(this.t('v2.fleet.noVehicles', {}, 'Connected, but no vehicles were returned for this account.'), true);
-                return;
-            }
-
-            this.setFleetMessage(this.t('v2.fleet.connectedCount', { count: this.state.fleetVehicles.length }, `Connected: ${this.state.fleetVehicles.length} vehicle(s) loaded.`));
-        } catch (error) {
-            this.setFleetMessage(this.t('v2.fleet.connectionFailed', { error: error.message }, `Connection failed: ${error.message}`), true);
-        }
-    }
-
-    populateVehicleSelect() {
-        const select = this.elements.fleetVehicleSelect;
-        if (!select) return;
-
-        const vehicles = this.state.fleetVehicles || [];
-        if (vehicles.length === 0) {
-            select.innerHTML = `<option value=\"\">${this.escapeHtml(this.t('v2.fleet.noVehiclesOption', {}, 'No vehicles'))}</option>`;
-            return;
-        }
-
-        select.innerHTML = vehicles.map(vehicle =>
-            `<option value=\"${this.escapeHtml(vehicle.vin)}\">${this.escapeHtml(vehicle.displayName)} (${this.escapeHtml(vehicle.vin.slice(-6))})</option>`
-        ).join('');
-
-        this.state.currentVehicleVin = vehicles[0].vin;
-        select.value = vehicles[0].vin;
-        select.onchange = () => {
-            this.state.currentVehicleVin = select.value;
-        };
-    }
-
-    async checkFleetCompatibility() {
-        const vin = this.elements.fleetVehicleSelect?.value || this.state.currentVehicleVin;
-        if (!vin) {
-            this.setFleetMessage(this.t('v2.fleet.selectVehicle', {}, 'Select a vehicle first.'), true);
-            return;
-        }
-
-        const vehicle = (this.state.fleetVehicles || []).find(v => v.vin === vin);
-        if (!vehicle) {
-            this.setFleetMessage(this.t('v2.fleet.vehicleUnavailable', {}, 'Selected vehicle is not available.'), true);
-            return;
-        }
-
-        this.setFleetMessage(this.t('v2.fleet.checking', {}, 'Checking compatibility...'));
-
-        try {
-            const status = await this.fleetClient.getFleetStatus(vin);
-            const result = this.featureUtils.evaluateCompatibility(vehicle, status);
-            const reasonText = result.reasons.length > 0
-                ? ` ${this.t('v2.fleet.notesPrefix', {}, 'Notes')}: ${result.reasons.join(' ')}`
-                : '';
-            this.setFleetMessage(
-                result.ready
-                    ? this.t('v2.fleet.compatible', { name: vehicle.displayName, notes: reasonText }, `Compatible: ${vehicle.displayName} is likely ready for custom lock chimes.${reasonText}`)
-                    : this.t('v2.fleet.needsAttention', { name: vehicle.displayName, notes: reasonText }, `Needs attention: ${vehicle.displayName} may need additional checks.${reasonText}`),
-                !result.ready
-            );
-        } catch (error) {
-            this.setFleetMessage(this.t('v2.fleet.checkFailed', { error: error.message }, `Compatibility check failed: ${error.message}`), true);
-        }
-    }
-
-    async checkReleaseUpdates() {
-        const vin = this.elements.fleetVehicleSelect?.value || this.state.currentVehicleVin;
-        if (!vin) {
-            this.elements.releaseUpdateMessage.textContent = this.t('v2.release.connectFirst', {}, 'Connect Tesla and select a vehicle first.');
-            return;
-        }
-
-        try {
-            const releaseResponse = await this.fleetClient.getReleaseNotes(vin);
-            const latest = Array.isArray(releaseResponse) ? releaseResponse[0] : releaseResponse;
-            const currentVersion = latest?.version || latest?.name || latest?.release_version || null;
-            const noteText = latest?.notes || latest?.body || JSON.stringify(latest || {});
-
-            const updateInfo = this.featureUtils.detectReleaseUpdate(vin, currentVersion);
-
-            if (!currentVersion) {
-                this.elements.releaseUpdateMessage.textContent = this.t('v2.release.noVersion', {}, 'No release version found in response.');
-                return;
-            }
-
-            if (updateInfo.updated) {
-                this.elements.releaseUpdateMessage.textContent = this.t('v2.release.updated', { previous: updateInfo.previous, current: currentVersion }, `Update detected: ${updateInfo.previous} -> ${currentVersion}`);
-            } else {
-                this.elements.releaseUpdateMessage.textContent = this.t('v2.release.noUpdate', { current: currentVersion }, `No new update detected. Current version: ${currentVersion}`);
-            }
-
-            const weekly = await this.gallery.getWeeklyPopular(5);
-            const recommendations = this.featureUtils.deriveRecommendationsFromRelease(
-                noteText,
-                weekly?.sounds || []
-            );
-            this.renderReleaseRecommendations(recommendations);
-        } catch (error) {
-            this.elements.releaseUpdateMessage.textContent = this.t('v2.release.failed', { error: error.message }, `Release check failed: ${error.message}`);
-        }
-    }
-
-    renderReleaseRecommendations(recommendations) {
-        if (!this.elements.releaseRecommendations) return;
-        this.elements.releaseRecommendations.innerHTML = '';
-
-        recommendations.forEach(item => {
-            const li = document.createElement('li');
-            li.textContent = `${item.category}: ${item.reason}`;
-            this.elements.releaseRecommendations.appendChild(li);
-        });
-    }
-
-    setFleetMessage(message, isError = false) {
-        if (!this.elements.fleetStatusMessage) return;
-        this.elements.fleetStatusMessage.textContent = message;
-        this.elements.fleetStatusMessage.style.color = isError ? 'var(--color-error)' : 'var(--color-text-secondary)';
     }
 
     incrementWeeklyAction(type) {
@@ -1203,6 +1063,7 @@ class TeslaLockSoundAppV2 {
             this.drawWaveform();
             this.updateTrimUI();
             this.validateDuration();
+            this.trackEvent('sound_open', { source: 'upload', sound_id: this.state.selectedSoundId });
 
             this.hideLoading();
             this.showToast(this.t('success.audioUploaded', {}, 'Audio uploaded successfully!'), 'success');
@@ -1236,6 +1097,10 @@ class TeslaLockSoundAppV2 {
             });
 
             this.hideLoading();
+            this.trackEvent('share_gallery_success', {
+                sound_id: this.state.selectedSoundId || 'unknown',
+                source: 'upload_modal'
+            });
             this.showToast(this.t('success.uploaded', {}, 'Sound uploaded to gallery!'), 'success');
             this.incrementWeeklyAction('upload');
             await this.loadGallerySounds();
@@ -1291,6 +1156,7 @@ class TeslaLockSoundAppV2 {
             this.drawWaveform();
             this.updateTrimUI();
             this.validateDuration();
+            this.trackEvent('sound_open', { source: 'preset', sound_id: soundId });
 
             this.hideLoading();
         } catch (error) {
@@ -1378,6 +1244,10 @@ class TeslaLockSoundAppV2 {
             toast.style.opacity = '0';
             setTimeout(() => toast.remove(), 300);
         }, 3000);
+    }
+
+    trackEvent(eventName, params = {}) {
+        this.analytics.track(eventName, params);
     }
 
     escapeHtml(text) {

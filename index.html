@@ -104,28 +104,6 @@
             <!-- Fleet & Growth Panels -->
             <div class="growth-panels">
                 <section class="growth-card">
-                    <h2 class="growth-card-title" data-i18n="v2.fleet.title">Tesla Fleet Compatibility</h2>
-                    <p class="growth-card-subtitle" data-i18n="v2.fleet.subtitle">Connect with a Tesla Fleet API access token to verify if your vehicle is ready.</p>
-                    <div class="fleet-form">
-                        <input type="password" id="fleet-token-input" data-i18n-placeholder="v2.fleet.tokenPlaceholder" placeholder="Tesla Fleet access token">
-                        <input type="url" id="fleet-base-url-input" data-i18n-placeholder="v2.fleet.baseUrlPlaceholder" placeholder="Fleet API base URL (optional)">
-                        <button class="btn-secondary" id="btn-fleet-connect" data-i18n="v2.fleet.connect">Connect Tesla</button>
-                        <select id="fleet-vehicle-select"></select>
-                        <button class="btn-primary" id="btn-fleet-check" data-i18n="v2.fleet.check">Check Compatibility</button>
-                        <a class="btn-secondary fleet-tutorial-link" href="fleet-tutorial.html" data-i18n="v2.fleet.tutorialCta">Open Fleet Tutorial</a>
-                    </div>
-                    <div id="fleet-status-message" class="growth-status" data-i18n="v2.fleet.notConnected">Not connected</div>
-                </section>
-
-                <section class="growth-card">
-                    <h2 class="growth-card-title" data-i18n="v2.release.title">Release Update Watcher</h2>
-                    <p class="growth-card-subtitle" data-i18n="v2.release.subtitle">Detect new release notes and get sound recommendations instantly.</p>
-                    <button class="btn-secondary" id="btn-release-check" data-i18n="v2.release.check">Check Release Notes</button>
-                    <div id="release-update-message" class="growth-status" data-i18n="v2.release.noChecks">No release checks yet</div>
-                    <ul id="release-recommendations" class="recommendation-list"></ul>
-                </section>
-
-                <section class="growth-card">
                     <h2 class="growth-card-title" data-i18n="v2.challenge.title">Weekly Challenge & Ranking</h2>
                     <p class="growth-card-subtitle" data-i18n="v2.challenge.subtitle">Save, upload, and share to complete this week&apos;s challenge.</p>
                     <div id="challenge-progress" class="challenge-progress"></div>
@@ -427,6 +405,7 @@
     <script src="js/gallery.js"></script>
     <script src="js/tesla-features.js"></script>
     <script src="js/i18n.js"></script>
+    <script src="js/analytics.js"></script>
     <script src="js/app-v2.js"></script>
 </body>
 </html>

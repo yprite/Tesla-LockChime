@@ -11,6 +11,14 @@ class TeslaLockSoundApp {
         this.fileSystem = new FileSystemHandler();
         this.gallery = new GalleryHandler();
         this.waveform = null;
+        this.analytics = (typeof window !== 'undefined' && window.AnalyticsTracker)
+            ? new window.AnalyticsTracker()
+            : {
+                setDatabaseFromGallery: () => {},
+                trackReturnSession7d: () => {},
+                shouldTrackTrimComplete: () => false,
+                track: () => {}
+            };
 
         // State
         this.selectedSound = null;
@@ -171,9 +179,11 @@ class TeslaLockSoundApp {
 
         // Initialize gallery
         await this.initGallery();
+        this.analytics.setDatabaseFromGallery(this.gallery);
+        this.analytics.trackReturnSession7d();
 
-        // Track page view
-        this.trackEvent('page_view', { page: 'home' });
+        // Track landing
+        this.trackEvent('landing_view', { page: 'home_v1' });
     }
 
     /**
@@ -235,6 +245,7 @@ class TeslaLockSoundApp {
         // Load gallery if switching to community tab
         if (tab === 'community' && this.gallery.isAvailable()) {
             this.loadGallerySounds(false);
+            this.trackEvent('gallery_browse', { tab: 'community' });
         }
 
         this.trackEvent('tab_switch', { tab });
@@ -547,6 +558,7 @@ class TeslaLockSoundApp {
             this.gallery.addToMyUploads(result.soundId);
 
             this.showToast('Sound uploaded to gallery!', 'success');
+            this.trackEvent('share_gallery_success', { sound_id: result.soundId, source: 'upload_modal' });
             this.trackEvent('gallery_upload', { sound_id: result.soundId });
 
             // Refresh gallery sections
@@ -1014,6 +1026,7 @@ class TeslaLockSoundApp {
 
             this.goToStep('trim');
             this.showToast('Sound loaded from gallery!', 'success');
+            this.trackEvent('sound_open', { source: 'gallery', sound_id: soundId });
             this.trackEvent('gallery_sound_used', { sound_id: soundId });
         } catch (error) {
             console.error('Failed to use gallery sound:', error);
@@ -1508,6 +1521,13 @@ class TeslaLockSoundApp {
 
         const fileSize = this.audioProcessor.estimateFileSize(this.trimStart, this.trimEnd);
         this.elements.fileDetails.textContent = `WAV • Mono • ~${this.audioProcessor.formatFileSize(fileSize)}`;
+
+        if (this.analytics.shouldTrackTrimComplete(this.selectedSound, this.trimStart, this.trimEnd, isValid)) {
+            this.trackEvent('trim_complete', {
+                sound_id: this.selectedSound || 'unknown',
+                duration: Number((this.trimEnd - this.trimStart).toFixed(2))
+            });
+        }
     }
 
     /**
@@ -1602,6 +1622,10 @@ class TeslaLockSoundApp {
 
             if (result.success) {
                 this.goToStep('success');
+                this.trackEvent('save_usb_success', {
+                    sound_id: this.selectedSound || 'unknown',
+                    duration: Number((this.trimEnd - this.trimStart).toFixed(2))
+                });
                 this.trackEvent('sound_saved', {
                     sound_id: this.selectedSound,
                     duration: (this.trimEnd - this.trimStart).toFixed(1)
@@ -1733,13 +1757,7 @@ class TeslaLockSoundApp {
      * Track analytics event
      */
     trackEvent(eventName, params = {}) {
-        if (typeof gtag === 'function') {
-            gtag('event', eventName, params);
-        }
-
-        if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
-            console.log('Analytics:', eventName, params);
-        }
+        this.analytics.track(eventName, params);
     }
 
     /**

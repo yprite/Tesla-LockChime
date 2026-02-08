@@ -1667,7 +1667,7 @@ body.editor-open .gallery-panel {
    =========================== */
 .growth-panels {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
     gap: 1rem;
     margin-bottom: 1.5rem;
 }
@@ -1691,13 +1691,6 @@ body.editor-open .gallery-panel {
     margin-bottom: 0.75rem;
 }
 
-.fleet-form {
-    display: grid;
-    gap: 0.5rem;
-}
-
-.fleet-form input,
-.fleet-form select,
 .workspace-controls input {
     width: 100%;
     border: 1px solid var(--color-border);
@@ -1706,10 +1699,6 @@ body.editor-open .gallery-panel {
     border-radius: var(--radius-sm);
     padding: 0.55rem 0.65rem;
     font-size: 0.85rem;
-}
-
-.fleet-tutorial-link {
-    text-decoration: none;
 }
 
 .growth-status {

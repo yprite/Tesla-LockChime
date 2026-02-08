@@ -176,6 +176,43 @@
     margin-bottom: 2rem;
 }
 
+.analytics-controls-section {
+    margin-bottom: 2rem;
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius-lg);
+    padding: 1rem 1.25rem;
+}
+
+.analytics-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: end;
+}
+
+.analytics-controls label {
+    display: grid;
+    gap: 0.35rem;
+    min-width: 140px;
+}
+
+.analytics-controls label span {
+    font-size: 0.75rem;
+    color: var(--color-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+.analytics-controls select {
+    padding: 0.5rem 0.75rem;
+    background-color: var(--color-surface-elevated);
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
+    color: var(--color-text);
+    font-size: 0.875rem;
+}
+
 .stats-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -569,6 +606,16 @@
 
     .management-controls select {
         width: 100%;
+    }
+
+    .analytics-controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .analytics-controls label {
+        width: 100%;
+        min-width: unset;
     }
 
     .pagination {
