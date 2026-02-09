@@ -70,12 +70,13 @@ describe('Dashboard external widget manifests', () => {
     document.body.innerHTML = '';
   });
 
-  it('normalizes and stores external manifests', async () => {
+  it('is disabled for now and does not store manifests', async () => {
     const builder = window.__dashboardBuilder;
     document.getElementById('external-widget-url').value = 'https://example.com/fuel.json';
     await builder.handleAddExternalWidget();
 
-    expect(handles.manifestsDocApi.set).toHaveBeenCalledTimes(1);
-    expect(builder.externalWidgets.some((widget) => widget.id === 'ext_fuel-monitor')).toBe(true);
+    expect(handles.manifestsDocApi.set).toHaveBeenCalledTimes(0);
+    expect(builder.externalWidgets.some((widget) => widget.id === 'ext_fuel-monitor')).toBe(false);
+    expect(global.alert).toHaveBeenCalled();
   });
 });
