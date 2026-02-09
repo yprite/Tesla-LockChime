@@ -243,6 +243,33 @@ class GalleryHandler {
         }
     }
 
+    async fetchBlobWithFallback(downloadUrl) {
+        let response = null;
+        try {
+            response = await fetch(downloadUrl, { mode: 'cors' });
+        } catch (error) {
+        }
+        if (!response || !response.ok) {
+            const proxyUrl = this.getMediaProxyUrl(downloadUrl);
+            if (proxyUrl) {
+                response = await fetch(proxyUrl, { mode: 'cors' });
+            }
+        }
+        if (!response || !response.ok) {
+            throw new Error(`Download request failed: ${response ? response.status : 'network'}`);
+        }
+        return response.blob();
+    }
+
+    async getSoundBlobForPreview(sound) {
+        if (!this.isInitialized) {
+            throw new Error('Gallery not initialized');
+        }
+
+        const resolvedDownloadUrl = await this.resolveDownloadUrl(sound);
+        return this.fetchBlobWithFallback(resolvedDownloadUrl);
+    }
+
     getMediaProxyUrl(originalUrl) {
         const configured = (typeof window !== 'undefined' && typeof window.CHAT_WS_ENDPOINT === 'string')
             ? String(window.CHAT_WS_ENDPOINT).trim()
@@ -284,21 +311,7 @@ class GalleryHandler {
                 }).catch(() => {});
             }
 
-            let response = null;
-            try {
-                response = await fetch(resolvedDownloadUrl, { mode: 'cors' });
-            } catch (error) {
-            }
-            if (!response || !response.ok) {
-                const proxyUrl = this.getMediaProxyUrl(resolvedDownloadUrl);
-                if (proxyUrl) {
-                    response = await fetch(proxyUrl, { mode: 'cors' });
-                }
-            }
-            if (!response || !response.ok) {
-                throw new Error(`Download request failed: ${response ? response.status : 'network'}`);
-            }
-            const blob = await response.blob();
+            const blob = await this.fetchBlobWithFallback(resolvedDownloadUrl);
 
             return {
                 blob: blob,

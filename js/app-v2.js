@@ -996,7 +996,7 @@ class TeslaLockSoundAppV2 {
                         <div class="sound-card-name">${this.escapeHtml(sound.name)}</div>
                         <span class="sound-card-category">${this.escapeHtml(categoryLabel)}</span>
                     </div>
-                    <button class="sound-card-play" data-url="${sound.downloadUrl}" title="${this.escapeHtml(previewLabel)}">
+                    <button class="sound-card-play" data-sound-id="${sound.id}" title="${this.escapeHtml(previewLabel)}">
                         <svg viewBox="0 0 24 24" fill="currentColor">
                             <polygon points="5,3 19,12 5,21"/>
                         </svg>
@@ -1022,7 +1022,7 @@ class TeslaLockSoundAppV2 {
 
         card.querySelector('.sound-card-play').addEventListener('click', (e) => {
             e.stopPropagation();
-            this.previewSound(sound.downloadUrl, e.currentTarget);
+            this.previewSound(sound, e.currentTarget);
         });
 
         card.querySelector('.sound-card-stat.likes').addEventListener('click', (e) => {
@@ -1038,7 +1038,7 @@ class TeslaLockSoundAppV2 {
         return card;
     }
 
-    async previewSound(url, button) {
+    async previewSound(sound, button) {
         if (this.state.isPlaying) {
             this.audioProcessor.stop();
             this.state.isPlaying = false;
@@ -1059,8 +1059,7 @@ class TeslaLockSoundAppV2 {
 
         try {
             await this.audioProcessor.init();
-            const response = await fetch(url);
-            const blob = await response.blob();
+            const blob = await this.gallery.getSoundBlobForPreview(sound);
             await this.audioProcessor.loadFromBlob(blob);
 
             this.state.isPlaying = true;
