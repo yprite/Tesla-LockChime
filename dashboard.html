@@ -11,81 +11,97 @@
 </head>
 <body>
   <header class="dash-header">
-    <a class="dash-back" href="./index.html">← Back</a>
-    <h1>My Tesla Dashboard</h1>
+    <a class="dash-back" href="./index.html" data-i18n="dash.back">← Back</a>
+    <h1 data-i18n="dash.title">My Tesla Dashboard</h1>
     <div class="dash-auth">
-      <span id="dash-user">Not signed in</span>
-      <button id="btn-login">Login</button>
+      <span id="dash-user" data-i18n="dash.auth.signedOut">Not signed in</span>
+      <button id="btn-login" data-i18n="dash.auth.login">Login</button>
       <div id="dash-provider-menu" class="dash-provider-menu">
-        <button id="btn-login-google">Google</button>
-        <button id="btn-login-kakao">Kakao</button>
-        <button id="btn-login-naver">Naver</button>
+        <button id="btn-login-google" data-i18n="dash.auth.google">Google</button>
+        <button id="btn-login-kakao" data-i18n="dash.auth.kakao">Kakao</button>
+        <button id="btn-login-naver" data-i18n="dash.auth.naver">Naver</button>
       </div>
-      <button id="btn-logout">Logout</button>
+      <button id="btn-logout" data-i18n="dash.auth.logout">Logout</button>
+      <select id="language-select" class="lang-select">
+        <option value="en" data-i18n="lang.en">EN</option>
+        <option value="ko" data-i18n="lang.ko">KO</option>
+        <option value="ja" data-i18n="lang.ja">JA</option>
+        <option value="zh" data-i18n="lang.zh">ZH</option>
+      </select>
     </div>
   </header>
 
   <main class="dash-main">
     <aside class="dash-editor">
-      <h2>Customize</h2>
-      <p class="dash-subtext">Pick a Tesla display size and build your own widget layout.</p>
+      <h2 data-i18n="dash.customize">Customize</h2>
+      <p class="dash-subtext" data-i18n="dash.subtitle">Pick a Tesla display size and build your own widget layout.</p>
 
-      <label>Tesla Model / Display</label>
+      <label data-i18n="dash.vehicleModel">Tesla Model / Display</label>
       <select id="vehicle-model">
-        <option value="model3">Model 3</option>
-        <option value="modely" selected>Model Y</option>
-        <option value="models">Model S</option>
-        <option value="modelx">Model X</option>
-        <option value="cybertruck">Cybertruck</option>
+        <option value="model3" data-i18n="dash.model.model3">Model 3</option>
+        <option value="modely" selected data-i18n="dash.model.modely">Model Y</option>
+        <option value="models" data-i18n="dash.model.models">Model S</option>
+        <option value="modelx" data-i18n="dash.model.modelx">Model X</option>
+        <option value="cybertruck" data-i18n="dash.model.cybertruck">Cybertruck</option>
       </select>
-      <div id="model-size" class="dash-chip">Display: 1920 x 1200</div>
+      <div id="model-size" class="dash-chip" data-i18n="dash.display.default">Display: 1920 x 1200</div>
 
-      <label>Background Theme</label>
+      <label data-i18n="dash.backgroundTheme">Background Theme</label>
       <select id="bg-theme">
-        <option value="tesla-red">Tesla Red</option>
-        <option value="midnight">Midnight Asphalt</option>
-        <option value="sunrise">Sunrise Drive</option>
-        <option value="emerald">Emerald Circuit</option>
+        <option value="tesla-red" data-i18n="dash.theme.teslaRed">Tesla Red</option>
+        <option value="midnight" data-i18n="dash.theme.midnight">Midnight Asphalt</option>
+        <option value="sunrise" data-i18n="dash.theme.sunrise">Sunrise Drive</option>
+        <option value="emerald" data-i18n="dash.theme.emerald">Emerald Circuit</option>
       </select>
 
-      <label>Custom Background URL (optional)</label>
-      <input id="bg-image-url" type="url" placeholder="https://...">
+      <label data-i18n="dash.backgroundUrl">Custom Background URL (optional)</label>
+      <input id="bg-image-url" type="url" placeholder="https://..." data-i18n-placeholder="dash.backgroundUrlPlaceholder">
 
-      <h3>Widgets</h3>
-      <p class="dash-subtext">Mix and match as many widgets as you want for your own layout.</p>
+      <h3 data-i18n="dash.widgets">Widgets</h3>
+      <p class="dash-subtext" data-i18n="dash.widgetsSubtitle">Mix and match as many widgets as you want for your own layout.</p>
       <div class="widget-filters">
-        <input id="widget-search" type="search" placeholder="Search widget name...">
+        <input id="widget-search" type="search" placeholder="Search widget name..." data-i18n-placeholder="dash.widgetSearchPlaceholder">
         <select id="widget-filter-category">
-          <option value="all">All categories</option>
+          <option value="all" data-i18n="dash.filter.allCategories">All categories</option>
         </select>
         <select id="widget-filter-style">
-          <option value="all">All styles</option>
+          <option value="all" data-i18n="dash.filter.allStyles">All styles</option>
         </select>
       </div>
       <div id="widget-controls" class="widget-controls"></div>
-      <p class="dash-subtext">Preview area: drag cards to move, drag bottom-right handle to resize.</p>
-      <button id="btn-reset-layout" type="button">Reset Grid Layout</button>
+      <p id="widget-placement-message" class="dash-subtext dash-warning"></p>
+
+      <h3 data-i18n="dash.externalWidgets">External Widgets</h3>
+      <p class="dash-subtext" data-i18n="dash.externalWidgetsSubtitle">Add your own widget manifests by URL.</p>
+      <div class="dash-share">
+        <input id="external-widget-url" type="url" placeholder="https://example.com/widget-manifest.json" data-i18n-placeholder="dash.externalWidgetPlaceholder">
+        <button id="btn-add-external-widget" type="button" data-i18n="dash.addExternalWidget">Add External Widget</button>
+      </div>
+
+      <p class="dash-subtext" data-i18n="dash.previewHelp">Preview area: drag cards to move, drag bottom-right handle to resize.</p>
+      <button id="btn-reset-layout" type="button" data-i18n="dash.resetLayout">Reset Grid Layout</button>
 
       <div class="dash-actions">
-        <button id="btn-preview">Preview</button>
-        <button id="btn-save">Save Dashboard</button>
+        <button id="btn-preview" data-i18n="dash.preview">Preview</button>
+        <button id="btn-save" data-i18n="dash.save">Save Dashboard</button>
       </div>
-      <button id="btn-save-copy">Save As My Copy</button>
+      <button id="btn-save-copy" data-i18n="dash.saveCopy">Save As My Copy</button>
 
       <div class="dash-share">
-        <label>Public ID</label>
+        <label data-i18n="dash.publicId">Public ID</label>
         <input id="public-id" readonly>
-        <button id="btn-copy-link">Copy Share Link</button>
+        <button id="btn-copy-link" data-i18n="dash.copyShareLink">Copy Share Link</button>
       </div>
 
       <div class="dash-share">
-        <label>Open by Email or ID</label>
-        <input id="owner-query" placeholder="owner email or dash-xxxx">
-        <button id="btn-load-owner">Open Dashboard</button>
+        <label data-i18n="dash.openByEmailOrId">Open by Email or ID</label>
+        <input id="owner-query" placeholder="owner email or dash-xxxx" data-i18n-placeholder="dash.ownerPlaceholder">
+        <button id="btn-load-owner" data-i18n="dash.openDashboard">Open Dashboard</button>
       </div>
 
       <p class="dash-help">
-        URL access: <code>/dashboard.html?owner=&lt;email or public-id&gt;</code>
+        <span data-i18n="dash.urlAccess">URL access:</span>
+        <code>/dashboard.html?owner=&lt;email or public-id&gt;</code>
       </p>
     </aside>
 
@@ -96,11 +112,63 @@
         </div>
       </div>
     </section>
+
+    <aside class="dash-inspector" id="widget-inspector">
+      <h2 data-i18n="dash.inspector">Widget Inspector</h2>
+      <p id="inspector-empty" class="dash-subtext" data-i18n="dash.inspectorEmpty">Select a widget from preview or catalog to configure it.</p>
+      <div id="inspector-content" class="inspector-content hidden">
+        <div class="inspector-row">
+          <label data-i18n="dash.inspectorWidget">Widget</label>
+          <div id="inspector-widget-name" class="dash-chip"></div>
+        </div>
+        <label for="inspector-size" data-i18n="dash.sizeVariant">Size</label>
+        <select id="inspector-size">
+          <option value="small" data-i18n="dash.size.small">Small</option>
+          <option value="medium" data-i18n="dash.size.medium">Medium</option>
+          <option value="large" data-i18n="dash.size.large">Large</option>
+        </select>
+        <label for="inspector-title" data-i18n="dash.customTitle">Title</label>
+        <input id="inspector-title" type="text" maxlength="48" placeholder="Custom title (optional)" data-i18n-placeholder="dash.customTitlePlaceholder">
+        <div id="inspector-weather" class="inspector-field-group hidden">
+          <label for="inspector-weather-mode" data-i18n="dash.weather.locationMode">Weather location</label>
+          <select id="inspector-weather-mode">
+            <option value="auto" data-i18n="dash.weather.locationAuto">Use my current location</option>
+            <option value="manual" data-i18n="dash.weather.locationManual">Choose a location</option>
+          </select>
+          <input id="inspector-weather-query" type="search" placeholder="Search city..." data-i18n-placeholder="dash.weather.searchPlaceholder">
+          <select id="inspector-weather-results"></select>
+        </div>
+        <div id="inspector-distance" class="inspector-field-group hidden">
+          <label for="inspector-distance-unit" data-i18n="dash.distanceUnit">Distance Unit</label>
+          <select id="inspector-distance-unit">
+            <option value="km">Kilometer</option>
+            <option value="mi">Mile</option>
+          </select>
+        </div>
+        <div id="inspector-temp" class="inspector-field-group hidden">
+          <label for="inspector-temp-unit" data-i18n="dash.tempUnit">Temperature Unit</label>
+          <select id="inspector-temp-unit">
+            <option value="c">Celsius</option>
+            <option value="f">Fahrenheit</option>
+          </select>
+        </div>
+        <div id="inspector-time" class="inspector-field-group hidden">
+          <label for="inspector-time-format" data-i18n="dash.timeFormat">Clock Format</label>
+          <select id="inspector-time-format">
+            <option value="auto">Auto</option>
+            <option value="12">12-hour</option>
+            <option value="24">24-hour</option>
+          </select>
+        </div>
+        <button id="btn-remove-widget" type="button" data-i18n="dash.removeWidget">Remove Widget</button>
+      </div>
+    </aside>
   </main>
 
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="js/i18n.js"></script>
   <script src="js/dashboard.js"></script>
 </body>
 </html>

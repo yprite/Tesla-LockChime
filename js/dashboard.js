@@ -16,6 +16,70 @@ const MODEL_PRESETS = {
 };
 
 const GRID_SPEC = { cols: 12, rows: 8 };
+const SIZE_PRESETS = {
+  small: { w: 2, h: 2 },
+  medium: { w: 3, h: 2 },
+  large: { w: 4, h: 3 }
+};
+
+function isLayoutInBounds(layout) {
+  if (!layout) return false;
+  return layout.x >= 0
+    && layout.y >= 0
+    && layout.w >= 1
+    && layout.h >= 1
+    && layout.x + layout.w <= GRID_SPEC.cols
+    && layout.y + layout.h <= GRID_SPEC.rows;
+}
+
+function rectsOverlap(a, b) {
+  if (!a || !b) return false;
+  return !(a.x + a.w <= b.x || b.x + b.w <= a.x || a.y + a.h <= b.y || b.y + b.h <= a.y);
+}
+
+function canPlaceLayout(widgetId, layout, activeLayouts) {
+  if (!isLayoutInBounds(layout)) return false;
+  return Object.entries(activeLayouts || {}).every(([otherId, otherLayout]) => {
+    if (!otherLayout || otherId === widgetId) return true;
+    return !rectsOverlap(layout, otherLayout);
+  });
+}
+
+function findFirstFit(widgetId, preferredLayout, activeLayouts) {
+  const base = preferredLayout || SIZE_PRESETS.small;
+  for (let y = 0; y <= GRID_SPEC.rows - base.h; y += 1) {
+    for (let x = 0; x <= GRID_SPEC.cols - base.w; x += 1) {
+      const candidate = { x, y, w: base.w, h: base.h };
+      if (canPlaceLayout(widgetId, candidate, activeLayouts)) return candidate;
+    }
+  }
+  return null;
+}
+
+function sanitizeSizeVariants(layout) {
+  const medium = {
+    w: Math.max(1, Math.min(GRID_SPEC.cols, layout?.w || SIZE_PRESETS.medium.w)),
+    h: Math.max(1, Math.min(GRID_SPEC.rows, layout?.h || SIZE_PRESETS.medium.h))
+  };
+  const small = {
+    w: Math.max(1, Math.min(medium.w, SIZE_PRESETS.small.w)),
+    h: Math.max(1, Math.min(medium.h, SIZE_PRESETS.small.h))
+  };
+  const large = {
+    w: Math.max(medium.w, Math.min(GRID_SPEC.cols, medium.w + 1)),
+    h: Math.max(medium.h, Math.min(GRID_SPEC.rows, medium.h + 1))
+  };
+  return { small, medium, large };
+}
+
+function normalizeWidgetDefinition(widget) {
+  const sizeVariants = sanitizeSizeVariants(widget.layout);
+  return {
+    ...widget,
+    sizeVariants,
+    source: widget.source || "builtin"
+  };
+}
 
 const WIDGET_LIBRARY = [
   { id: "clock", label: "Clock", category: "utility", style: "minimal", skin: "charcoal", defaultOn: true, layout: { x: 0, y: 0, w: 2, h: 2 } },
@@ -51,7 +115,7 @@ const WIDGET_LIBRARY = [
   { id: "eventCard", label: "Event Card", category: "social", style: "card", skin: "paper", defaultOn: false, layout: { x: 6, y: 6, w: 2, h: 2 } },
   { id: "pricePicker", label: "Price Picker", category: "finance", style: "card", skin: "paper", defaultOn: false, layout: { x: 8, y: 6, w: 2, h: 2 } },
   { id: "callPanel", label: "Call Panel", category: "social", style: "minimal", skin: "charcoal", defaultOn: false, layout: { x: 10, y: 0, w: 2, h: 2 } }
-];
+].map(normalizeWidgetDefinition);
 
 function createDefaultWidgetState() {
   return WIDGET_LIBRARY.reduce((acc, widget) => {
@@ -73,7 +137,8 @@ const DEFAULT_STATE = {
   backgroundImageUrl: "",
   widgets: createDefaultWidgetState(),
   layouts: createDefaultLayouts(),
-  widgetSettings: {}
+  widgetSettings: {},
+  externalWidgetIds: []
 };
 
 class DashboardBuilder {
@@ -85,9 +150,11 @@ class DashboardBuilder {
     this.dashboardId = localStorage.getItem("dashboard_id") || "";
     this.publicId = localStorage.getItem("dashboard_public_id") || "";
     this.viewedOwnerUid = "";
+    this.externalWidgets = [];
     this.state = this.createState(DEFAULT_STATE);
     this.clockMainEl = null;
     this.dragState = null;
+    this.selectedWidgetId = "";
     this.liveData = {
       battery: null,
       network: null,
@@ -97,10 +164,9 @@ class DashboardBuilder {
     this.weatherDisabled = false;
     this.weatherLastFetchMs = 0;
     this.dataRefreshTimer = null;
-    this.modalWidgetId = "";
+    this.weatherSearchTimer = null;
     this.els = this.cacheElements();
     this.initLanguageSettings();
-    this.initWidgetSettingsModal();
     this.populateFilterOptions();
     this.renderWidgetControls();
     this.bindEvents();
@@ -129,7 +195,8 @@ class DashboardBuilder {
       widgetSettings: {
         ...(DEFAULT_STATE.widgetSettings || {}),
         ...((input.widgetSettings && typeof input.widgetSettings === "object") ? input.widgetSettings : {})
-      }
+      },
+      externalWidgetIds: Array.isArray(input.externalWidgetIds) ? [...new Set(input.externalWidgetIds.map((id) => String(id)))] : []
     };
   }
 
@@ -175,6 +242,7 @@ class DashboardBuilder {
       widgetFilterCategory: document.getElementById("widget-filter-category"),
       widgetFilterStyle: document.getElementById("widget-filter-style"),
       btnResetLayout: document.getElementById("btn-reset-layout"),
+      widgetPlacementMessage: document.getElementById("widget-placement-message"),
       widgetControls: document.getElementById("widget-controls"),
       widgetGrid: document.getElementById("widget-grid"),
       preview: document.getElementById("dashboard-preview"),
@@ -184,7 +252,26 @@ class DashboardBuilder {
       publicId: document.getElementById("public-id"),
       btnCopyLink: document.getElementById("btn-copy-link"),
       ownerQuery: document.getElementById("owner-query"),
-      btnLoadOwner: document.getElementById("btn-load-owner")
+      btnLoadOwner: document.getElementById("btn-load-owner"),
+      externalWidgetUrl: document.getElementById("external-widget-url"),
+      btnAddExternalWidget: document.getElementById("btn-add-external-widget"),
+      inspector: document.getElementById("widget-inspector"),
+      inspectorEmpty: document.getElementById("inspector-empty"),
+      inspectorContent: document.getElementById("inspector-content"),
+      inspectorWidgetName: document.getElementById("inspector-widget-name"),
+      inspectorSize: document.getElementById("inspector-size"),
+      inspectorTitle: document.getElementById("inspector-title"),
+      inspectorWeatherWrap: document.getElementById("inspector-weather"),
+      inspectorWeatherMode: document.getElementById("inspector-weather-mode"),
+      inspectorWeatherQuery: document.getElementById("inspector-weather-query"),
+      inspectorWeatherResults: document.getElementById("inspector-weather-results"),
+      inspectorDistanceWrap: document.getElementById("inspector-distance"),
+      inspectorDistanceUnit: document.getElementById("inspector-distance-unit"),
+      inspectorTempWrap: document.getElementById("inspector-temp"),
+      inspectorTempUnit: document.getElementById("inspector-temp-unit"),
+      inspectorTimeWrap: document.getElementById("inspector-time"),
+      inspectorTimeFormat: document.getElementById("inspector-time-format"),
+      btnRemoveWidget: document.getElementById("btn-remove-widget")
     };
   }
 
@@ -231,6 +318,7 @@ class DashboardBuilder {
     this.renderWidgetControls();
     this.updateModelBadge();
     this.renderPreview();
+    this.renderInspector();
     this.updateAuthUi();
   }
 
@@ -263,8 +351,9 @@ class DashboardBuilder {
     allStyleOption.textContent = this.t("dash.filter.allStyles", {}, "All styles");
     this.els.widgetFilterStyle.appendChild(allStyleOption);
 
-    const categories = [...new Set(WIDGET_LIBRARY.map((widget) => widget.category))];
-    const styles = [...new Set(WIDGET_LIBRARY.map((widget) => widget.style))];
+    const widgets = this.getAllWidgets();
+    const categories = [...new Set(widgets.map((widget) => widget.category))];
+    const styles = [...new Set(widgets.map((widget) => widget.style))];
 
     categories.forEach((category) => {
       const option = document.createElement("option");
@@ -291,12 +380,34 @@ class DashboardBuilder {
       .join(" ");
   }
 
+  getAllWidgets() {
+    return [...WIDGET_LIBRARY, ...this.externalWidgets];
+  }
+
+  getWidgetById(widgetId) {
+    return this.getAllWidgets().find((widget) => widget.id === widgetId) || null;
+  }
+
+  getActiveLayouts(exceptWidgetId = "") {
+    const active = {};
+    Object.keys(this.state.widgets || {}).forEach((id) => {
+      if (!this.state.widgets[id]) return;
+      if (exceptWidgetId && id === exceptWidgetId) return;
+      active[id] = this.state.layouts[id];
+    });
+    return active;
+  }
+
+  setPlacementMessage(message = "") {
+    if (this.els.widgetPlacementMessage) this.els.widgetPlacementMessage.textContent = message;
+  }
+
   getFilteredWidgets() {
     const query = (this.els.widgetSearch.value || "").trim().toLowerCase();
     const category = this.els.widgetFilterCategory.value || "all";
     const style = this.els.widgetFilterStyle.value || "all";
 
-    return WIDGET_LIBRARY.filter((widget) => {
+    return this.getAllWidgets().filter((widget) => {
       if (category !== "all" && widget.category !== category) return false;
       if (style !== "all" && widget.style !== style) return false;
       if (!query) return true;
@@ -318,14 +429,19 @@ class DashboardBuilder {
     }
 
     widgets.forEach((widget) => {
-      const label = document.createElement("label");
-      label.className = "widget-item";
-      const input = document.createElement("input");
-      input.type = "checkbox";
-      input.dataset.widgetId = widget.id;
-      input.checked = Boolean(this.state.widgets[widget.id]);
+      const activeLayouts = this.getActiveLayouts();
+      const preferred = this.normalizeLayout(this.state.layouts[widget.id] || widget.layout, widget.layout);
+      const hasSpace = Boolean(findFirstFit(widget.id, preferred, activeLayouts));
 
-      const textWrap = document.createElement("span");
+      const item = document.createElement("article");
+      item.className = "widget-item";
+      item.dataset.widgetId = widget.id;
+
+      const preview = document.createElement("div");
+      preview.className = `widget-item-preview skin-${widget.skin}`;
+      preview.innerHTML = `<p class="widget-title">${this.escapeHtml(this.getWidgetLabel(widget))}</p><p class="widget-item-preview-main">${this.escapeHtml(this.t("dash.widget.preview", {}, "Preview"))}</p>`;
+
+      const textWrap = document.createElement("div");
       textWrap.className = "widget-item-text";
       const title = document.createElement("span");
       title.className = "widget-item-title";
@@ -333,12 +449,26 @@ class DashboardBuilder {
       const meta = document.createElement("span");
       meta.className = "widget-item-meta";
       meta.textContent = `${this.getWidgetCategoryLabel(widget.category)} · ${this.getWidgetStyleLabel(widget.style)}`;
-
       textWrap.appendChild(title);
       textWrap.appendChild(meta);
-      label.appendChild(input);
-      label.appendChild(textWrap);
-      this.els.widgetControls.appendChild(label);
+
+      const actions = document.createElement("div");
+      actions.className = "widget-item-actions";
+      const btnAdd = document.createElement("button");
+      btnAdd.type = "button";
+      btnAdd.dataset.action = "add";
+      btnAdd.dataset.widgetId = widget.id;
+      btnAdd.textContent = this.t("dash.widget.add", {}, "Add");
+      btnAdd.disabled = !this.state.widgets[widget.id] && !hasSpace;
+      const btnSelect = document.createElement("button");
+      btnSelect.type = "button";
+      btnSelect.dataset.action = "select";
+      btnSelect.dataset.widgetId = widget.id;
+      btnSelect.textContent = this.state.widgets[widget.id] ? this.t("dash.widget.edit", {}, "Edit") : this.t("dash.widget.inspect", {}, "Inspect");
+      actions.append(btnAdd, btnSelect);
+
+      item.append(preview, textWrap, actions);
+      this.els.widgetControls.appendChild(item);
     });
   }
 
@@ -361,17 +491,38 @@ class DashboardBuilder {
     this.els.widgetFilterCategory?.addEventListener("change", () => this.renderWidgetControls());
     this.els.widgetFilterStyle?.addEventListener("change", () => this.renderWidgetControls());
 
-    this.els.widgetControls?.addEventListener("change", (event) => {
+    this.els.widgetControls?.addEventListener("click", (event) => {
       const target = event.target;
-      if (!(target instanceof HTMLInputElement)) return;
+      if (!(target instanceof HTMLButtonElement)) return;
       const widgetId = target.dataset.widgetId;
       if (!widgetId) return;
-      this.state.widgets[widgetId] = target.checked;
-      if (!this.state.layouts[widgetId]) {
-        const libraryEntry = WIDGET_LIBRARY.find((widget) => widget.id === widgetId);
-        this.state.layouts[widgetId] = this.normalizeLayout(libraryEntry?.layout);
+
+      if (target.dataset.action === "select") {
+        this.selectWidget(widgetId);
+        return;
       }
+      if (target.dataset.action !== "add") return;
+
+      if (this.state.widgets[widgetId]) {
+        this.selectWidget(widgetId);
+        return;
+      }
+
+      const widget = this.getWidgetById(widgetId);
+      const layoutBase = this.normalizeLayout(this.state.layouts[widgetId] || widget?.layout, widget?.layout);
+      const firstFit = findFirstFit(widgetId, layoutBase, this.getActiveLayouts());
+      if (!firstFit) {
+        this.setPlacementMessage(this.t("dash.widget.noSpace", {}, "No space left in this grid. Move or remove another widget."));
+        this.renderWidgetControls();
+        return;
+      }
+
+      this.state.widgets[widgetId] = true;
+      this.state.layouts[widgetId] = firstFit;
+      this.setPlacementMessage("");
+      this.selectWidget(widgetId);
       this.renderPreview();
+      this.renderWidgetControls();
     });
 
     this.els.ownerQuery?.addEventListener("keydown", (event) => {
@@ -388,6 +539,16 @@ class DashboardBuilder {
 
     this.els.bgTheme?.addEventListener("change", () => this.applyFromEditor());
     this.els.bgImageUrl?.addEventListener("change", () => this.applyFromEditor());
+    this.els.btnAddExternalWidget?.addEventListener("click", () => this.handleAddExternalWidget());
+    this.els.inspectorSize?.addEventListener("change", () => this.handleInspectorSizeChange());
+    this.els.inspectorTitle?.addEventListener("input", () => this.handleInspectorTextChange());
+    this.els.inspectorWeatherMode?.addEventListener("change", () => this.handleInspectorWeatherModeChange());
+    this.els.inspectorWeatherQuery?.addEventListener("input", () => this.handleInspectorWeatherSearch());
+    this.els.inspectorWeatherResults?.addEventListener("change", () => this.handleInspectorWeatherResultChange());
+    this.els.inspectorDistanceUnit?.addEventListener("change", () => this.handleInspectorDistanceUnitChange());
+    this.els.inspectorTempUnit?.addEventListener("change", () => this.handleInspectorTempUnitChange());
+    this.els.inspectorTimeFormat?.addEventListener("change", () => this.handleInspectorTimeFormatChange());
+    this.els.btnRemoveWidget?.addEventListener("click", () => this.removeSelectedWidget());
 
     this.bindGridInteraction();
   }
@@ -407,6 +568,7 @@ class DashboardBuilder {
 
       const widgetId = card.getAttribute("data-widget-id");
       if (!widgetId) return;
+      this.selectWidget(widgetId);
 
       const initial = this.normalizeLayout(this.state.layouts[widgetId], this.getWidgetDefaultLayout(widgetId));
       this.dragState = {
@@ -429,31 +591,323 @@ class DashboardBuilder {
       if (this.dragState.pointerId !== event.pointerId) return;
 
       const next = this.computeDragLayout(event.clientX, event.clientY);
-      this.applyCardLayout(this.dragState.card, next);
-      this.state.layouts[this.dragState.widgetId] = next;
+      const activeLayouts = this.getActiveLayouts(this.dragState.widgetId);
+      const valid = canPlaceLayout(this.dragState.widgetId, next, activeLayouts);
+      this.applyCardLayout(this.dragState.card, valid ? next : this.dragState.initial);
+      this.dragState.card.classList.toggle("invalid", !valid);
+      this.dragState.next = valid ? next : this.dragState.initial;
+      this.dragState.isValid = valid;
     });
 
     const releaseDrag = (event) => {
       if (!this.dragState) return;
       if (event && this.dragState.pointerId !== event.pointerId) return;
+      this.state.layouts[this.dragState.widgetId] = this.dragState.next || this.dragState.initial;
       this.dragState.card.classList.remove("dragging", "resizing");
+      this.dragState.card.classList.remove("invalid");
       this.dragState = null;
       this.renderPreview();
+      this.renderWidgetControls();
     };
 
     grid.addEventListener("pointerup", releaseDrag);
     grid.addEventListener("pointercancel", releaseDrag);
 
-    grid.addEventListener("dblclick", (event) => {
+    grid.addEventListener("click", (event) => {
       const target = event.target;
       if (!(target instanceof Element)) return;
       const card = target.closest(".dash-widget");
       if (!card) return;
       const widgetId = card.getAttribute("data-widget-id");
       if (!widgetId) return;
-      this.openWidgetSettings(widgetId);
-      event.preventDefault();
+      this.selectWidget(widgetId);
     });
+  }
+
+  selectWidget(widgetId) {
+    this.selectedWidgetId = widgetId || "";
+    this.renderInspector();
+    this.renderPreview();
+    this.renderWidgetControls();
+  }
+
+  renderInspector() {
+    const widgetId = this.selectedWidgetId;
+    const widget = widgetId ? this.getWidgetById(widgetId) : null;
+    const hasSelection = Boolean(widget && this.state.widgets[widgetId]);
+    this.els.inspectorEmpty?.classList.toggle("hidden", hasSelection);
+    this.els.inspectorContent?.classList.toggle("hidden", !hasSelection);
+    if (!hasSelection) return;
+
+    const settings = this.getWidgetSettings(widgetId);
+    const sizeVariants = widget.sizeVariants || sanitizeSizeVariants(widget.layout);
+    const layout = this.state.layouts[widgetId] || widget.layout;
+    let size = "small";
+    if (layout.w >= sizeVariants.large.w && layout.h >= sizeVariants.large.h) size = "large";
+    else if (layout.w >= sizeVariants.medium.w && layout.h >= sizeVariants.medium.h) size = "medium";
+
+    if (this.els.inspectorWidgetName) this.els.inspectorWidgetName.textContent = this.getWidgetLabel(widget);
+    if (this.els.inspectorSize) this.els.inspectorSize.value = size;
+    if (this.els.inspectorTitle) this.els.inspectorTitle.value = settings.title || "";
+
+    const weatherVisible = widgetId === "weather" || widgetId === "weatherTiles";
+    const distanceVisible = widgetId === "range" || widgetId === "cityHop" || widgetId === "navigation";
+    const tempVisible = weatherVisible;
+    const timeVisible = widgetId === "clock" || widgetId === "clockGrid";
+    this.els.inspectorWeatherWrap?.classList.toggle("hidden", !weatherVisible);
+    this.els.inspectorDistanceWrap?.classList.toggle("hidden", !distanceVisible);
+    this.els.inspectorTempWrap?.classList.toggle("hidden", !tempVisible);
+    this.els.inspectorTimeWrap?.classList.toggle("hidden", !timeVisible);
+
+    if (this.els.inspectorWeatherMode) this.els.inspectorWeatherMode.value = settings.locationMode || "auto";
+    if (this.els.inspectorDistanceUnit) this.els.inspectorDistanceUnit.value = settings.distanceUnit || "km";
+    if (this.els.inspectorTempUnit) this.els.inspectorTempUnit.value = settings.tempUnit || "c";
+    if (this.els.inspectorTimeFormat) this.els.inspectorTimeFormat.value = settings.timeFormat || "auto";
+
+    if (this.els.inspectorWeatherQuery) {
+      this.els.inspectorWeatherQuery.disabled = (settings.locationMode || "auto") !== "manual";
+      this.els.inspectorWeatherQuery.value = settings.locationName || "";
+    }
+    if (this.els.inspectorWeatherResults) {
+      this.els.inspectorWeatherResults.disabled = (settings.locationMode || "auto") !== "manual";
+      if (!this.els.inspectorWeatherResults.options.length) {
+        const option = document.createElement("option");
+        option.value = "";
+        option.textContent = this.t("dash.weather.searchHint", {}, "Search and select a city.");
+        this.els.inspectorWeatherResults.appendChild(option);
+      }
+    }
+  }
+
+  handleInspectorSizeChange() {
+    const widgetId = this.selectedWidgetId;
+    const widget = this.getWidgetById(widgetId);
+    if (!widget || !this.els.inspectorSize) return;
+    const size = this.els.inspectorSize.value || "small";
+    const target = widget.sizeVariants?.[size] || widget.layout;
+    const existing = this.state.layouts[widgetId] || widget.layout;
+    const candidate = this.normalizeLayout({ ...existing, w: target.w, h: target.h }, existing);
+    const fitted = canPlaceLayout(widgetId, candidate, this.getActiveLayouts(widgetId))
+      ? candidate
+      : findFirstFit(widgetId, candidate, this.getActiveLayouts(widgetId));
+    if (!fitted) {
+      this.setPlacementMessage(this.t("dash.widget.noSpaceForSize", {}, "Not enough space for this size."));
+      this.renderInspector();
+      return;
+    }
+    this.state.layouts[widgetId] = fitted;
+    this.updateWidgetSetting(widgetId, { sizeVariant: size });
+    this.setPlacementMessage("");
+    this.renderPreview();
+    this.renderWidgetControls();
+  }
+
+  handleInspectorTextChange() {
+    const widgetId = this.selectedWidgetId;
+    if (!widgetId || !this.els.inspectorTitle) return;
+    const title = this.els.inspectorTitle.value.trim();
+    this.updateWidgetSetting(widgetId, { title });
+    this.renderPreview();
+  }
+
+  handleInspectorWeatherModeChange() {
+    const widgetId = this.selectedWidgetId;
+    if (!widgetId || !this.els.inspectorWeatherMode) return;
+    const locationMode = this.els.inspectorWeatherMode.value === "manual" ? "manual" : "auto";
+    this.updateWidgetSetting(widgetId, { locationMode });
+    this.renderInspector();
+    this.renderPreview();
+  }
+
+  async handleInspectorWeatherSearch() {
+    const widgetId = this.selectedWidgetId;
+    if (!widgetId || !this.els.inspectorWeatherQuery || !this.els.inspectorWeatherResults) return;
+    const query = this.els.inspectorWeatherQuery.value.trim();
+    if (this.weatherSearchTimer) clearTimeout(this.weatherSearchTimer);
+    this.weatherSearchTimer = setTimeout(async () => {
+      if (query.length < 2) return;
+      try {
+        const url = new URL("https://geocoding-api.open-meteo.com/v1/search");
+        url.searchParams.set("name", query);
+        url.searchParams.set("count", "5");
+        url.searchParams.set("language", "en");
+        const response = await fetch(url.toString());
+        if (!response.ok) return;
+        const payload = await response.json();
+        const results = Array.isArray(payload.results) ? payload.results : [];
+        this.els.inspectorWeatherResults.innerHTML = "";
+        if (!results.length) {
+          const option = document.createElement("option");
+          option.value = "";
+          option.textContent = this.t("dash.weather.noResults", {}, "No locations found.");
+          this.els.inspectorWeatherResults.appendChild(option);
+          return;
+        }
+        results.forEach((item) => {
+          const option = document.createElement("option");
+          option.value = JSON.stringify({
+            name: item.name,
+            country: item.country,
+            latitude: item.latitude,
+            longitude: item.longitude
+          });
+          option.textContent = `${item.name}${item.country ? `, ${item.country}` : ""}`;
+          this.els.inspectorWeatherResults.appendChild(option);
+        });
+      } catch (error) {
+      }
+    }, 250);
+  }
+
+  handleInspectorWeatherResultChange() {
+    const widgetId = this.selectedWidgetId;
+    if (!widgetId || !this.els.inspectorWeatherResults) return;
+    try {
+      const selected = JSON.parse(this.els.inspectorWeatherResults.value || "{}");
+      if (!Number.isFinite(selected.latitude) || !Number.isFinite(selected.longitude)) return;
+      this.updateWidgetSetting(widgetId, {
+        locationMode: "manual",
+        locationName: `${selected.name}${selected.country ? `, ${selected.country}` : ""}`,
+        latitude: Number(selected.latitude),
+        longitude: Number(selected.longitude)
+      });
+      this.renderInspector();
+      this.renderPreview();
+    } catch (error) {
+    }
+  }
+
+  handleInspectorDistanceUnitChange() {
+    const widgetId = this.selectedWidgetId;
+    if (!widgetId || !this.els.inspectorDistanceUnit) return;
+    this.updateWidgetSetting(widgetId, { distanceUnit: this.els.inspectorDistanceUnit.value === "mi" ? "mi" : "km" });
+    this.renderPreview();
+  }
+
+  handleInspectorTempUnitChange() {
+    const widgetId = this.selectedWidgetId;
+    if (!widgetId || !this.els.inspectorTempUnit) return;
+    this.updateWidgetSetting(widgetId, { tempUnit: this.els.inspectorTempUnit.value === "f" ? "f" : "c" });
+    this.renderPreview();
+  }
+
+  handleInspectorTimeFormatChange() {
+    const widgetId = this.selectedWidgetId;
+    if (!widgetId || !this.els.inspectorTimeFormat) return;
+    this.updateWidgetSetting(widgetId, { timeFormat: this.els.inspectorTimeFormat.value || "auto" });
+    this.renderPreview();
+  }
+
+  removeSelectedWidget() {
+    const widgetId = this.selectedWidgetId;
+    if (!widgetId) return;
+    this.state.widgets[widgetId] = false;
+    this.selectedWidgetId = "";
+    this.setPlacementMessage("");
+    this.renderInspector();
+    this.renderPreview();
+    this.renderWidgetControls();
+  }
+
+  updateWidgetSetting(widgetId, patch) {
+    const current = this.getWidgetSettings(widgetId);
+    const merged = { ...current, ...patch };
+    if (!merged.title) delete merged.title;
+    this.state.widgetSettings = {
+      ...(this.state.widgetSettings || {}),
+      [widgetId]: merged
+    };
+  }
+
+  normalizeExternalManifest(rawManifest, url) {
+    const raw = rawManifest && typeof rawManifest === "object" ? rawManifest : {};
+    const idBase = String(raw.id || "").trim().toLowerCase().replace(/[^a-z0-9_-]/g, "-");
+    if (!idBase) throw new Error("invalid_manifest");
+    const id = `ext_${idBase}`;
+    const layout = this.normalizeLayout(raw.defaultLayout || SIZE_PRESETS.medium, SIZE_PRESETS.medium);
+    const widget = normalizeWidgetDefinition({
+      id,
+      label: String(raw.name || raw.id || "External Widget"),
+      category: String(raw.category || "custom"),
+      style: String(raw.style || "card"),
+      skin: String(raw.skin || "paper"),
+      defaultOn: false,
+      layout,
+      source: "external",
+      manifestUrl: url
+    });
+    return { id, manifest: raw, widget };
+  }
+
+  getUserManifestCollection() {
+    const root = this.db?.collection?.("userWidgets");
+    const userDoc = root?.doc?.(this.user?.uid || "");
+    const manifests = userDoc?.collection?.("manifests");
+    return manifests || null;
+  }
+
+  async handleAddExternalWidget() {
+    if (!this.user) {
+      alert(this.t("dash.toast.loginRequired", {}, "Login required to save dashboard."));
+      return;
+    }
+    const url = (this.els.externalWidgetUrl?.value || "").trim();
+    if (!url) return;
+    try {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error("manifest_fetch_failed");
+      const payload = await response.json();
+      const normalized = this.normalizeExternalManifest(payload, url);
+      const manifests = this.getUserManifestCollection();
+      if (!manifests) throw new Error("manifest_store_unavailable");
+      await manifests.doc(normalized.id).set({
+        ownerUid: this.user.uid,
+        manifestUrl: url,
+        manifest: normalized.manifest,
+        widget: normalized.widget,
+        updatedAtMs: Date.now(),
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      }, { merge: true });
+      this.externalWidgets = this.externalWidgets.filter((item) => item.id !== normalized.widget.id).concat(normalized.widget);
+      if (!this.state.externalWidgetIds.includes(normalized.widget.id)) {
+        this.state.externalWidgetIds.push(normalized.widget.id);
+      }
+      this.populateFilterOptions();
+      this.renderWidgetControls();
+      this.renderPreview();
+      this.els.externalWidgetUrl.value = "";
+      alert(this.t("dash.toast.externalAdded", {}, "External widget registered."));
+    } catch (error) {
+      alert(this.t("dash.toast.externalFailed", {}, "Failed to add external widget."));
+    }
+  }
+
+  async loadExternalWidgetsForUser() {
+    if (!this.user) {
+      this.externalWidgets = [];
+      this.populateFilterOptions();
+      return;
+    }
+    try {
+      const manifests = this.getUserManifestCollection();
+      if (!manifests) return;
+      const snap = await manifests.get();
+      const loaded = [];
+      snap.forEach((doc) => {
+        const data = doc.data() || {};
+        if (data.widget && typeof data.widget === "object") {
+          loaded.push(normalizeWidgetDefinition(data.widget));
+        }
+      });
+      this.externalWidgets = loaded;
+      const ids = new Set(loaded.map((item) => item.id));
+      this.state.externalWidgetIds = this.state.externalWidgetIds.filter((id) => ids.has(id));
+      this.populateFilterOptions();
+      this.renderWidgetControls();
+      this.renderPreview();
+    } catch (error) {
+      this.externalWidgets = [];
+    }
   }
 
   initWidgetSettingsModal() {
@@ -520,7 +974,7 @@ class DashboardBuilder {
   openWidgetSettings(widgetId) {
     if (!this.settingsModal || !this.settingsForm) return;
     this.modalWidgetId = widgetId;
-    const widget = WIDGET_LIBRARY.find((item) => item.id === widgetId);
+    const widget = this.getWidgetById(widgetId);
     const settings = this.getWidgetSettings(widgetId);
 
     const titleEl = this.settingsForm.elements.namedItem("title");
@@ -636,13 +1090,38 @@ class DashboardBuilder {
   }
 
   getWidgetDefaultLayout(widgetId) {
-    const item = WIDGET_LIBRARY.find((widget) => widget.id === widgetId);
+    const item = this.getWidgetById(widgetId);
     return item?.layout || { x: 0, y: 0, w: 2, h: 2 };
   }
 
+  validateDashboardLayout() {
+    const errors = [];
+    const active = this.getActiveLayouts();
+    const entries = Object.entries(active);
+    entries.forEach(([id, layout]) => {
+      if (!isLayoutInBounds(layout)) {
+        errors.push(`${id}:out_of_bounds`);
+      }
+    });
+    for (let i = 0; i < entries.length; i += 1) {
+      for (let j = i + 1; j < entries.length; j += 1) {
+        if (rectsOverlap(entries[i][1], entries[j][1])) {
+          errors.push(`${entries[i][0]}:${entries[j][0]}:overlap`);
+        }
+      }
+    }
+    return { ok: errors.length === 0, errors };
+  }
+
   resetGridLayout() {
-    this.state.layouts = createDefaultLayouts();
+    const next = {};
+    this.getAllWidgets().forEach((widget) => {
+      next[widget.id] = this.normalizeLayout(widget.layout, widget.layout);
+    });
+    this.state.layouts = next;
+    this.setPlacementMessage("");
     this.renderPreview();
+    this.renderWidgetControls();
   }
 
   startDataPipeline() {
@@ -657,7 +1136,7 @@ class DashboardBuilder {
       this.refreshWeatherData()
     ]);
     this.refreshNetworkData();
-    if (!this.dragState && !this.modalWidgetId) {
+    if (!this.dragState) {
       this.renderPreview();
     }
   }
@@ -714,11 +1193,23 @@ class DashboardBuilder {
   async refreshWeatherData() {
     if (this.weatherDisabled) return;
     if (Date.now() - this.weatherLastFetchMs < 10 * 60 * 1000) return;
-    if (!("geolocation" in navigator) || typeof fetch !== "function") return;
+    if (typeof fetch !== "function") return;
     try {
-      const position = await this.getCurrentPosition();
-      const latitude = Number(position.coords.latitude);
-      const longitude = Number(position.coords.longitude);
+      const weatherWidgetIds = ["weather", "weatherTiles"];
+      const manual = weatherWidgetIds
+        .map((id) => this.getWidgetSettings(id))
+        .find((settings) => settings.locationMode === "manual" && Number.isFinite(settings.latitude) && Number.isFinite(settings.longitude));
+      let latitude;
+      let longitude;
+      if (manual) {
+        latitude = Number(manual.latitude);
+        longitude = Number(manual.longitude);
+      } else {
+        if (!("geolocation" in navigator)) return;
+        const position = await this.getCurrentPosition();
+        latitude = Number(position.coords.latitude);
+        longitude = Number(position.coords.longitude);
+      }
       if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return;
 
       const url = new URL("https://api.open-meteo.com/v1/forecast");
@@ -798,9 +1289,11 @@ class DashboardBuilder {
     this.auth.onAuthStateChanged(async (user) => {
       this.user = user || null;
       this.updateAuthUi();
+      await this.loadExternalWidgetsForUser();
       await this.loadDashboardFromRouteOrOwner();
     });
     this.updateAuthUi();
+    await this.loadExternalWidgetsForUser();
     await this.loadDashboardFromRouteOrOwner();
   }
 
@@ -899,10 +1392,12 @@ class DashboardBuilder {
       this.state = this.createState(DEFAULT_STATE);
       this.viewedOwnerUid = "";
     }
+    this.selectedWidgetId = "";
 
     this.syncEditorFromState();
     this.renderWidgetControls();
     this.renderPreview();
+    this.renderInspector();
     this.updateSaveCopyVisibility();
   }
 
@@ -939,12 +1434,17 @@ class DashboardBuilder {
 
     const ownerName = this.user?.displayName || this.user?.email?.split("@")[0] || this.t("dash.ownerFallback", {}, "Tesla owner");
 
-    WIDGET_LIBRARY.forEach((widget) => {
+    this.getAllWidgets().forEach((widget) => {
       if (!this.state.widgets[widget.id]) return;
       const card = this.createWidgetCard(widget, ownerName);
       const layout = this.normalizeLayout(this.state.layouts[widget.id], widget.layout);
-      this.state.layouts[widget.id] = layout;
-      this.applyCardLayout(card, layout);
+      const activeLayouts = this.getActiveLayouts(widget.id);
+      const finalLayout = canPlaceLayout(widget.id, layout, activeLayouts)
+        ? layout
+        : findFirstFit(widget.id, widget.layout, activeLayouts) || null;
+      if (!finalLayout) return;
+      this.state.layouts[widget.id] = finalLayout;
+      this.applyCardLayout(card, finalLayout);
       card.style.setProperty("--grid-cols", String(GRID_SPEC.cols));
       card.style.setProperty("--grid-rows", String(GRID_SPEC.rows));
       this.els.widgetGrid.appendChild(card);
@@ -970,6 +1470,11 @@ class DashboardBuilder {
       this.els.widgetGrid.appendChild(empty);
     }
 
+    if (this.selectedWidgetId && !this.state.widgets[this.selectedWidgetId]) {
+      this.selectedWidgetId = "";
+      this.renderInspector();
+    }
+
     this.updateClockWidget();
   }
 
@@ -977,6 +1482,9 @@ class DashboardBuilder {
     const card = document.createElement("article");
     card.className = `dash-widget skin-${widget.skin}`;
     card.setAttribute("data-widget-id", widget.id);
+    if (this.selectedWidgetId === widget.id) {
+      card.classList.add("selected");
+    }
 
     const content = this.getWidgetContent(widget.id, ownerName);
     const topHtml = `<div class="widget-top"><p class="widget-title">${this.escapeHtml(content.title)}</p><span class="widget-badge">${this.escapeHtml(content.badge || this.t("dash.widget.badgeLive", {}, "Live"))}</span></div>`;
@@ -1094,6 +1602,16 @@ class DashboardBuilder {
       result.meter = Math.max(0, Math.min(100, usage.usedPct));
     }
 
+    const sizeVariant = settings.sizeVariant || "small";
+    if (sizeVariant === "small") {
+      result.subLines = (result.subLines || []).slice(0, 1);
+      if (Array.isArray(result.pills)) result.pills = result.pills.slice(0, 1);
+      delete result.bars;
+    } else if (sizeVariant === "medium") {
+      result.subLines = (result.subLines || []).slice(0, 2);
+      if (Array.isArray(result.pills)) result.pills = result.pills.slice(0, 2);
+    }
+
     return result;
   }
 
@@ -1170,6 +1688,11 @@ class DashboardBuilder {
 
     const asCopy = Boolean(options.asCopy);
     this.applyFromEditor();
+    const layoutCheck = this.validateDashboardLayout();
+    if (!layoutCheck.ok) {
+      alert(this.t("dash.toast.layoutInvalid", {}, "Layout has overlapping or out-of-bound widgets."));
+      return;
+    }
 
     let targetDashboardId = this.dashboardId;
     let targetPublicId = this.publicId;
@@ -1240,6 +1763,13 @@ class DashboardBuilder {
   }
 }
 
+window.__dashboardLayoutUtils = {
+  isLayoutInBounds,
+  rectsOverlap,
+  canPlaceLayout,
+  findFirstFit
+};
+
 window.addEventListener("DOMContentLoaded", () => {
-  new DashboardBuilder();
+  window.__dashboardBuilder = new DashboardBuilder();
 });
