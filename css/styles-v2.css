@@ -55,6 +55,7 @@
 
     /* Editor Panel */
     --editor-width: 420px;
+    --content-rail-width: 1136px;
 }
 
 *, *::before, *::after {
@@ -305,6 +306,9 @@ body {
         padding-left: 22rem;
         padding-right: 24rem;
         max-width: 1700px;
+    }
+    :root {
+        --content-rail-width: 964px;
     }
 }
 
@@ -1937,11 +1941,40 @@ body.editor-open .challenge-dock {
 }
 
 /* ===========================
+   Inline Ad Band
+   =========================== */
+.ad-inline-band {
+    margin: 0.9rem auto 0.7rem;
+    width: min(var(--content-rail-width), calc(100% - 2rem));
+}
+
+.ad-inline-inner {
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: linear-gradient(180deg, rgba(19, 19, 22, 0.92), rgba(14, 14, 18, 0.9));
+    box-shadow: var(--shadow-sm);
+    padding: 0.65rem 0.7rem 0.75rem;
+    overflow: hidden;
+}
+
+.ad-inline-label {
+    margin: 0 0 0.4rem;
+    font-size: 0.64rem;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+}
+
+.ad-inline-inner .adsbygoogle {
+    min-height: 110px;
+}
+
+/* ===========================
    Legal Footer
    =========================== */
 .legal-footer {
     margin: 1.25rem auto 1.25rem;
-    width: min(1200px, calc(100% - 2rem));
+    width: min(var(--content-rail-width), calc(100% - 2rem));
     border: 1px solid var(--color-border);
     border-radius: var(--radius-md);
     background: rgba(17, 17, 20, 0.82);
@@ -2080,6 +2113,11 @@ body.editor-open .challenge-dock {
     }
 
     .legal-footer {
+        width: calc(100% - 2rem);
+        margin-top: 0;
+    }
+
+    .ad-inline-band {
         width: calc(100% - 2rem);
         margin-top: 0;
     }
