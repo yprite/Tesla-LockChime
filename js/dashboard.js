@@ -16,6 +16,9 @@ const MODEL_PRESETS = {
 };
 
 const GRID_SPEC = { cols: 12, rows: 8 };
+const EXTERNAL_WIDGETS_ENABLED = false;
+const HOLD_FEEDBACK_DELAY_MS = 1000;
+const DRAG_START_THRESHOLD_PX = 4;
 const SIZE_PRESETS = {
   small: { w: 2, h: 2 },
   medium: { w: 3, h: 2 },
@@ -166,6 +169,7 @@ class DashboardBuilder {
     this.dataRefreshTimer = null;
     this.weatherSearchTimer = null;
     this.els = this.cacheElements();
+    this.configureExternalWidgetsAvailability();
     this.initLanguageSettings();
     this.populateFilterOptions();
     this.renderWidgetControls();
@@ -243,6 +247,7 @@ class DashboardBuilder {
       widgetFilterStyle: document.getElementById("widget-filter-style"),
       btnResetLayout: document.getElementById("btn-reset-layout"),
       widgetPlacementMessage: document.getElementById("widget-placement-message"),
+      externalWidgetSection: document.getElementById("external-widget-section"),
       widgetControls: document.getElementById("widget-controls"),
       widgetGrid: document.getElementById("widget-grid"),
       preview: document.getElementById("dashboard-preview"),
@@ -381,6 +386,7 @@ class DashboardBuilder {
   }
 
   getAllWidgets() {
+    if (!EXTERNAL_WIDGETS_ENABLED) return [...WIDGET_LIBRARY];
     return [...WIDGET_LIBRARY, ...this.externalWidgets];
   }
 
@@ -400,6 +406,14 @@ class DashboardBuilder {
 
   setPlacementMessage(message = "") {
     if (this.els.widgetPlacementMessage) this.els.widgetPlacementMessage.textContent = message;
+  }
+
+  configureExternalWidgetsAvailability() {
+    if (!EXTERNAL_WIDGETS_ENABLED) {
+      this.els.externalWidgetSection?.classList.add("hidden");
+    } else {
+      this.els.externalWidgetSection?.classList.remove("hidden");
+    }
   }
 
   getFilteredWidgets() {
@@ -539,7 +553,9 @@ class DashboardBuilder {
 
     this.els.bgTheme?.addEventListener("change", () => this.applyFromEditor());
     this.els.bgImageUrl?.addEventListener("change", () => this.applyFromEditor());
-    this.els.btnAddExternalWidget?.addEventListener("click", () => this.handleAddExternalWidget());
+    if (EXTERNAL_WIDGETS_ENABLED) {
+      this.els.btnAddExternalWidget?.addEventListener("click", () => this.handleAddExternalWidget());
+    }
     this.els.inspectorSize?.addEventListener("change", () => this.handleInspectorSizeChange());
     this.els.inspectorTitle?.addEventListener("input", () => this.handleInspectorTextChange());
     this.els.inspectorWeatherMode?.addEventListener("change", () => this.handleInspectorWeatherModeChange());
@@ -568,9 +584,14 @@ class DashboardBuilder {
 
       const widgetId = card.getAttribute("data-widget-id");
       if (!widgetId) return;
-      this.selectWidget(widgetId);
+      this.selectWidget(widgetId, { renderPreview: false, renderControls: false });
 
       const initial = this.normalizeLayout(this.state.layouts[widgetId], this.getWidgetDefaultLayout(widgetId));
+      const holdTimer = setTimeout(() => {
+        if (this.dragState && this.dragState.widgetId === widgetId && !this.dragState.moved) {
+          card.classList.add("press-feedback");
+        }
+      }, HOLD_FEEDBACK_DELAY_MS);
       this.dragState = {
         widgetId,
         card,
@@ -578,7 +599,13 @@ class DashboardBuilder {
         pointerId: event.pointerId,
         startX: event.clientX,
         startY: event.clientY,
-        initial
+        initial,
+        next: initial,
+        moved: false,
+        holdTimer,
+        rafPending: false,
+        pendingClientX: event.clientX,
+        pendingClientY: event.clientY
       };
 
       card.classList.add(resizeHandle ? "resizing" : "dragging");
@@ -589,21 +616,42 @@ class DashboardBuilder {
     grid.addEventListener("pointermove", (event) => {
       if (!this.dragState) return;
       if (this.dragState.pointerId !== event.pointerId) return;
+      const drag = this.dragState;
+      drag.pendingClientX = event.clientX;
+      drag.pendingClientY = event.clientY;
 
-      const next = this.computeDragLayout(event.clientX, event.clientY);
-      const activeLayouts = this.getActiveLayouts(this.dragState.widgetId);
-      const valid = canPlaceLayout(this.dragState.widgetId, next, activeLayouts);
-      this.applyCardLayout(this.dragState.card, valid ? next : this.dragState.initial);
-      this.dragState.card.classList.toggle("invalid", !valid);
-      this.dragState.next = valid ? next : this.dragState.initial;
-      this.dragState.isValid = valid;
+      const movedX = Math.abs(event.clientX - drag.startX);
+      const movedY = Math.abs(event.clientY - drag.startY);
+      if (movedX > DRAG_START_THRESHOLD_PX || movedY > DRAG_START_THRESHOLD_PX) {
+        drag.moved = true;
+        drag.card.classList.remove("press-feedback");
+      }
+
+      if (drag.rafPending) return;
+      drag.rafPending = true;
+      const runOnFrame = typeof requestAnimationFrame === "function"
+        ? requestAnimationFrame
+        : (cb) => setTimeout(cb, 16);
+      runOnFrame(() => {
+        if (!this.dragState || this.dragState.pointerId !== drag.pointerId) return;
+        const next = this.computeDragLayout(drag.pendingClientX, drag.pendingClientY);
+        const activeLayouts = this.getActiveLayouts(drag.widgetId);
+        const valid = canPlaceLayout(drag.widgetId, next, activeLayouts);
+        this.applyCardLayout(drag.card, valid ? next : drag.initial);
+        drag.card.classList.toggle("invalid", !valid);
+        drag.card.classList.toggle("moving", drag.moved);
+        drag.next = valid ? next : drag.initial;
+        drag.isValid = valid;
+        drag.rafPending = false;
+      });
     });
 
     const releaseDrag = (event) => {
       if (!this.dragState) return;
       if (event && this.dragState.pointerId !== event.pointerId) return;
+      clearTimeout(this.dragState.holdTimer);
       this.state.layouts[this.dragState.widgetId] = this.dragState.next || this.dragState.initial;
-      this.dragState.card.classList.remove("dragging", "resizing");
+      this.dragState.card.classList.remove("dragging", "resizing", "moving", "press-feedback");
       this.dragState.card.classList.remove("invalid");
       this.dragState = null;
       this.renderPreview();
@@ -624,11 +672,22 @@ class DashboardBuilder {
     });
   }
 
-  selectWidget(widgetId) {
+  selectWidget(widgetId, options = {}) {
+    const { renderPreview = true, renderControls = true } = options;
     this.selectedWidgetId = widgetId || "";
     this.renderInspector();
-    this.renderPreview();
-    this.renderWidgetControls();
+    this.updateSelectedWidgetVisualState();
+    if (renderPreview) this.renderPreview();
+    if (renderControls) this.renderWidgetControls();
+  }
+
+  updateSelectedWidgetVisualState() {
+    const cards = this.els.widgetGrid?.querySelectorAll(".dash-widget");
+    if (!cards) return;
+    cards.forEach((card) => {
+      const widgetId = card.getAttribute("data-widget-id");
+      card.classList.toggle("selected", Boolean(widgetId && widgetId === this.selectedWidgetId));
+    });
   }
 
   renderInspector() {
@@ -847,6 +906,10 @@ class DashboardBuilder {
   }
 
   async handleAddExternalWidget() {
+    if (!EXTERNAL_WIDGETS_ENABLED) {
+      alert(this.t("dash.toast.externalDisabled", {}, "External widgets are temporarily disabled."));
+      return;
+    }
     if (!this.user) {
       alert(this.t("dash.toast.loginRequired", {}, "Login required to save dashboard."));
       return;
@@ -883,6 +946,10 @@ class DashboardBuilder {
   }
 
   async loadExternalWidgetsForUser() {
+    if (!EXTERNAL_WIDGETS_ENABLED) {
+      this.externalWidgets = [];
+      return;
+    }
     if (!this.user) {
       this.externalWidgets = [];
       this.populateFilterOptions();
