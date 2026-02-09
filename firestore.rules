@@ -98,6 +98,28 @@ service cloud.firestore {
                     && resource.data.ownerUid == request.auth.uid;
     }
 
+    // User-owned external widget manifests
+    match /userWidgets/{userId}/manifests/{manifestId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+
+      allow create: if request.auth != null
+                    && request.auth.uid == userId
+                    && request.resource.data.ownerUid == request.auth.uid
+                    && request.resource.data.manifestUrl is string
+                    && request.resource.data.widget is map;
+
+      allow update: if request.auth != null
+                    && request.auth.uid == userId
+                    && resource.data.ownerUid == request.auth.uid
+                    && request.resource.data.ownerUid == request.auth.uid
+                    && request.resource.data.manifestUrl is string
+                    && request.resource.data.widget is map;
+
+      allow delete: if request.auth != null
+                    && request.auth.uid == userId
+                    && resource.data.ownerUid == request.auth.uid;
+    }
+
     // Deny access to all other collections by default
     match /{document=**} {
       allow read, write: if false;
