@@ -190,6 +190,58 @@
                         <span class="range-value" id="volume-value-v2">100%</span>
                     </div>
 
+                    <!-- Effects Section -->
+                    <div class="effects-section">
+                        <button class="effects-toggle" id="effects-toggle" type="button">
+                            <span data-i18n="v2.effects.title">Effects</span>
+                            <svg class="effects-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M6 9l6 6 6-6"/>
+                            </svg>
+                        </button>
+                        <div class="effects-controls collapsed" id="effects-controls">
+                            <!-- Fade In -->
+                            <div class="control-row">
+                                <label class="control-label">
+                                    <span data-i18n="v2.effects.fadeIn">Fade In</span>
+                                </label>
+                                <input type="range" class="range-slider" id="effect-fade-in" min="0" max="100" value="0" step="1">
+                                <span class="range-value" id="effect-fade-in-value">0.0s</span>
+                            </div>
+                            <!-- Fade Out -->
+                            <div class="control-row">
+                                <label class="control-label">
+                                    <span data-i18n="v2.effects.fadeOut">Fade Out</span>
+                                </label>
+                                <input type="range" class="range-slider" id="effect-fade-out" min="0" max="100" value="0" step="1">
+                                <span class="range-value" id="effect-fade-out-value">0.0s</span>
+                            </div>
+                            <!-- Pitch Shift -->
+                            <div class="control-row">
+                                <label class="control-label">
+                                    <span data-i18n="v2.effects.pitch">Pitch</span>
+                                </label>
+                                <input type="range" class="range-slider" id="effect-pitch" min="-12" max="12" value="0" step="1">
+                                <span class="range-value" id="effect-pitch-value">0 st</span>
+                            </div>
+                            <!-- Reverb -->
+                            <div class="control-row">
+                                <label class="control-label">
+                                    <span data-i18n="v2.effects.reverb">Reverb</span>
+                                </label>
+                                <input type="range" class="range-slider" id="effect-reverb" min="0" max="100" value="0" step="1">
+                                <span class="range-value" id="effect-reverb-value">0%</span>
+                            </div>
+                            <!-- Bass Boost -->
+                            <div class="control-row">
+                                <label class="control-label">
+                                    <span data-i18n="v2.effects.bass">Bass</span>
+                                </label>
+                                <input type="range" class="range-slider" id="effect-bass" min="-12" max="12" value="0" step="1">
+                                <span class="range-value" id="effect-bass-value">0 dB</span>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Validation Status -->
                     <div class="validation-status" id="validation-status">
                         <svg class="status-icon valid" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -483,6 +535,7 @@
     <script defer src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
     <script defer src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
     <script defer src="js/audio-data.js"></script>
+    <script defer src="js/audio-effects.js"></script>
     <script defer src="js/audio-processor.js"></script>
     <script defer src="js/file-system.js"></script>
     <script defer src="js/gallery.js"></script>

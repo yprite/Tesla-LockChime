@@ -35,6 +35,7 @@ class TeslaLockSoundAppV2 {
             duration: 0,
             isPlaying: false,
             volume: 100,
+            effects: { fadeIn: 0, fadeOut: 0, pitch: 0, reverb: 0, bass: 0 },
             isEditorOpen: false,
             currentCategory: 'all',
             searchQuery: '',
@@ -142,7 +143,20 @@ class TeslaLockSoundAppV2 {
             btnChatSend: document.getElementById('btn-chat-send'),
             workspaceDraftName: document.getElementById('workspace-draft-name'),
             btnSaveDraft: document.getElementById('btn-save-draft'),
-            workspaceDraftsList: document.getElementById('workspace-drafts-list')
+            workspaceDraftsList: document.getElementById('workspace-drafts-list'),
+
+            effectsToggle: document.getElementById('effects-toggle'),
+            effectsControls: document.getElementById('effects-controls'),
+            effectFadeIn: document.getElementById('effect-fade-in'),
+            effectFadeInValue: document.getElementById('effect-fade-in-value'),
+            effectFadeOut: document.getElementById('effect-fade-out'),
+            effectFadeOutValue: document.getElementById('effect-fade-out-value'),
+            effectPitch: document.getElementById('effect-pitch'),
+            effectPitchValue: document.getElementById('effect-pitch-value'),
+            effectReverb: document.getElementById('effect-reverb'),
+            effectReverbValue: document.getElementById('effect-reverb-value'),
+            effectBass: document.getElementById('effect-bass'),
+            effectBassValue: document.getElementById('effect-bass-value')
         };
     }
 
@@ -511,6 +525,13 @@ class TeslaLockSoundAppV2 {
         this.elements.progressBar?.addEventListener('click', (e) => this.seekTo(e));
 
         this.elements.volumeSlider?.addEventListener('input', () => this.handleVolumeChange());
+
+        this.elements.effectsToggle?.addEventListener('click', () => this.toggleEffectsPanel());
+        this.elements.effectFadeIn?.addEventListener('input', () => this.handleEffectChange());
+        this.elements.effectFadeOut?.addEventListener('input', () => this.handleEffectChange());
+        this.elements.effectPitch?.addEventListener('input', () => this.handleEffectChange());
+        this.elements.effectReverb?.addEventListener('input', () => this.handleEffectChange());
+        this.elements.effectBass?.addEventListener('input', () => this.handleEffectChange());
 
         this.elements.btnDownload?.addEventListener('click', () => this.downloadSound());
         this.elements.btnSaveUsb?.addEventListener('click', () => this.saveToUsb());
@@ -1161,6 +1182,7 @@ class TeslaLockSoundAppV2 {
         if (this.elements.editorSoundName) {
             this.elements.editorSoundName.textContent = this.state.selectedSoundName;
         }
+        this.resetEffects();
         this.resizeWaveformCanvas();
     }
 
@@ -1364,14 +1386,103 @@ class TeslaLockSoundAppV2 {
         }
     }
 
-    downloadSound() {
+    toggleEffectsPanel() {
+        const controls = this.elements.effectsControls;
+        const toggle = this.elements.effectsToggle;
+        if (!controls || !toggle) return;
+
+        const isCollapsed = controls.classList.contains('collapsed');
+        controls.classList.toggle('collapsed', !isCollapsed);
+        toggle.classList.toggle('active', isCollapsed);
+    }
+
+    handleEffectChange() {
+        const fadeInRaw = parseInt(this.elements.effectFadeIn?.value || 0, 10);
+        const fadeOutRaw = parseInt(this.elements.effectFadeOut?.value || 0, 10);
+        const pitch = parseInt(this.elements.effectPitch?.value || 0, 10);
+        const reverb = parseInt(this.elements.effectReverb?.value || 0, 10);
+        const bass = parseInt(this.elements.effectBass?.value || 0, 10);
+
+        const fadeIn = fadeInRaw / 100;
+        const fadeOut = fadeOutRaw / 100;
+
+        this.state.effects = { fadeIn, fadeOut, pitch, reverb, bass };
+
+        this.audioProcessor.setEffects(this.state.effects);
+
+        if (this.elements.effectFadeInValue) {
+            this.elements.effectFadeInValue.textContent = `${fadeIn.toFixed(1)}s`;
+        }
+        if (this.elements.effectFadeOutValue) {
+            this.elements.effectFadeOutValue.textContent = `${fadeOut.toFixed(1)}s`;
+        }
+        if (this.elements.effectPitchValue) {
+            const sign = pitch > 0 ? '+' : '';
+            this.elements.effectPitchValue.textContent = `${sign}${pitch} st`;
+        }
+        if (this.elements.effectReverbValue) {
+            this.elements.effectReverbValue.textContent = `${reverb}%`;
+        }
+        if (this.elements.effectBassValue) {
+            const sign = bass > 0 ? '+' : '';
+            this.elements.effectBassValue.textContent = `${sign}${bass} dB`;
+        }
+    }
+
+    resetEffects() {
+        this.state.effects = { fadeIn: 0, fadeOut: 0, pitch: 0, reverb: 0, bass: 0 };
+        this.audioProcessor.setEffects(this.state.effects);
+
+        if (this.elements.effectFadeIn) this.elements.effectFadeIn.value = '0';
+        if (this.elements.effectFadeOut) this.elements.effectFadeOut.value = '0';
+        if (this.elements.effectPitch) this.elements.effectPitch.value = '0';
+        if (this.elements.effectReverb) this.elements.effectReverb.value = '0';
+        if (this.elements.effectBass) this.elements.effectBass.value = '0';
+
+        if (this.elements.effectFadeInValue) this.elements.effectFadeInValue.textContent = '0.0s';
+        if (this.elements.effectFadeOutValue) this.elements.effectFadeOutValue.textContent = '0.0s';
+        if (this.elements.effectPitchValue) this.elements.effectPitchValue.textContent = '0 st';
+        if (this.elements.effectReverbValue) this.elements.effectReverbValue.textContent = '0%';
+        if (this.elements.effectBassValue) this.elements.effectBassValue.textContent = '0 dB';
+    }
+
+    applyEffectsFromDraft(effects) {
+        const fadeIn = Math.max(0, Math.min(1, Number(effects.fadeIn) || 0));
+        const fadeOut = Math.max(0, Math.min(1, Number(effects.fadeOut) || 0));
+        const pitch = Math.max(-12, Math.min(12, Number(effects.pitch) || 0));
+        const reverb = Math.max(0, Math.min(100, Number(effects.reverb) || 0));
+        const bass = Math.max(-12, Math.min(12, Number(effects.bass) || 0));
+
+        this.state.effects = { fadeIn, fadeOut, pitch, reverb, bass };
+        this.audioProcessor.setEffects(this.state.effects);
+
+        if (this.elements.effectFadeIn) this.elements.effectFadeIn.value = String(Math.round(fadeIn * 100));
+        if (this.elements.effectFadeOut) this.elements.effectFadeOut.value = String(Math.round(fadeOut * 100));
+        if (this.elements.effectPitch) this.elements.effectPitch.value = String(pitch);
+        if (this.elements.effectReverb) this.elements.effectReverb.value = String(reverb);
+        if (this.elements.effectBass) this.elements.effectBass.value = String(bass);
+
+        if (this.elements.effectFadeInValue) this.elements.effectFadeInValue.textContent = `${fadeIn.toFixed(1)}s`;
+        if (this.elements.effectFadeOutValue) this.elements.effectFadeOutValue.textContent = `${fadeOut.toFixed(1)}s`;
+        if (this.elements.effectPitchValue) {
+            const sign = pitch > 0 ? '+' : '';
+            this.elements.effectPitchValue.textContent = `${sign}${pitch} st`;
+        }
+        if (this.elements.effectReverbValue) this.elements.effectReverbValue.textContent = `${reverb}%`;
+        if (this.elements.effectBassValue) {
+            const sign = bass > 0 ? '+' : '';
+            this.elements.effectBassValue.textContent = `${sign}${bass} dB`;
+        }
+    }
+
+    async downloadSound() {
         if (!this.validateDuration()) {
             this.showToast(this.t('step2.duration', {}, 'Duration must be 2-5 seconds'), 'error');
             return;
         }
 
         try {
-            const wavBlob = this.audioProcessor.exportToWav(this.state.trimStart, this.state.trimEnd, {
+            const wavBlob = await this.audioProcessor.exportToWav(this.state.trimStart, this.state.trimEnd, {
                 normalize: true
             });
 
@@ -1395,7 +1506,7 @@ class TeslaLockSoundAppV2 {
         this.showLoading(this.t('status.processing', {}, 'Processing audio...'));
 
         try {
-            const wavBlob = this.audioProcessor.exportToWav(this.state.trimStart, this.state.trimEnd, {
+            const wavBlob = await this.audioProcessor.exportToWav(this.state.trimStart, this.state.trimEnd, {
                 normalize: true
             });
 
@@ -1442,7 +1553,7 @@ class TeslaLockSoundAppV2 {
         this.showLoading(this.t('status.uploading', {}, 'Uploading to gallery...'));
 
         try {
-            const wavBlob = this.audioProcessor.exportToWav(this.state.trimStart, this.state.trimEnd, {
+            const wavBlob = await this.audioProcessor.exportToWav(this.state.trimStart, this.state.trimEnd, {
                 normalize: true
             });
 
@@ -1652,7 +1763,8 @@ class TeslaLockSoundAppV2 {
                 },
                 trimStart: this.state.trimStart,
                 trimEnd: this.state.trimEnd,
-                volume: this.state.volume
+                volume: this.state.volume,
+                effects: { ...this.state.effects }
             });
             this.renderWorkspaceDrafts();
             this.showToast(this.t('v2.draft.saved', {}, 'Draft version saved.'), 'success');
@@ -1737,6 +1849,13 @@ class TeslaLockSoundAppV2 {
             this.elements.volumeValue.textContent = `${this.state.volume}%`;
         }
         this.audioProcessor.setVolume(this.state.volume / 100);
+
+        if (version.effects) {
+            this.applyEffectsFromDraft(version.effects);
+        } else {
+            this.resetEffects();
+        }
+
         this.updateTrimUI();
         this.validateDuration();
         this.showToast(this.t('v2.draft.loaded', { name: draft.name }, `Loaded draft: ${draft.name}`), 'success');
@@ -1818,7 +1937,7 @@ class TeslaLockSoundAppV2 {
         this.showLoading(this.t('status.uploading', {}, 'Uploading to gallery...'));
 
         try {
-            const wavBlob = this.audioProcessor.exportToWav(this.state.trimStart, this.state.trimEnd, {
+            const wavBlob = await this.audioProcessor.exportToWav(this.state.trimStart, this.state.trimEnd, {
                 normalize: true
             });
 

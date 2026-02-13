@@ -991,6 +991,64 @@ body.editor-open .gallery-panel {
 }
 
 /* ===========================
+   Effects Section
+   =========================== */
+.effects-section {
+    border-top: 1px solid var(--color-border);
+    padding-top: 0.75rem;
+}
+
+.effects-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 0.5rem 0;
+    background: transparent;
+    border: none;
+    color: var(--color-text);
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: color var(--duration-fast) var(--ease-out);
+}
+
+.effects-toggle:hover {
+    color: var(--color-primary);
+}
+
+.effects-chevron {
+    width: 18px;
+    height: 18px;
+    color: var(--color-text-secondary);
+    transition: transform var(--duration-normal) var(--ease-out);
+}
+
+.effects-toggle.active .effects-chevron {
+    transform: rotate(180deg);
+}
+
+.effects-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding-top: 0.5rem;
+    max-height: 500px;
+    overflow: hidden;
+    transition: max-height var(--duration-slow) var(--ease-out),
+                padding-top var(--duration-slow) var(--ease-out),
+                opacity var(--duration-normal) var(--ease-out);
+    opacity: 1;
+}
+
+.effects-controls.collapsed {
+    max-height: 0;
+    padding-top: 0;
+    opacity: 0;
+    overflow: hidden;
+}
+
+/* ===========================
    Validation Status
    =========================== */
 .validation-status {

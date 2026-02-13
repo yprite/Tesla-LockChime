@@ -24,6 +24,7 @@ class AudioProcessor {
         this.volume = 1.0;
         this.fadeInDuration = 0;
         this.fadeOutDuration = 0;
+        this.effects = { fadeIn: 0, fadeOut: 0, pitch: 0, reverb: 0, bass: 0 };
     }
 
     /**
@@ -115,6 +116,50 @@ class AudioProcessor {
     }
 
     /**
+     * Set effects parameters
+     * @param {Object} effects - { fadeIn, fadeOut, pitch, reverb, bass }
+     */
+    setEffects(effects) {
+        this.effects = {
+            fadeIn: effects.fadeIn || 0,
+            fadeOut: effects.fadeOut || 0,
+            pitch: effects.pitch || 0,
+            reverb: effects.reverb || 0,
+            bass: effects.bass || 0
+        };
+        this.fadeInDuration = this.effects.fadeIn;
+        this.fadeOutDuration = this.effects.fadeOut;
+    }
+
+    /**
+     * Apply offline effects (pitch, reverb, EQ) to a buffer.
+     * Returns a new processed buffer.
+     *
+     * @param {AudioBuffer} buffer - Source buffer
+     * @param {Object} effects - { pitch, reverb, bass }
+     * @returns {Promise<AudioBuffer>} Processed buffer
+     */
+    async applyEffects(buffer, effects) {
+        if (typeof AudioEffects === 'undefined') return buffer;
+
+        let result = buffer;
+
+        if (effects.pitch && effects.pitch !== 0) {
+            result = await AudioEffects.pitchShift(result, this.audioContext, effects.pitch);
+        }
+
+        if (effects.bass && effects.bass !== 0) {
+            result = await AudioEffects.applyEQ(result, this.audioContext, effects.bass);
+        }
+
+        if (effects.reverb && effects.reverb > 0) {
+            result = await AudioEffects.applyReverb(result, this.audioContext, effects.reverb / 100);
+        }
+
+        return result;
+    }
+
+    /**
      * Play the current buffer (full or trimmed)
      */
     async play(startTime = 0, endTime = null, onEnded = null) {
@@ -126,15 +171,50 @@ class AudioProcessor {
         this.stop();
 
         const duration = endTime !== null ? endTime - startTime : this.currentBuffer.duration - startTime;
+        const now = this.audioContext.currentTime;
 
-        // Create gain node for volume control
+        // Build node chain: Source → BiquadFilter(bass) → GainNode(volume+fade) → destination
         const gainNode = this.audioContext.createGain();
-        gainNode.gain.value = this.volume;
         gainNode.connect(this.audioContext.destination);
+
+        // Apply fade in/out via gain automation
+        const fadeIn = this.effects.fadeIn || 0;
+        const fadeOut = this.effects.fadeOut || 0;
+
+        if (fadeIn > 0) {
+            gainNode.gain.setValueAtTime(0, now);
+            gainNode.gain.linearRampToValueAtTime(this.volume, now + Math.min(fadeIn, duration));
+        } else {
+            gainNode.gain.setValueAtTime(this.volume, now);
+        }
+
+        if (fadeOut > 0) {
+            const fadeOutStart = now + Math.max(0, duration - fadeOut);
+            gainNode.gain.setValueAtTime(this.volume, fadeOutStart);
+            gainNode.gain.linearRampToValueAtTime(0, now + duration);
+        }
+
+        let lastNode = gainNode;
+
+        // Bass EQ node
+        if (this.effects.bass && this.effects.bass !== 0) {
+            const bassFilter = this.audioContext.createBiquadFilter();
+            bassFilter.type = 'lowshelf';
+            bassFilter.frequency.value = 200;
+            bassFilter.gain.value = this.effects.bass;
+            bassFilter.connect(lastNode);
+            lastNode = bassFilter;
+        }
 
         this.currentSource = this.audioContext.createBufferSource();
         this.currentSource.buffer = this.currentBuffer;
-        this.currentSource.connect(gainNode);
+
+        // Apply pitch via playbackRate (real-time preview)
+        if (this.effects.pitch && this.effects.pitch !== 0) {
+            this.currentSource.playbackRate.value = Math.pow(2, this.effects.pitch / 12);
+        }
+
+        this.currentSource.connect(lastNode);
 
         this.currentSource.onended = () => {
             this.isPlaying = false;
@@ -147,7 +227,7 @@ class AudioProcessor {
         return {
             startTime,
             duration,
-            contextTime: this.audioContext.currentTime
+            contextTime: now
         };
     }
 
@@ -245,15 +325,26 @@ class AudioProcessor {
     }
 
     /**
-     * Export the audio as a WAV blob
+     * Export the audio as a WAV blob.
+     * Now async to support OfflineAudioContext-based effects.
      */
-    exportToWav(startTime = 0, endTime = null, options = {}) {
+    async exportToWav(startTime = 0, endTime = null, options = {}) {
         if (!this.currentBuffer) {
             throw new Error('No audio loaded');
         }
 
         const actualEnd = endTime !== null ? endTime : this.currentBuffer.duration;
         let trimmedBuffer = this.trimBuffer(startTime, actualEnd);
+
+        // Apply offline effects (pitch, reverb, EQ)
+        const hasOfflineEffects = this.effects.pitch !== 0 ||
+            this.effects.reverb > 0 ||
+            this.effects.bass !== 0;
+
+        if (hasOfflineEffects) {
+            await this.init();
+            trimmedBuffer = await this.applyEffects(trimmedBuffer, this.effects);
+        }
 
         // Apply normalization if requested
         if (options.normalize !== false) {

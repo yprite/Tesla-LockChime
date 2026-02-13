@@ -49,6 +49,7 @@ class WorkspaceStore {
             trimStart: Number(data.trimStart) || 0,
             trimEnd: Number(data.trimEnd) || DEFAULT_TRIM_END,
             volume: Number(data.volume) || 100,
+            effects: data.effects || null,
             savedAt: new Date().toISOString()
         };
 
