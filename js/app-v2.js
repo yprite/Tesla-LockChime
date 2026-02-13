@@ -156,7 +156,6 @@ class TeslaLockSoundAppV2 {
         this.resizeWaveformCanvas();
         this.ensureFirebaseApp();
         this.initAuth();
-        this.analytics.setDatabaseFromGallery(this.gallery);
         this.analytics.trackReturnSession7d();
         this.trackEvent('landing_view', { page: 'home_v2' });
 
@@ -1000,12 +999,11 @@ class TeslaLockSoundAppV2 {
                 this.elements.loadMoreSection.style.display = result.hasMore ? 'block' : 'none';
             }
         } catch (error) {
-            console.error('Failed to load gallery sounds:', error);
             if (!append) {
                 this.elements.soundsGrid.innerHTML = '';
             }
             this.showEmptyState();
-            this.showToast(`${this.t('gallery.loadFailed', {}, 'Failed to load gallery. Please try again.')} ${error.message}`, 'error');
+            this.showToast(this.t('gallery.loadFailed', {}, 'Failed to load gallery. Please try again.'), 'error');
         }
     }
 
@@ -1734,6 +1732,8 @@ class TeslaLockSoundAppV2 {
         this.state.volume = Math.min(100, Math.max(0, version.volume || 100));
         if (this.elements.volumeSlider) {
             this.elements.volumeSlider.value = String(this.state.volume);
+        }
+        if (this.elements.volumeValue) {
             this.elements.volumeValue.textContent = `${this.state.volume}%`;
         }
         this.audioProcessor.setVolume(this.state.volume / 100);

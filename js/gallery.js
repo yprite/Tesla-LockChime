@@ -420,8 +420,12 @@ class GalleryHandler {
      * Get liked sounds from localStorage
      */
     getLikedSounds() {
-        const liked = localStorage.getItem('gallery_liked_sounds');
-        return liked ? JSON.parse(liked) : [];
+        try {
+            const liked = localStorage.getItem('gallery_liked_sounds');
+            return liked ? JSON.parse(liked) : [];
+        } catch (error) {
+            return [];
+        }
     }
 
     /**
@@ -717,8 +721,12 @@ class GalleryHandler {
      * Get uploaded sounds IDs from localStorage
      */
     getMyUploadedSoundIds() {
-        const uploaded = localStorage.getItem('gallery_my_uploads');
-        return uploaded ? JSON.parse(uploaded) : [];
+        try {
+            const uploaded = localStorage.getItem('gallery_my_uploads');
+            return uploaded ? JSON.parse(uploaded) : [];
+        } catch (error) {
+            return [];
+        }
     }
 
     /**
