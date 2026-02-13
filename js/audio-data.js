@@ -100,6 +100,38 @@ const AUDIO_SAMPLES = [
         duration: 2.0,
         description: 'Soft bell sequence',
         category: 'classic'
+    },
+    {
+        id: 'scifi-alert',
+        name: 'Sci-Fi Alert',
+        icon: '🛸',
+        duration: 1.6,
+        description: 'Descending sci-fi warning signal',
+        category: 'game'
+    },
+    {
+        id: 'power-up',
+        name: 'Power Up',
+        icon: '⬆️',
+        duration: 1.4,
+        description: 'Rising arpeggio pickup sound',
+        category: 'game'
+    },
+    {
+        id: 'mech-lock',
+        name: 'Mech Lock',
+        icon: '🤖',
+        duration: 1.2,
+        description: 'Mechanical latch with servo whir',
+        category: 'game'
+    },
+    {
+        id: 'plasma-ping',
+        name: 'Plasma Ping',
+        icon: '💠',
+        duration: 1.0,
+        description: 'High-energy plasma burst ping',
+        category: 'game'
     }
 ];
 
@@ -289,6 +321,146 @@ const soundGenerators = {
             const sine = Math.sin(2 * Math.PI * freq * t);
             const square = Math.sign(sine) * 0.3;
             data[i] = (sine * 0.7 + square) * envelope * 0.3;
+        }
+        return buffer;
+    },
+
+    'scifi-alert': (sampleRate, createBuffer) => {
+        const duration = 1.6;
+        const buffer = createBuffer(1, Math.floor(sampleRate * duration), sampleRate);
+        const data = buffer.getChannelData(0);
+
+        for (let i = 0; i < buffer.length; i++) {
+            const t = i / sampleRate;
+            const envelope = Math.exp(-1.8 * t);
+            // Descending sweep from 2000Hz to 300Hz
+            const sweep = 2000 * Math.exp(-2.5 * t) + 300;
+            const main = Math.sin(2 * Math.PI * sweep * t);
+            // Pulsing LFO for alarm feel
+            const lfo = 0.6 + 0.4 * Math.sin(2 * Math.PI * 8 * t);
+            // Metallic overtone
+            const overtone = Math.sin(2 * Math.PI * sweep * 2.7 * t) * 0.15;
+            // Noise burst at start
+            const noiseBurst = t < 0.05 ? (Math.random() * 2 - 1) * (1 - t / 0.05) * 0.4 : 0;
+            data[i] = (main * lfo + overtone + noiseBurst) * envelope * 0.3;
+        }
+        return buffer;
+    },
+
+    'power-up': (sampleRate, createBuffer) => {
+        const duration = 1.4;
+        const buffer = createBuffer(1, Math.floor(sampleRate * duration), sampleRate);
+        const data = buffer.getChannelData(0);
+        // Rising arpeggio: C5 → E5 → G5 → C6 → E6 → G6
+        const notes = [523.25, 659.25, 783.99, 1046.5, 1318.5, 1568.0];
+        const noteLen = 0.18;
+
+        for (let i = 0; i < buffer.length; i++) {
+            const t = i / sampleRate;
+            let sample = 0;
+
+            for (let n = 0; n < notes.length; n++) {
+                const noteStart = n * noteLen;
+                if (t >= noteStart) {
+                    const nt = t - noteStart;
+                    const env = Math.exp(-4 * nt) * Math.min(1, nt / 0.005);
+                    sample += Math.sin(2 * Math.PI * notes[n] * t) * env;
+                    // Shimmer harmonic
+                    sample += Math.sin(2 * Math.PI * notes[n] * 2.01 * t) * env * 0.15;
+                }
+            }
+
+            // Final sustain chord (top 3 notes)
+            const chordStart = notes.length * noteLen;
+            if (t >= chordStart) {
+                const ct = t - chordStart;
+                const chordEnv = Math.exp(-2.5 * ct);
+                for (let c = 3; c < notes.length; c++) {
+                    sample += Math.sin(2 * Math.PI * notes[c] * t) * chordEnv * 0.3;
+                }
+            }
+
+            data[i] = sample * 0.18;
+        }
+        return buffer;
+    },
+
+    'mech-lock': (sampleRate, createBuffer) => {
+        const duration = 1.2;
+        const buffer = createBuffer(1, Math.floor(sampleRate * duration), sampleRate);
+        const data = buffer.getChannelData(0);
+
+        for (let i = 0; i < buffer.length; i++) {
+            const t = i / sampleRate;
+            let sample = 0;
+
+            // Phase 1: Servo whir (0 - 0.4s) - rising frequency noise
+            if (t < 0.4) {
+                const servoFreq = 200 + 1800 * (t / 0.4);
+                const servoEnv = Math.sin(Math.PI * t / 0.4);
+                sample += Math.sin(2 * Math.PI * servoFreq * t) * servoEnv * 0.3;
+                // Gritty texture
+                sample += Math.sin(2 * Math.PI * servoFreq * 3.1 * t) * servoEnv * 0.08;
+            }
+
+            // Phase 2: Heavy clunk (0.35 - 0.7s)
+            if (t >= 0.35 && t < 0.7) {
+                const ct = t - 0.35;
+                const clunkEnv = Math.exp(-12 * ct);
+                // Low thud
+                sample += Math.sin(2 * Math.PI * 80 * ct) * clunkEnv * 0.6;
+                // Metallic transient
+                sample += (Math.random() * 2 - 1) * Math.exp(-30 * ct) * 0.5;
+                // Resonant ring
+                sample += Math.sin(2 * Math.PI * 1200 * ct) * Math.exp(-8 * ct) * 0.2;
+            }
+
+            // Phase 3: Confirmation beep (0.7 - 1.2s)
+            if (t >= 0.7) {
+                const bt = t - 0.7;
+                const beepEnv = Math.exp(-4 * bt) * Math.min(1, bt / 0.01);
+                sample += Math.sin(2 * Math.PI * 880 * t) * beepEnv * 0.25;
+                sample += Math.sin(2 * Math.PI * 1320 * t) * beepEnv * 0.12;
+            }
+
+            data[i] = sample * 0.5;
+        }
+        return buffer;
+    },
+
+    'plasma-ping': (sampleRate, createBuffer) => {
+        const duration = 1.0;
+        const buffer = createBuffer(1, Math.floor(sampleRate * duration), sampleRate);
+        const data = buffer.getChannelData(0);
+
+        for (let i = 0; i < buffer.length; i++) {
+            const t = i / sampleRate;
+            let sample = 0;
+
+            // Initial plasma burst (sharp attack)
+            const burstEnv = Math.exp(-20 * t);
+            sample += Math.sin(2 * Math.PI * 3200 * t) * burstEnv * 0.4;
+            // Noise crackle on burst
+            sample += (Math.random() * 2 - 1) * burstEnv * 0.3;
+
+            // Main ping body - descending with wobble
+            const pingFreq = 1600 * Math.exp(-1.5 * t) + 400;
+            const wobble = 1 + 0.05 * Math.sin(2 * Math.PI * 30 * t);
+            const pingEnv = Math.exp(-3 * t) * Math.min(1, t / 0.003);
+            sample += Math.sin(2 * Math.PI * pingFreq * wobble * t) * pingEnv * 0.5;
+
+            // Sub-harmonic rumble
+            sample += Math.sin(2 * Math.PI * 120 * t) * Math.exp(-5 * t) * 0.2;
+
+            // Harmonic shimmer tail
+            if (t > 0.1) {
+                const st = t - 0.1;
+                const shimmerEnv = Math.exp(-2.5 * st);
+                sample += Math.sin(2 * Math.PI * 2400 * t) * shimmerEnv * 0.08;
+                sample += Math.sin(2 * Math.PI * 3600 * t) * shimmerEnv * 0.04;
+            }
+
+            data[i] = Math.max(-1, Math.min(1, sample * 0.4));
         }
         return buffer;
     },
