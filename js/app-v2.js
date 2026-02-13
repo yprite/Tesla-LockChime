@@ -884,12 +884,12 @@ class TeslaLockSoundAppV2 {
         };
 
         this.elements.trimHandleLeft?.addEventListener('mousedown', startDrag('left'));
-        this.elements.trimHandleLeft?.addEventListener('touchstart', startDrag('left'));
+        this.elements.trimHandleLeft?.addEventListener('touchstart', startDrag('left'), { passive: false });
         this.elements.trimHandleRight?.addEventListener('mousedown', startDrag('right'));
-        this.elements.trimHandleRight?.addEventListener('touchstart', startDrag('right'));
+        this.elements.trimHandleRight?.addEventListener('touchstart', startDrag('right'), { passive: false });
 
         document.addEventListener('mousemove', onDrag);
-        document.addEventListener('touchmove', onDrag);
+        document.addEventListener('touchmove', onDrag, { passive: false });
         document.addEventListener('mouseup', endDrag);
         document.addEventListener('touchend', endDrag);
     }
