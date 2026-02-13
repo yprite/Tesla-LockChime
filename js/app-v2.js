@@ -149,20 +149,44 @@ class TeslaLockSoundAppV2 {
     async init() {
         this.waveformCanvas = this.elements.waveformCanvas;
         this.waveformCtx = this.waveformCanvas?.getContext('2d');
+        this.loadOwnerProfile();
         this.initLanguageSettings();
-
-        await this.initGallery();
-        this.initAuth();
-        this.initChat();
-        this.initGrowthFeatures();
         this.setupEventListeners();
         this.populatePresets();
         this.resizeWaveformCanvas();
+        this.ensureFirebaseApp();
+        this.initAuth();
         this.analytics.setDatabaseFromGallery(this.gallery);
         this.analytics.trackReturnSession7d();
         this.trackEvent('landing_view', { page: 'home_v2' });
 
+        if (this.elements.soundsGrid && !this.elements.soundsGrid.childElementCount) {
+            this.elements.soundsGrid.innerHTML = `<div class="loading-placeholder">${this.t('status.loading', {}, 'Loading...')}</div>`;
+        }
+
+        this.runAfterFirstPaint(() => {
+            this.initGallery();
+        });
+        this.runWhenIdle(() => this.initGrowthFeatures(), 1500);
+        this.runWhenIdle(() => this.initChat(), 2000);
+
         window.addEventListener('resize', () => this.resizeWaveformCanvas());
+    }
+
+    runAfterFirstPaint(task) {
+        if (typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function') {
+            window.requestAnimationFrame(() => task());
+            return;
+        }
+        setTimeout(task, 0);
+    }
+
+    runWhenIdle(task, timeout = 1500) {
+        if (typeof window !== 'undefined' && typeof window.requestIdleCallback === 'function') {
+            window.requestIdleCallback(() => task(), { timeout });
+            return;
+        }
+        setTimeout(task, 0);
     }
 
     t(key, params = {}, fallback = key) {
@@ -452,16 +476,14 @@ class TeslaLockSoundAppV2 {
     async initGallery() {
         try {
             const initialized = await this.gallery.init();
-            console.log('Gallery initialized:', initialized);
             if (initialized) {
+                this.analytics.setDatabaseFromGallery(this.gallery);
                 await this.loadGallerySounds();
                 await this.updateStats();
             } else {
-                console.warn('Gallery initialization failed');
                 this.showEmptyState();
             }
         } catch (error) {
-            console.error('Gallery init error:', error);
             this.showEmptyState();
         }
     }
@@ -520,6 +542,17 @@ class TeslaLockSoundAppV2 {
                 this.sendChatMessage();
             }
         });
+    }
+
+    ensureFirebaseApp() {
+        if (typeof firebase === 'undefined') return;
+        try {
+            if (!firebase.apps.length) {
+                firebase.initializeApp(FIREBASE_CONFIG);
+            }
+        } catch (error) {
+            // Firebase init will be retried in gallery.init()
+        }
     }
 
     initAuth() {
@@ -920,7 +953,6 @@ class TeslaLockSoundAppV2 {
 
     async loadGallerySounds(append = false) {
         if (!this.gallery.isAvailable()) {
-            console.warn('Gallery not available');
             this.showEmptyState();
             return;
         }
@@ -1007,7 +1039,7 @@ class TeslaLockSoundAppV2 {
                     <span>${this.formatFileSize(sound.fileSize || 0)}</span>
                 </div>
                 <div class="sound-card-stats">
-                    <span class="sound-card-stat likes ${isLiked ? 'liked' : ''}" data-sound-id="${sound.id}">
+                    <span class="sound-card-stat likes ${isLiked ? 'liked' : ''}" data-sound-id="${sound.id}" data-like-count="${sound.likes || 0}">
                         ${isLiked ? '❤️' : '🤍'} ${sound.likes || 0}
                     </span>
                     <span class="sound-card-stat">
@@ -1084,10 +1116,12 @@ class TeslaLockSoundAppV2 {
 
     async handleLike(soundId, element) {
         try {
+            const previousCount = parseInt(element.dataset.likeCount || '0', 10);
             const { liked } = await this.gallery.likeSound(soundId);
-            const count = parseInt(element.textContent.match(/\d+/)?.[0] || 0);
+            const newCount = Math.max(0, previousCount + (liked ? 1 : -1));
+            element.dataset.likeCount = String(newCount);
             element.classList.toggle('liked', liked);
-            element.innerHTML = `${liked ? '❤️' : '🤍'} ${count + (liked ? 1 : -1)}`;
+            element.innerHTML = `${liked ? '❤️' : '🤍'} ${newCount}`;
         } catch (error) {
             this.showToast(this.t('v2.likeFailed', {}, 'Failed to like sound.'), 'error');
         }
@@ -1126,7 +1160,9 @@ class TeslaLockSoundAppV2 {
         this.state.isEditorOpen = true;
         document.body.classList.add('editor-open');
         this.elements.editorPanel?.classList.add('open');
-        this.elements.editorSoundName.textContent = this.state.selectedSoundName;
+        if (this.elements.editorSoundName) {
+            this.elements.editorSoundName.textContent = this.state.selectedSoundName;
+        }
         this.resizeWaveformCanvas();
     }
 
@@ -1150,7 +1186,9 @@ class TeslaLockSoundAppV2 {
         this.waveformCanvas.style.width = `${rect.width}px`;
         this.waveformCanvas.style.height = `${rect.height}px`;
 
-        this.waveformCtx?.scale(dpr, dpr);
+        if (this.waveformCtx) {
+            this.waveformCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        }
 
         if (this.audioData) {
             this.drawWaveform();
@@ -1158,7 +1196,7 @@ class TeslaLockSoundAppV2 {
     }
 
     drawWaveform() {
-        if (!this.waveformCtx || !this.audioProcessor.audioBuffer) return;
+        if (!this.waveformCtx || !this.audioProcessor.getBuffer()) return;
 
         const canvas = this.waveformCanvas;
         const ctx = this.waveformCtx;
@@ -1167,7 +1205,7 @@ class TeslaLockSoundAppV2 {
 
         ctx.clearRect(0, 0, width, height);
 
-        const buffer = this.audioProcessor.audioBuffer;
+        const buffer = this.audioProcessor.getBuffer();
         const data = buffer.getChannelData(0);
         const step = Math.ceil(data.length / width);
         const amp = height / 2;
@@ -1706,7 +1744,9 @@ class TeslaLockSoundAppV2 {
 
     openUploadModal() {
         this.elements.uploadModal?.classList.add('open');
-        this.elements.uploadForm.style.display = 'none';
+        if (this.elements.uploadForm) {
+            this.elements.uploadForm.style.display = 'none';
+        }
         if (this.elements.uploadModel) {
             this.elements.uploadModel.value = this.normalizeModel(this.state.challengeModel);
         }
@@ -1714,7 +1754,9 @@ class TeslaLockSoundAppV2 {
 
     closeUploadModal() {
         this.elements.uploadModal?.classList.remove('open');
-        this.elements.fileInput.value = '';
+        if (this.elements.fileInput) {
+            this.elements.fileInput.value = '';
+        }
     }
 
     async handleFileUpload(file) {

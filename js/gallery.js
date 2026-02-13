@@ -105,6 +105,8 @@ class GalleryHandler {
                 vehicleModel: metadata.vehicleModel || '',
                 ownerNickname: metadata.ownerNickname || '',
                 signaturePackId: metadata.signaturePackId || '',
+                creatorAuthUid: metadata.creatorAuthUid || '',
+                creatorAuthProvider: metadata.creatorAuthProvider || '',
                 fileSize: wavBlob.size,
                 downloadUrl: downloadUrl,
                 fileName: fileName,
@@ -486,9 +488,21 @@ class GalleryHandler {
         }
 
         try {
-            const snapshot = await this.db.collection(GALLERY_COLLECTION).get();
-            let totalDownloads = 0;
+            const statsDoc = await this.db.collection('meta').doc('gallery_stats').get();
+            if (statsDoc.exists) {
+                const data = statsDoc.data();
+                return {
+                    totalSounds: data.totalSounds || 0,
+                    totalDownloads: data.totalDownloads || 0
+                };
+            }
 
+            const snapshot = await this.db.collection(GALLERY_COLLECTION)
+                .orderBy('downloads', 'desc')
+                .limit(200)
+                .get();
+
+            let totalDownloads = 0;
             snapshot.forEach(doc => {
                 totalDownloads += doc.data().downloads || 0;
             });
