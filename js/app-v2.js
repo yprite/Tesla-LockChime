@@ -989,15 +989,24 @@ class TeslaLockSoundAppV2 {
                 this.elements.soundsGrid.innerHTML = `<div class="loading-placeholder">${this.t('status.loading', {}, 'Loading...')}</div>`;
             }
 
+            const isTrending = this.state.currentCategory === 'trending';
             const options = {
-                category: this.state.currentCategory === 'all' ? null : this.state.currentCategory,
-                sortBy: this.state.currentCategory === 'trending' ? 'downloads' : 'createdAt',
+                // "trending" is a virtual filter (not a stored category field).
+                category: (this.state.currentCategory === 'all' || isTrending) ? null : this.state.currentCategory,
+                sortBy: isTrending ? 'downloads' : 'createdAt',
                 startAfter: append ? this.gallery.lastDoc : null
             };
 
             let result;
             if (this.state.searchQuery) {
                 result = await this.gallery.searchSounds(this.state.searchQuery);
+            } else if (isTrending) {
+                // Trending This Week should use weekly scoring data.
+                const weekly = await this.gallery.getWeeklyPopular(20);
+                result = {
+                    sounds: weekly?.sounds || [],
+                    hasMore: false
+                };
             } else {
                 result = await this.gallery.getSounds(options);
             }
