@@ -1003,8 +1003,16 @@ class TeslaLockSoundAppV2 {
             } else if (isTrending) {
                 // Trending This Week should use weekly scoring data.
                 const weekly = await this.gallery.getWeeklyPopular(20);
+                let sounds = weekly?.sounds || [];
+
+                // UX fallback: if weekly window has no data yet, show all-time popular.
+                if (sounds.length === 0) {
+                    const popular = await this.gallery.getPopularSounds(20);
+                    sounds = popular?.sounds || [];
+                }
+
                 result = {
-                    sounds: weekly?.sounds || [],
+                    sounds,
                     hasMore: false
                 };
             } else {
